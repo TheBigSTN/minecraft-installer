@@ -18,7 +18,7 @@ jobs:
       GitToken: ${{ secrets.TOKEN }}
       Solution_Name: minecraft-installer.sln
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
-      Executable_Name: MyCSharpApp/Release/MyCSharpApp.exe # Ajustează cu numele exact al .exe-ului tău
+      Executable_Name: MyCSharpApp.exe # Ajustează cu numele exact al .exe-ului tău
 
     steps:
     - name: Checkout
@@ -67,6 +67,6 @@ jobs:
         name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
         draft: false
         prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
-        files: ${{ github.workspace }}/Release/${{ env.Executable_Name }}
+        files: ${{ github.workspace }}\Release/${{ env.Executable_Name }}
         body: |
           For you to get started you need to download the ${{ env.Executable_Name }}
