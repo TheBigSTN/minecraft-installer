@@ -44,11 +44,16 @@ jobs:
     - name: Publish the application
       run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:TrimMode=link -o Release
         # Log files under ${{ github.workspace }}/Release
-    - name: Log Release Files
+    - name: Normalize Path
+      run: | 
+        echo "Normalized Path: ${{ github.workspace }}/Release/${{ env.Executable_Name }}"
+
+    - name: Verify File Exists
       run: |
-        echo "--- Listing files in ${{ github.workspace }}/Release ---"
-        Get-ChildItem -Path "${{ github.workspace }}/Release" -Recurse
-        echo "--- End of file listing ---"
+        if [ ! -f "${{ github.workspace }}/Release/${{ env.Executable_Name }}" ]; then
+          echo "File does not exist: ${{ github.workspace }}/Release/${{ env.Executable_Name }}"
+          exit 1
+        fi
 
     # Get Project Version using PowerShell
     - name: Get Project Version
