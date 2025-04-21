@@ -47,6 +47,7 @@ jobs:
     # Get Project Version
     - name: Get Project Version
       id: project_version
+      shell: bash # Specifică utilizarea bash pentru acest pas
       run: |
         VERSION=$(grep -oP '<Version>(.*?)</Version>' ${{ env.Project_Path }} | sed -e 's/<Version>//g' -e 's/<\/Version>//g')
         echo "PROJECT_VERSION=$VERSION" >> $GITHUB_OUTPUT
