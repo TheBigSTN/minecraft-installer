@@ -17,7 +17,7 @@ jobs:
     env:
       GitToken: ${{ secrets.TOKEN }}
       Solution_Name: minecraft-installer.sln
-      Project_Path: MinecraftInstaller.csproj
+      Project_Path: MyCSharpApp/MyCSharpApp.csproj
 
     steps:
     - name: Checkout
