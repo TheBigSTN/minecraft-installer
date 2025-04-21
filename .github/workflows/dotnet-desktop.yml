@@ -37,7 +37,7 @@ jobs:
 
     # Build the application
     - name: Build the application
-      run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration
+      run: dotnet build $env:Solution_Name -c $env:Configuration
 
     # Publish the application as a self-contained release
     - name: Publish the application
