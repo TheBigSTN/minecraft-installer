@@ -26,6 +26,13 @@ jobs:
       with:
         fetch-depth: 0
 
+            # Log files under ${{ github.workspace }}/Release
+    - name: Log Release Files
+      run: |
+        echo "--- Listing files in ${{ github.workspace }}/Release ---"
+        ls ${{ github.workspace }}/Release
+        echo "--- End of file listing ---"
+
     # Install the .NET Core workload
     - name: Install .NET Core
       uses: actions/setup-dotnet@v4
