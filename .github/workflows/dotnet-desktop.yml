@@ -37,7 +37,7 @@ jobs:
 
     # Build the application
     - name: Build the application
-      run: dotnet build $env:Solution_Name -c $env:Configuration
+      run: dotnet build $env:Solution_Name -c ${{ matrix.configuration }}
 
     # Publish the application as a self-contained release
     - name: Publish the application
