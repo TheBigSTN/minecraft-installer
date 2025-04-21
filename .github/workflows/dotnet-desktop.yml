@@ -1,0 +1,65 @@
+name: .NET Core Desktop Release
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        configuration: [Release]
+
+    runs-on: windows-latest
+
+    env:
+      GitToken: ${{ secrets.TOKEN }}
+      Solution_Name: minecraft-installer.sln
+      Project_Path: MyCSharpApp/MyCSharpApp.csproj
+      Executable_Name: MyCSharpApp.exe # Ajustează cu numele exact al .exe-ului tău
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # Install the .NET Core workload
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    # Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore $env:Solution_Name
+
+    # Build the application
+    - name: Build the application
+      run: dotnet build $env:Solution_Name -c ${{ matrix.configuration }}
+
+    # Publish the application as a self-contained single file release
+    - name: Publish the application
+      run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:TrimMode=link -o Release
+
+    # Get Project Version
+    - name: Get Project Version
+      id: project_version
+      run: |
+        VERSION=$(grep -oP '<Version>(.*?)</Version>' ${{ env.Project_Path }} | sed -e 's/<Version>//g' -e 's/<\/Version>//g')
+        echo "PROJECT_VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+    # Create GitHub Release
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.project_version.outputs.PROJECT_VERSION }}
+        name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
+        draft: false
+        prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
+        files: ${{ github.workspace }}/Release/${{ env.Executable_Name }}
+        body: |
+          For you to get started you need to download the ${{ env.Executable_Name }}
