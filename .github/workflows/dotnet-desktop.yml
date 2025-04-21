@@ -73,6 +73,6 @@ jobs:
         name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
         draft: false
         prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
-        files: ${{ github.workspace }}\Release\${{ env.Executable_Name }}
+        files: ${{ github.workspace }}/Release/${{ env.Executable_Name }}
         body: |
           For you to get started you need to download the ${{ env.Executable_Name }}
