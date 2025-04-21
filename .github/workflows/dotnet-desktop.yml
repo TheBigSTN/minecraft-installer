@@ -44,18 +44,19 @@ jobs:
     - name: Publish the application
       run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:TrimMode=link -o Release
 
-    # Get Project Version
+    # Get Project Version using PowerShell
     - name: Get Project Version
       id: project_version
-      shell: bash
       run: |
-        locale -a
-        sudo locale-gen en_US.UTF-8
-        sudo update-locale LC_ALL=en_US.UTF-8
-        export LANG=en_US.UTF-8
-        export LC_ALL=en_US.UTF-8
-        VERSION=$(grep -oP '<Version>(.*?)</Version>' ${{ env.Project_Path }} | sed -e 's/<Version>//g' -e 's/<\/Version>//g')
-        echo "PROJECT_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        $csprojContent = Get-Content -Path "${{ env.Project_Path }}" -Raw
+        $versionMatch = $csprojContent -match '<Version>(.*?)</Version>'
+        if ($versionMatch) {
+          $version = $Matches[1]
+          echo "PROJECT_VERSION=$version" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "Eroare: Tag-ul <Version> nu a fost găsit în fișierul .csproj."
+          exit 1
+        }
 
     # Create GitHub Release
     - name: Create Release
