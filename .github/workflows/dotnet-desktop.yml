@@ -50,10 +50,10 @@ jobs:
 
     - name: Verify File Exists
       run: |
-        if [ ! -f "${{ github.workspace }}/Release/${{ env.Executable_Name }}" ]; then
-          echo "File does not exist: ${{ github.workspace }}/Release/${{ env.Executable_Name }}"
-          exit 1
-        fi
+        if (-Not (Test-Path "D:\a\minecraft-installer\minecraft-installer/Release/MyCSharpApp.exe")) {
+            Write-Host "File does not exist."
+            exit 1
+        }
 
     # Get Project Version using PowerShell
     - name: Get Project Version
