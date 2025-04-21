@@ -43,8 +43,7 @@ jobs:
     # Publish the application as a self-contained single file release
     - name: Publish the application
       run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:TrimMode=link -o Release
-
-    # Log files under ${{ github.workspace }}/Release
+        # Log files under ${{ github.workspace }}/Release
     - name: Log Release Files
       run: |
         echo "--- Listing files in ${{ github.workspace }}/Release ---"
@@ -74,15 +73,6 @@ jobs:
         name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
         draft: false
         prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
-        # files: ${{ github.workspace }}/Release/${{ env.Executable_Name }} # Scoate linia 'files' de aici
+        files: ${{ github.workspace }}\Release\${{ env.Executable_Name }}
         body: |
           For you to get started you need to download the ${{ env.Executable_Name }}
-
-    # Upload Release Asset
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ github.workspace }}/Release/${{ env.Executable_Name }}
-        asset_name: ${{ env.Executable_Name }}
-        asset_content_type: application/vnd.microsoft.portable-executable # Sau application/x-msdownload pentru .exe
