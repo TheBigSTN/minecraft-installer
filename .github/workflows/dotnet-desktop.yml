@@ -43,17 +43,6 @@ jobs:
     # Publish the application as a self-contained single file release
     - name: Publish the application
       run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:TrimMode=link -o Release
-        # Log files under ${{ github.workspace }}/Release
-    - name: Normalize Path
-      run: | 
-        echo "Normalized Path: ${{ github.workspace }}/Release/${{ env.Executable_Name }}"
-
-    - name: Verify File Exists
-      run: |
-        if (-Not (Test-Path "D:\a\minecraft-installer\minecraft-installer/Release/MyCSharpApp.exe")) {
-            Write-Host "File does not exist."
-            exit 1
-        }
 
     # Get Project Version using PowerShell
     - name: Get Project Version
@@ -78,6 +67,7 @@ jobs:
         name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
         draft: false
         prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
-        files: ${{ github.workspace }}/Release/${{ env.Executable_Name }}
+        files: |
+          ${{ github.workspace }}/Release/${{ env.Executable_Name }}
         body: |
           For you to get started you need to download the ${{ env.Executable_Name }}
