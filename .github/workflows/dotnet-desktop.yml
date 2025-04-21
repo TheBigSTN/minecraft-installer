@@ -18,7 +18,7 @@ jobs:
       GitToken: ${{ secrets.TOKEN }}
       Solution_Name: minecraft-installer.sln
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
-      Executable_Name: MyCSharpApp.exe # Ajustează cu numele exact al .exe-ului tău
+      Executable_Name: MyCSharpApp/Release/MyCSharpApp.exe # Ajustează cu numele exact al .exe-ului tău
 
     steps:
     - name: Checkout
