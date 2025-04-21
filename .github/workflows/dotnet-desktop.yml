@@ -1,0 +1,51 @@
+name: .NET Core Desktop Release
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        configuration: [Release]
+
+    runs-on: windows-latest
+
+    env:
+      GitToken: ${{ secrets.TOKEN }}
+      Solution_Name: minecraft-installer.sln
+      Project_Path: MinecraftInstaller.csproj
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # Install the .NET Core workload
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    # Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore $env:Solution_Name
+
+    # Build the application
+    - name: Build the application
+      run: msbuild $env:Solution_Name /p:Configuration=$env:Configuration
+
+    # Publish the application as a self-contained release
+    - name: Publish the application
+      run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:TrimMode=link -o Release
+
+    # Upload the release artifact
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Release-win-x64
+        path: ${{ github.workspace }}/Release
