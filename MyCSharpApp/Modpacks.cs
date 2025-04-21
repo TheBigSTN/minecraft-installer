@@ -1,36 +1,37 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
+using Github;
 
 namespace MyCSharpApp {
     public static class Modpacks {
-        public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versions");
+        public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versionsa");
 
         public static List<Modpack> GetModpacks() {
             List<Modpack> modpackdata = [];
 
-            try {
                 string[] modpacks = Directory.GetDirectories(modpacksPath);
                 foreach (string modpack in modpacks) {
-                    string mineloaderFilePath = Path.Combine(modpack, "mineloader-Aditional.json");
-                    string jsonFilePath = Path.Combine(modpack, "TLauncherAdditional.json");
+                    try {
+                        string mineloaderFilePath = Path.Combine(modpack, "mineloader-Aditional.json");
+                        string jsonFilePath = Path.Combine(modpack, "TLauncherAdditional.json");
 
-                    if (File.Exists(mineloaderFilePath) && File.Exists(jsonFilePath)) {
-                        string jsonContent = File.ReadAllText(jsonFilePath);
-                        using JsonDocument doc = JsonDocument.Parse(jsonContent);
-                        JsonElement root = doc.RootElement;
-                        string mineloaderContent = File.ReadAllText(mineloaderFilePath);
-                        using JsonDocument mineloaderdoc = JsonDocument.Parse(mineloaderContent);
-                        JsonElement mineloaderroot = mineloaderdoc.RootElement;
+                        if (File.Exists(mineloaderFilePath) && File.Exists(jsonFilePath)) {
+                            string jsonContent = File.ReadAllText(jsonFilePath);
+                            using JsonDocument doc = JsonDocument.Parse(jsonContent);
+                            JsonElement root = doc.RootElement;
+                            string mineloaderContent = File.ReadAllText(mineloaderFilePath);
+                            using JsonDocument mineloaderdoc = JsonDocument.Parse(mineloaderContent);
+                            JsonElement mineloaderroot = mineloaderdoc.RootElement;
 
-                        Modpack parsedModpacks = ParseModpack(root, mineloaderroot);
-                        modpackdata.Add(parsedModpacks);
+                            Modpack parsedModpacks = ParseModpack(root, mineloaderroot);
+                            modpackdata.Add(parsedModpacks);
+                        }
+                    }
+                    catch (Exception ex) {
+                        Console.WriteLine("An error occurred: " + ex.Message);
                     }
                 }
-            }
-            catch (Exception ex) {
-                Console.WriteLine("An error occurred: " + ex.Message);
-            }
 
             return modpackdata;
         }
@@ -79,7 +80,7 @@ namespace MyCSharpApp {
             return new Modpack(tlauncherData, mineLoaderData);
         }
 
-        private static TLauncherData ParseTLauncherData(JsonElement root) {
+        public static TLauncherData ParseTLauncherData(JsonElement root) {
             string modpackVersion = root.GetProperty("jar").GetString() ?? "Unknown";
             string modpackName = "Unknown";
             List<Mod> mods = [];
@@ -97,14 +98,20 @@ namespace MyCSharpApp {
         }
 
         private static MineLoaderData ParseMineLoaderData(JsonElement mineloaderroot) {
-            string additionalName = mineloaderroot.GetProperty("name").GetString() ?? "Unknown";
+            string modpackname = mineloaderroot.GetProperty("ModpackName").GetString() ?? "Unknown";
 
             List<Mod> mods = [];
-            if (mineloaderroot.TryGetProperty("mods", out JsonElement modsElement)) {
+            if (mineloaderroot.TryGetProperty("Mods", out JsonElement modsElement)) {
                 mods = ParseMods(modsElement);
             }
 
-            return new MineLoaderData(additionalName, mods);
+            GitHubTree? tree = null;
+
+            if (mineloaderroot.TryGetProperty("Tree", out var treeElement)) {
+                tree = treeElement.Deserialize<GitHubTree>();
+            }
+
+            return new MineLoaderData(modpackname, mods, tree);
         }
 
 
@@ -133,7 +140,16 @@ namespace MyCSharpApp {
 
             public Modpack(TLauncherData tlauncher = null!, MineLoaderData mineLoader = null!) {
                 TLauncher = tlauncher ?? new TLauncherData("Default", "Unknown", new List<Mod>());
-                MineLoader = mineLoader ?? new MineLoaderData("Default", new List<Mod>());
+                MineLoader = mineLoader ?? new MineLoaderData(
+                    "Default",
+                    new List<Mod>(),
+                    new GitHubTree {
+                        Sha = "",
+                        Url = "",
+                        Tree = new List<GitHubTreeItem>(),
+                        Truncated = false
+                    }
+                );
             }
         }
 
@@ -150,16 +166,16 @@ namespace MyCSharpApp {
         }
 
         public class MineLoaderData {
-            public string AdditionalName { get; set; }
+            public string ModpackName { get; set; }
             public List<Mod> Mods { get; set; }
+            public GitHubTree Tree { get; set; }
 
-            public MineLoaderData(string additionalName, List<Mod> mods) {
-                AdditionalName = additionalName;
+            public MineLoaderData(string modpackname, List<Mod> mods, GitHubTree tree) {
+                ModpackName = modpackname;
                 Mods = mods;
+                Tree = tree;
             }
         }
-
-
         public class Mod {
             public required string Path { get; set; }
             public bool IsActive { get; set; }

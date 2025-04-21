@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,12 +11,13 @@ namespace MyCSharpApp {
         public MainWindow() {
             InitializeComponent();
             var modpacks = Modpacks.GetModpacks();
-            AddModpackButtons(modpacks);
-
-            if (modpacks.Count == 0) {
+            if(modpacks.Count != 0)
+                AddModpackButtons(modpacks);
+            else {
                 Sidebar.Visibility = Visibility.Collapsed;
-                StartInfo.Visibility = Visibility.Visible;
-            }
+                TopBar.Visibility = Visibility.Collapsed;
+                Install_Button_Click(null, null);
+            } 
         }
 
         private void AddModpackButtons(List<Modpacks.Modpack> modpacks) {
@@ -26,26 +27,40 @@ namespace MyCSharpApp {
             // Loop through each modpack and create a button
             foreach (var modpack in modpacks) {
                 Button modpackButton = new Button {
-                    Content = modpack.MineLoader.AdditionalName,
+                    Content = modpack.MineLoader.ModpackName,
+                    Style = (Style)FindResource("ModpackButtonStyle")
                 };
 
-                // Apply the XAML-defined style
-                modpackButton.Style = (Style)FindResource("ModpackButtonStyle");
+                modpackButton.Click += (sender, e) =>
+                {
+                    var detailsControl = new ModpackInfo(modpack);
+                    BodyContent.Content = detailsControl;
+                };
 
                 SidebarButtonPanel.Children.Add(modpackButton);
             }
         }
 
-        private void Install_Modpack(object sender, RoutedEventArgs e) {
-            InstallModpackWindow window = new();
-            window.Owner = this;
-            window.ShowDialog();
+        private void Install_Button_Click(object sender, RoutedEventArgs e) {
+            InstallMenu installModpackWindow = new InstallMenu();
+
+            // Te abonezi la evenimentul ModpackInstalled
+            installModpackWindow.ModpackInstalled += InstallModpackWindow_ModpackInstalled;
+
+            // Înlocuiește conținutul din BodyContent cu InstallMenu
+            BodyContent.Content = installModpackWindow;
+        }
+
+        private void InstallModpackWindow_ModpackInstalled(object sender, EventArgs e) {
+            // După ce instalarea modpack-ului este completă, poți reîncărca lista de modpack-uri
             var modpacks = Modpacks.GetModpacks();
 
+            // Actualizează butoanele din sidebar pentru a reflecta modpack-urile noi
             AddModpackButtons(modpacks);
 
+            BodyContent.Content = null;
             Sidebar.Visibility = Visibility.Visible;
-            StartInfo.Visibility = Visibility.Hidden;
+            TopBar.Visibility = Visibility.Visible;
         }
     }
 }

@@ -89,27 +89,14 @@
             Orientation="Horizontal" 
             Height="49"
             Grid.ColumnSpan="2">
-            <Button x:Name="Install_Button_Copy" Content="Install Modpack" Height="NaN" Foreground="White" Cursor="Hand" Width="168" VerticalAlignment="Stretch">
+            <Button x:Name="Install_Button" Content="Install Modpack" Height="NaN" Foreground="White" Cursor="Hand" Width="168" VerticalAlignment="Stretch" Click="Install_Button_Click">
                 <Button.Effect>
                     <DropShadowEffect/>
                 </Button.Effect>
             </Button>
         </StackPanel>
-        <Grid 
-            x:Name="Body" 
-            Grid.Column="1" Grid.Row="1" Height="515" VerticalAlignment="Center" Width="610">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
-            <Grid x:Name="StartInfo" Grid.Row="1" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <TextBlock TextWrapping="Wrap" VerticalAlignment="Top" TextAlignment="Center" Margin="0,39,0,0" Width="500" HorizontalAlignment="Center" Height="170"><Run Foreground="White" FontSize="16" Text="Salut."/><LineBreak Foreground="White" FontSize="16"/><Run Foreground="White" FontSize="16" Text="Acesta este instalatorul meu de modpakuri de minecraft."/><LineBreak/><Run Foreground="White" FontSize="16" Text="Deoarece pentru ca un modpack de pe curseforge dureaza pana cand este acceptat si apoi adaugat pe tlmods."/><LineBreak/><Run Foreground="White" FontSize="16" Text="Mi am facut un mod manager care face fix asta."/><LineBreak/><Run Foreground="White" FontSize="16" Text="Acest mesaj in vezi probabil datorita faptului ca inca nu ai instalat nici un modpack."/><LineBreak/><Run Foreground="White" FontSize="16" Text="Pentru a continua apasa butonul de mai jos."/></TextBlock>
-                <Button Content="Install Modpack" HorizontalAlignment="Center" Height="68" Margin="0,40,0,0" VerticalAlignment="Top" Width="200" Click="Install_Modpack" Grid.Row="1"/>
-            </Grid>
+        <Grid x:Name="Body" Grid.Column="1" Grid.Row="1" Height="515" VerticalAlignment="Center" Width="610">
+            <ContentControl x:Name="BodyContent"/>
         </Grid>
     </Grid>
 </Window>

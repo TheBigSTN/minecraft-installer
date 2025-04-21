@@ -1,6 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -10,7 +12,7 @@ using static MyCSharpApp.Modpacks;
 
 namespace Github {
     public class GithubHelper {
-        private static string Token { get; set; } = Environment.GetEnvironmentVariable("GitToken") ?? throw new Exception("No token found");
+        public static string Token { get; set; } = Environment.GetEnvironmentVariable("GitToken") ?? throw new Exception("No token found");
 
         public static async Task<GitHubTree> GetGitHubTreeAsync(bool recursive = true, string tree = "main") {
             var url = recursive
@@ -35,12 +37,9 @@ namespace Github {
 
             GitHubTree gittree = await GetGitHubTreeAsync(true, modpacksha);
 
-            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string path = Path.Combine(appDataPath, $".minecraft\\versions\\{modpackname}");
+            string path = Path.Combine(Modpacks.modpacksPath, modpackname);
 
             var tasks = new List<Task>();
-            var stopwatch = new System.Diagnostics.Stopwatch();
-            stopwatch.Start();
 
             foreach (var item in gittree.Tree) {
                 if (item.Type == "blob") {
@@ -60,24 +59,76 @@ namespace Github {
                 await Task.WhenAll(tasks);
             }
 
-            stopwatch.Stop();
-            Console.WriteLine($"Downloaded in {stopwatch.ElapsedMilliseconds}ms");
-
-
-
-            TLauncherData launcherData = Modpacks.GetLauncherData(modpackname);
+            using JsonDocument launcherData = await GetGitLauncherDataAsync(modpacksha, modpackname);
 
             JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
 
             var data = new Modpacks.MineLoaderData(
-                "Hello",
-                launcherData.Mods
+                modpackname,
+                ParseTLauncherData(launcherData.RootElement).Mods,
+                gittree
             );
-            string filePath = "mineloader-Aditional.json";
 
-            using FileStream createStream = File.Create(Path.Combine(Modpacks.modpacksPath, modpackname, filePath));
+            using FileStream createStream = File.Create(Path.Combine(Modpacks.modpacksPath, modpackname, "mineloader-Aditional.json"));
             await JsonSerializer.SerializeAsync(createStream, data, options);
             await createStream.FlushAsync();
+        }
+
+        public static async Task<GitHubTree> GetModpackWithName(string modpack_name) {
+            GitHubTree fullTree = await GetGitHubTreeAsync(false); // arborele principal, non-recursiv
+
+            var modpack = fullTree.Tree.Find(i =>
+                i.Type == "tree" && i.Path.Equals(modpack_name, StringComparison.OrdinalIgnoreCase));
+
+            if (modpack == null) {
+                Console.WriteLine($"Modpack '{modpack_name}' not found in GitHub tree.");
+                return null;
+            }
+
+            GitHubTree modpackTree = await GetGitHubTreeAsync(true, modpack.Sha); // recursiv în folderul respectiv
+            return modpackTree;
+        }
+
+        public static async Task<JsonDocument> GetGitLauncherDataAsync(string modpackSha, string modpackName) {
+            var headers = new Dictionary<string, string> {
+        { "Authorization", "Bearer " + Token }
+    };
+
+            GitHubTree tree = await GetGitHubTreeAsync(true, modpackSha);
+
+            var tlauncherFile = tree.Tree.FirstOrDefault(item =>
+                item.Path.Equals("TLauncherAdditional.json", StringComparison.OrdinalIgnoreCase));
+
+            if (tlauncherFile == null)
+                throw new Exception("The tlauncer file does not exist on remote");
+
+            string jsonResponse = await Exiom.Get(tlauncherFile.Url, headers);
+
+            var jsonDocument = JsonDocument.Parse(jsonResponse);
+            if (jsonDocument.RootElement.TryGetProperty("content", out var contentElement)) {
+                string? base64Content = contentElement.GetString();
+                if (!string.IsNullOrEmpty(base64Content)) {
+                    // 🔧 Elimină newline-urile (\n) din Base64
+                    string cleanBase64 = base64Content.Replace("\n", "").Replace("\r", "");
+
+                    // Decodează conținutul Base64
+                    byte[] decodedBytes = Convert.FromBase64String(cleanBase64);
+
+                    // Decodeaza bytes în string JSON
+                    string decodedJson = Encoding.UTF8.GetString(decodedBytes);
+
+                    // Parseaza ca JsonDocument
+                    var tlauncherDoc = JsonDocument.Parse(decodedJson);
+
+                    return tlauncherDoc;
+                }
+                else {
+                    throw new Exception("The 'content' field is empty.");
+                }
+            }
+            else {
+                throw new Exception("The 'content' field was not found in the blob JSON.");
+            }
         }
     }
 
