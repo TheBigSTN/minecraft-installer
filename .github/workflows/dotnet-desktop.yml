@@ -26,13 +26,6 @@ jobs:
       with:
         fetch-depth: 0
 
-            # Log files under ${{ github.workspace }}/Release
-    - name: Log Release Files
-      run: |
-        echo "--- Listing files in ${{ github.workspace }}/Release ---"
-        ls ${{ github.workspace }}/Release
-        echo "--- End of file listing ---"
-
     # Install the .NET Core workload
     - name: Install .NET Core
       uses: actions/setup-dotnet@v4
@@ -64,6 +57,13 @@ jobs:
           echo "Eroare: Tag-ul <Version> nu a fost găsit în fișierul .csproj."
           exit 1
         }
+
+    # Log files under ${{ github.workspace }}/Release
+    - name: Log Release Files
+      run: |
+        echo "--- Listing files in ${{ github.workspace }}/Release ---"
+        ls ${{ github.workspace }}/Release
+        echo "--- End of file listing ---"
 
     # Create GitHub Release
     - name: Create Release
