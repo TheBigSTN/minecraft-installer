@@ -8,79 +8,65 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        configuration: [Release]
-
     runs-on: windows-latest
 
     env:
-      GitToken: ${{ secrets.TOKEN }}
       Solution_Name: minecraft-installer.sln
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
       Executable_Name: MyCSharpApp.exe
-      Wix_Project_Path: MSI_Builder/MSI_Builder.wixproj
-      Wix_Output_Path: MSI_Builder/bin/Release/net8.0-windows/MSI_Builder.msi
+      Wix_Source_Files: MSI_Builder/Product.wxs
+      Wix_Output_Dir: MSI_Builder/bin/Release
+      Architecture: x64
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # Install the .NET Core workload
-    - name: Install .NET Core
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
 
-    # Install WiX Toolset v3.11
-    - name: Install WiX Toolset v3.11
-      run: |
-        # Descarcă și instalează WiX Toolset
-        Invoke-WebRequest -Uri https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314.exe -OutFile wix311-binaries-x64.exe
-        Start-Process -FilePath wix311-binaries-x64.exe -ArgumentList '/quiet', '/install' -Wait
-        # Curăță fișierul de instalare
-        Remove-Item wix311-binaries-x64.exe
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.Solution_Name }}
 
-    # Restore dependencies
-    - name: Restore dependencies
-      run: dotnet restore $env:Solution_Name
+      - name: Publish application
+        run: |
+          dotnet publish ${{ env.Project_Path }} `
+            -c Release `
+            -r win-x64 `
+            --self-contained false `
+            -p:PublishSingleFile=false `
+            -p:TrimMode=link `
+            -o Release
 
-    # Publish the application as a framework-dependent release
-    - name: Publish the application
-      run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:TrimMode=link -o Release
+      - name: Build MSI with WiX Toolset
+        uses: utilitywarehouse/ghaction-wix@v1
+        with:
+          name: ${{ env.Executable_Name }}
+          sourceFiles: ${{ env.Wix_Source_Files }}
+          outputDir: ${{ env.Wix_Output_Dir }}
+          architecture: ${{ env.Architecture }}
 
-    # Build MSI using WiX project
-    - name: Build MSI installer
-      run: |
-        dotnet build $env:Wix_Project_Path -c Release
+      - name: Get Project Version
+        id: project_version
+        shell: pwsh
+        run: |
+          $content = Get-Content -Path "${{ env.Project_Path }}" -Raw
+          if ($content -match '<Version>(.*?)</Version>') {
+            echo "PROJECT_VERSION=$($Matches[1])" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Error "Could not find <Version> tag in $env:Project_Path"
+          }
 
-    # Get Project Version using PowerShell
-    - name: Get Project Version
-      id: project_version
-      run: |
-        $csprojContent = Get-Content -Path "${{ env.Project_Path }}" -Raw
-        $versionMatch = $csprojContent -match '<Version>(.*?)</Version>'
-        if ($versionMatch) {
-          $version = $Matches[1]
-          echo "PROJECT_VERSION=$version" >> $env:GITHUB_OUTPUT
-        } else {
-          echo "Eroare: Tag-ul <Version> nu a fost găsit în fișierul .csproj."
-          exit 1
-        }
-
-    # Create GitHub Release
-    - name: Create Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ steps.project_version.outputs.PROJECT_VERSION }}
-        name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
-        draft: false
-        prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
-        files: |
-          ${{ env.Wix_Output_Path }}
-        body: |
-          For you to get started you need to download the ${{ env.Executable_Name }} and the installer MSI.
-
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.project_version.outputs.PROJECT_VERSION }}
+          name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
+          draft: false
+          prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
+          files: |
+            ${{ env.Wix_Output_Dir }}/${{ env.Executable_Name }}.msi
+          body: |
+            Download the latest **${{ env.Executable_Name }}** and the MSI installer.
