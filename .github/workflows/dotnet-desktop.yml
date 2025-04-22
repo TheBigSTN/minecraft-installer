@@ -11,65 +11,65 @@ jobs:
     runs-on: windows-latest
 
     env:
-      # Your solution and project paths
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
       Wix_Project_Path: MSI_Builder/MSI_Builder.wixproj
-      # Where the MSI will land after a Release build
       Wix_Output: MSI_Builder/bin/Release/net8.0-windows/MSI_Builder.msi
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
 
-    - name: Ensure WiX 3.14 is on PATH
-      shell: pwsh
-      run: |
-        $wixBin = 'C:\Program Files (x86)\WiX Toolset v3.14\bin'
-        if (Test-Path $wixBin) {
-          Write-Host "Adding WiX to PATH"
-          $env:PATH += ";$wixBin"
-        } else {
-          Write-Error "WiX path not found at $wixBin"
-          exit 1
-        }
+      - name: Ensure WiX 3.14 is on PATH
+        shell: pwsh
+        run: |
+          $wixBin = 'C:\Program Files (x86)\WiX Toolset v3.14\bin'
+          if (Test-Path $wixBin) {
+            Write-Host "Adding WiX to PATH"
+            $env:PATH += ";$wixBin"
+          } else {
+            Write-Error "WiX path not found: $wixBin"
+            exit 1
+          }
 
-    - name: Restore only the .NET project
-      run: dotnet restore ${{ env.Project_Path }}
+      - name: Restore .NET project
+        run: dotnet restore "${{ env.Project_Path }}"
 
-    - name: Publish application
-      run: dotnet publish ${{ env.Project_Path }} \
-        -c Release \
-        -r win-x64 \
-        --self-contained false \
-        -p:PublishSingleFile=false \
-        -p:TrimMode=link \
-        -o Release
+      - name: Publish application
+        run: |
+          dotnet publish "${{ env.Project_Path }}" \
+            -c Release \
+            -r win-x64 \
+            --self-contained false \
+            -p:PublishSingleFile=false \
+            -p:TrimMode=link \
+            -o Release
 
-    - name: Build MSI via MSBuild
-      shell: pwsh
-      run: |
-        msbuild ${{ env.Wix_Project_Path }} /p:Configuration=Release
+      - name: Build MSI via MSBuild
+        shell: pwsh
+        run: msbuild "${{ env.Wix_Project_Path }}" /p:Configuration=Release
 
-    - name: Get Project Version
-      id: get_version
-      shell: pwsh
-      run: |
-        [xml]$csproj = Get-Content ${{ env.Project_Path }}
-        $ver = $csproj.Project.PropertyGroup.Version
-        echo "PROJECT_VERSION=$ver" >> $env:GITHUB_OUTPUT
+      - name: Get Project Version
+        id: get_version
+        shell: pwsh
+        run: |
+          [xml]$csproj = Get-Content "${{ env.Project_Path }}"
+          $ver = $csproj.Project.PropertyGroup.Version
+          echo "PROJECT_VERSION=$ver" >> $env:GITHUB_OUTPUT
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
-        name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
-        draft: false
-        prerelease: ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
-        files: ${{ env.Wix_Output }}
-        body: |
-          Download the latest **MyCSharpApp.exe** and MSI installer.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
+          name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') 
+                         || contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') 
+                         || contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
+          files: ${{ env.Wix_Output }}
+          body: |
+            Download the latest MyCSharpApp.exe and the MSI installer.
