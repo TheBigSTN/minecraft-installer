@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/BootstrapperApplicationData">
+
+	<PackageGroup Id="NetDesktopRuntime">
+		<ExePackage Id="Net8Runtime"
+					SourceFile="windowsdesktop-runtime-8.0.4-win-x64.exe"
+					InstallCommand="/install /quiet /norestart"
+					Permanent="yes"
+					Vital="yes"
+					DisplayName=".NET Desktop Runtime 8.0"
+                />
+	</PackageGroup>
+
+	<Product Id="*" Name="MyCSharpApp" Language="1033" Version="1.0.0.0"
+			 Manufacturer="Me" UpgradeCode="Hello">
+		<Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+		<MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+		<MediaTemplate />
+		<Feature Id="ProductFeature" Title="MyCSharpApp" Level="1">
+			<ComponentGroupRef Id="AppFiles" />
+			<PackageGroupRef Id="NetDesktopRuntime" />
+		</Feature>
+
+		<!-- Lansare app după instalare (cu bifă) -->
+		<CustomAction Id="LaunchApp" FileKey="AppExe" ExeCommand="" Return="asyncNoWait" />
+		<InstallUI>
+			<UI>
+				<Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApp">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1</Publish>
+			</UI>
+		</InstallUI>
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="INSTALLFOLDER" Name="MyCSharpApp" />
+			</Directory>
+			<Directory Id="ProgramMenuFolder">
+				<Directory Id="MyAppShortcutFolder" Name="MyCSharpApp" />
+			</Directory>
+			<Directory Id="DesktopFolder" />
+		</Directory>
+	</Fragment>
+
+	<Fragment>
+		<ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+			<Component Id="AppExeComp" Guid="*">
+				<File Id="AppExe" Source="..\MyCSharpApp\bin\Release\net8.0-windows\publish\MyCSharpApp.exe" KeyPath="yes" />
+
+				<Shortcut Id="StartMenuShortcut"
+						  Directory="MyAppShortcutFolder"
+						  Name="MyCSharpApp"
+						  Target="[INSTALLFOLDER]MyCSharpApp.exe"
+						  WorkingDirectory="INSTALLFOLDER"
+						  Icon="AppIcon"
+						  Advertise="no" />
+
+				<Shortcut Id="DesktopShortcut"
+						  Directory="DesktopFolder"
+						  Name="MyCSharpApp"
+						  Target="[INSTALLFOLDER]MyCSharpApp.exe"
+						  WorkingDirectory="INSTALLFOLDER"
+						  Icon="AppIcon"
+						  Advertise="no" />
+
+				<RemoveFolder Id="RemoveShortcutDir" On="uninstall" Directory="MyAppShortcutFolder" />
+				<RegistryValue Root="HKCU" Key="Software\MyCSharpApp" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+			</Component>
+		</ComponentGroup>
+	</Fragment>
+
+	<!-- Icon din exe -->
+	<Fragment>
+		<Icon Id="AppIcon" SourceFile="..\MyCSharpApp\bin\Release\net8.0-windows\publish\MyCSharpApp.exe" />
+	</Fragment>
+
+	<!-- UI clasic -->
+	<Fragment>
+		<UIRef Id="WixUI_InstallDir" />
+		<UIRef Id="WixUI_ErrorProgressText" />
+		<Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch MyCSharpApp" />
+	</Fragment>
+
+</Wix>
