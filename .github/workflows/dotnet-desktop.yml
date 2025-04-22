@@ -1,77 +1,75 @@
-name: Latest Release Builder
+name: .NET Core Desktop Release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
 
     env:
-      Solution_Name: minecraft-installer.sln
+      # Your solution and project paths
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
-      Executable_Name: MyCSharpApp.exe
       Wix_Project_Path: MSI_Builder/MSI_Builder.wixproj
-      Wix_Output_Path: MSI_Builder/bin/Release/net8.0-windows/MSI_Builder.msi
+      # Where the MSI will land after a Release build
+      Wix_Output: MSI_Builder/bin/Release/net8.0-windows/MSI_Builder.msi
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 9.0.x
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
 
-      - name: Ensure WiX Toolset is in PATH
-        shell: pwsh
-        run: |
-          $wixPath = 'C:\Program Files (x86)\WiX Toolset v3.14\bin'
-          if (Test-Path $wixPath) {
-            $env:PATH += ";$wixPath"
-          } else {
-            Write-Error "WiX Toolset path not found at $wixPath"
-            exit 1
-          }
+    - name: Ensure WiX 3.14 is on PATH
+      shell: pwsh
+      run: |
+        $wixBin = 'C:\Program Files (x86)\WiX Toolset v3.14\bin'
+        if (Test-Path $wixBin) {
+          Write-Host "Adding WiX to PATH"
+          $env:PATH += ";$wixBin"
+        } else {
+          Write-Error "WiX path not found at $wixBin"
+          exit 1
+        }
 
-      - name: Restore dependencies
-        run: dotnet restore ${{ env.Solution_Name }}
+    - name: Restore only the .NET project
+      run: dotnet restore ${{ env.Project_Path }}
 
-      - name: Publish application
-        run: |
-          dotnet publish ${{ env.Project_Path }} `
-            -c Release `
-            -r win-x64 `
-            --self-contained false `
-            -p:PublishSingleFile=false `
-            -p:TrimMode=link `
-            -o Release
+    - name: Publish application
+      run: dotnet publish ${{ env.Project_Path }} \
+        -c Release \
+        -r win-x64 \
+        --self-contained false \
+        -p:PublishSingleFile=false \
+        -p:TrimMode=link \
+        -o Release
 
-      - name: Build MSI installer
-        run: dotnet build ${{ env.Wix_Project_Path }} -c Release
+    - name: Build MSI via MSBuild
+      shell: pwsh
+      run: |
+        msbuild ${{ env.Wix_Project_Path }} /p:Configuration=Release
 
-      - name: Get Project Version
-        id: project_version
-        shell: pwsh
-        run: |
-          $content = Get-Content -Path "${{ env.Project_Path }}" -Raw
-          if ($content -match '<Version>(.*?)</Version>') {
-            echo "PROJECT_VERSION=$($Matches[1])" >> $env:GITHUB_OUTPUT
-          } else {
-            Write-Error "Could not find <Version> tag in $env:Project_Path"
-          }
+    - name: Get Project Version
+      id: get_version
+      shell: pwsh
+      run: |
+        [xml]$csproj = Get-Content ${{ env.Project_Path }}
+        $ver = $csproj.Project.PropertyGroup.Version
+        echo "PROJECT_VERSION=$ver" >> $env:GITHUB_OUTPUT
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.project_version.outputs.PROJECT_VERSION }}
-          name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
-          draft: false
-          prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
-          files: |
-            ${{ env.Wix_Output_Path }}
-          body: |
-            Download the latest **${{ env.Executable_Name }}** and the MSI installer.
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
+        name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
+        files: ${{ env.Wix_Output }}
+        body: |
+          Download the latest **MyCSharpApp.exe** and MSI installer.
