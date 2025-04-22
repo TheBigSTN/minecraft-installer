@@ -1,27 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
-     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 
   <Fragment>
     <PackageGroup Id="NetDesktopRuntime">
       <ExePackage Id="Net8Runtime"
                   SourceFile="windowsdesktop-runtime-8.0.4-win-x64.exe"
                   InstallCommand="/install /quiet /norestart"
-                  DisplayName=".NET Desktop Runtime 8.0"
                   Permanent="yes"
-                  Vital="yes" />
+                  Vital="yes"
+                  DisplayName=".NET Desktop Runtime 8.0" />
     </PackageGroup>
   </Fragment>
 
-  <Product Id="*"
-           Name="MyCSharpApp"
-           Language="1033"
-           Version="1.0.0.0"
-           Manufacturer="Me"
-           UpgradeCode="D4C3B2A1-1234-5678-90AB-CDEF12345678">
-    <Package InstallerVersion="500"
-             Compressed="yes"
-             InstallScope="perMachine" />
+  <Product Id="*" Name="MyCSharpApp" Language="1033" Version="1.0.0.0"
+           Manufacturer="Me" UpgradeCode="12345678-ABCD-1234-ABCD-1234567890AB">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
     <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
     <MediaTemplate />
 
@@ -29,6 +23,13 @@
       <ComponentGroupRef Id="AppFiles" />
       <PackageGroupRef Id="NetDesktopRuntime" />
     </Feature>
+
+    <CustomAction Id="LaunchApp" FileKey="AppExe" ExeCommand="" Return="asyncNoWait" />
+    <InstallUI>
+      <UI>
+        <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApp">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1</Publish>
+      </UI>
+    </InstallUI>
   </Product>
 
   <Fragment>
@@ -45,66 +46,39 @@
 
   <Fragment>
     <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
-      <!-- File component with single File key path -->
-      <Component Id="AppExeComp"
-                 Guid="A1B2C3D4-5678-90AB-CDEF-1234567890AB">
-        <File Id="AppExe"
-              Source="..\MyCSharpApp\bin\Release\net8.0-windows\publish\MyCSharpApp.exe"
-              KeyPath="yes" />
-
-        <!-- Shortcuts but no additional KeyPath -->
+      <Component Id="AppExeComp" Guid="A1B2C3D4-E5F6-7890-ABCD-1234567890AB">
+        <File Id="AppExe" Source="..\MyCSharpApp\bin\Release\net8.0-windows\publish\MyCSharpApp.exe" KeyPath="yes" />
         <Shortcut Id="StartMenuShortcut"
                   Directory="MyAppShortcutFolder"
                   Name="MyCSharpApp"
                   Target="[INSTALLFOLDER]MyCSharpApp.exe"
                   WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon"
                   Advertise="no" />
-
         <Shortcut Id="DesktopShortcut"
                   Directory="DesktopFolder"
                   Name="MyCSharpApp"
                   Target="[INSTALLFOLDER]MyCSharpApp.exe"
                   WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon"
                   Advertise="no" />
-
-        <RemoveFolder Id="RemoveShortcutDir"
-                      On="uninstall"
-                      Directory="MyAppShortcutFolder" />
+        <RemoveFolder Id="RemoveShortcutDir" On="uninstall" Directory="MyAppShortcutFolder" />
       </Component>
 
-      <!-- Registry component in its own Component if you need a key path -->
-      <Component Id="AppRegistryComp"
-                 Guid="B2C3D4E5-6789-0ABC-DEF1-234567890BCD">
-        <RegistryValue Root="HKCU"
-                       Key="Software\MyCSharpApp"
-                       Name="Installed"
-                       Type="integer"
-                       Value="1"
-                       KeyPath="yes" />
+      <Component Id="AppRegistryComp" Guid="B1C2D3E4-F5A6-7890-BCDE-2345678901BC">
+        <RegistryValue Root="HKCU" Key="Software\MyCSharpApp" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </ComponentGroup>
   </Fragment>
 
   <Fragment>
-    <Icon Id="AppIcon"
-          SourceFile="..\MyCSharpApp\bin\Release\net8.0-windows\publish\MyCSharpApp.exe" />
+    <Icon Id="AppIcon" SourceFile="..\MyCSharpApp\bin\Release\net8.0-windows\publish\MyCSharpApp.exe" />
   </Fragment>
 
   <Fragment>
     <UIRef Id="WixUI_InstallDir" />
-    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
-              Value="Launch MyCSharpApp" />
-    <CustomAction Id="LaunchApp"
-                  FileKey="AppExe"
-                  ExeCommand=""
-                  Return="asyncNoWait" />
-    <UI>
-      <Publish Dialog="ExitDialog"
-               Control="Finish"
-               Event="DoAction"
-               Value="LaunchApp">
-        WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1
-      </Publish>
-    </UI>
+    <UIRef Id="WixUI_ErrorProgressText" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch MyCSharpApp" />
   </Fragment>
+
 </Wix>
