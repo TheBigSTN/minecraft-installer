@@ -14,7 +14,7 @@ jobs:
       # Paths relative to repo root
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
       Wix_Project_Path: MSI_Builder/MSI_Builder.wixproj
-      Wix_Output: MSI_Builder/bin/Release/net8.0-windows/MSI_Builder.msi
+      Wix_Output: MSI_Builder/bin/Release/MSI_Builder.msi
 
     steps:
       - name: Checkout repository
