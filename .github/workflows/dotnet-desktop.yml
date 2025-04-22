@@ -36,8 +36,7 @@ jobs:
         run: dotnet restore ${{ env.Project_Path }}
 
       - name: Publish application
-        # one‐liner avoids backtick issues
-        run: dotnet publish ${{ env.Project_Path }} -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:TrimMode=link -o Release
+        run: dotnet publish ${{ env.Project_Path }} -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:TrimMode=link -p:OutputType=WinExe -o Release
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
