@@ -1,4 +1,4 @@
-name: .NET Core Desktop Release
+name: Latest Release Builder
 
 on:
   push:
@@ -14,9 +14,8 @@ jobs:
       Solution_Name: minecraft-installer.sln
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
       Executable_Name: MyCSharpApp.exe
-      Wix_Source_Files: MSI_Builder/Product.wxs
-      Wix_Output_Dir: MSI_Builder/bin/Release
-      Architecture: x64
+      Wix_Project_Path: MSI_Builder/MSI_Builder.wixproj
+      Wix_Output_Path: MSI_Builder/bin/Release/net8.0-windows/MSI_Builder.msi
 
     steps:
       - name: Checkout repository
@@ -26,6 +25,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
+
+      - name: Install WiX Toolset v3.11.2
+        shell: pwsh
+        run: |
+          choco install wixtoolset --version=3.11.2 -y
+          $env:PATH += ';C:\Program Files (x86)\WiX Toolset v3.11\bin'
 
       - name: Restore dependencies
         run: dotnet restore ${{ env.Solution_Name }}
@@ -40,13 +45,8 @@ jobs:
             -p:TrimMode=link `
             -o Release
 
-      - name: Build MSI with WiX Toolset
-        uses: utilitywarehouse/ghaction-wix@v1
-        with:
-          name: ${{ env.Executable_Name }}
-          sourceFiles: ${{ env.Wix_Source_Files }}
-          outputDir: ${{ env.Wix_Output_Dir }}
-          architecture: ${{ env.Architecture }}
+      - name: Build MSI installer
+        run: dotnet build ${{ env.Wix_Project_Path }} -c Release
 
       - name: Get Project Version
         id: project_version
@@ -67,6 +67,6 @@ jobs:
           draft: false
           prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
           files: |
-            ${{ env.Wix_Output_Dir }}/${{ env.Executable_Name }}.msi
+            ${{ env.Wix_Output_Path }}
           body: |
             Download the latest **${{ env.Executable_Name }}** and the MSI installer.
