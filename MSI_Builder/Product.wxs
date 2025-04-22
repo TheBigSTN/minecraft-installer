@@ -3,26 +3,32 @@
      xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 
-  <Bundle Name="MyCSharpApp Installer"
-          Version="1.0.0.0"
-          Manufacturer="Me"
-          UpgradeCode="12345678-ABCD-1234-ABCD-1234567890AB">
+  <!-- Use Product instead of Bundle for MSI -->
+  <Product Id="*"
+           Name="MyCSharpApp"
+           Language="1033"
+           Version="1.0.0.0"
+           Manufacturer="Me"
+           UpgradeCode="12345678-ABCD-1234-ABCD-1234567890AB">
     
-    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense" />
+    <!-- Define the directory structure -->
+    <Package InstallerVersion="500" Compressed="yes" Comments="MyCSharpApp Installer"/>
 
-    <Chain>
-      <!-- ExePackage for .NET Desktop Runtime -->
-      <ExePackage Id="Net8DesktopRuntime"
-                  SourceFile="windowsdesktop-runtime-8.0.4-win-x64.exe"
-                  InstallCommand="/install /quiet /norestart"
-                  Compressed="yes"
-                  DetectCondition="NET8DESKTOP_INSTALLED" />
+    <Media Id="1" Cabinet="cab1.cab" EmbedCab="yes"/>
 
-      <!-- MsiPackage for your app -->
-      <MsiPackage Id="MyAppInstaller"
-                  SourceFile="MyCSharpApp.msi"
-                  Compressed="yes"
-                  Vital="yes" />
-    </Chain>
-  </Bundle>
+    <!-- Define the application installation -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="MyCSharpApp">
+          <Component Id="AppFiles" Directory="INSTALLFOLDER" Guid="{E18F8F3E-5FEC-4FF2-951C-5039C2552B79}">
+            <File Id="MyCSharpAppFile" Source="MyCSharpApp.exe"/>
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id="ProductFeature" Title="MyCSharpApp" Level="1">
+      <ComponentRef Id="AppFiles"/>
+    </Feature>
+  </Product>
 </Wix>
