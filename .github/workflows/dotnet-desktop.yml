@@ -39,6 +39,9 @@ jobs:
         # one‐liner avoids backtick issues
         run: dotnet publish ${{ env.Project_Path }} -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:TrimMode=link -o Release
 
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
       - name: Build MSI via MSBuild
         shell: pwsh
         run: msbuild ${{ env.Wix_Project_Path }} /p:Configuration=Release
