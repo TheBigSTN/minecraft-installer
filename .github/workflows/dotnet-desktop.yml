@@ -18,7 +18,9 @@ jobs:
       GitToken: ${{ secrets.TOKEN }}
       Solution_Name: minecraft-installer.sln
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
-      Executable_Name: MyCSharpApp.exe # Ajustează cu numele exact al .exe-ului tău
+      Executable_Name: MyCSharpApp.exe
+      Wix_Project_Path: MSI_Builder/MSI_Builder.wixproj
+      Wix_Output_Path: MSI_Builder/bin/Release/net8.0-windows/MSI_Builder.msi
 
     steps:
     - name: Checkout
@@ -36,13 +38,14 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore $env:Solution_Name
 
-    # Build the application
-    - name: Build the application
-      run: dotnet build $env:Solution_Name -c ${{ matrix.configuration }}
-
-    # Publish the application as a self-contained single file release
+    # Publish the application as a framework-dependent release
     - name: Publish the application
-      run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:TrimMode=link -o Release
+      run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:TrimMode=link -o Release
+
+    # Build MSI using WiX project
+    - name: Build MSI installer
+      run: |
+        dotnet build $env:Wix_Project_Path -c Release
 
     # Get Project Version using PowerShell
     - name: Get Project Version
@@ -58,13 +61,6 @@ jobs:
           exit 1
         }
 
-    # Log files under ${{ github.workspace }}/Release
-    - name: Log Release Files
-      run: |
-        echo "--- Listing files in ${{ github.workspace }}/Release ---"
-        ls ${{ github.workspace }}/Release
-        echo "--- End of file listing ---"
-
     # Create GitHub Release
     - name: Create Release
       id: create_release
@@ -75,6 +71,7 @@ jobs:
         draft: false
         prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
         files: |
-          Release/${{ env.Executable_Name }}
+          ${{ env.Wix_Output_Path }}
         body: |
-          For you to get started you need to download the ${{ env.Executable_Name }}
+          For you to get started you need to download the ${{ env.Executable_Name }} and the installer MSI.
+
