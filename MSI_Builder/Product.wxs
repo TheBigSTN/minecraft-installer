@@ -20,7 +20,7 @@
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="MyCSharpApp">
-          <Component Id="AppFiles" Directory="INSTALLFOLDER" Guid="{E18F8F3E-5FEC-4FF2-951C-5039C2552B79}">
+          <Component Id="AppFiles" Guid="{E18F8F3E-5FEC-4FF2-951C-5039C2552B79}">
             <File Id="MyCSharpAppFile" Source="MyCSharpApp.exe"/>
           </Component>
         </Directory>
