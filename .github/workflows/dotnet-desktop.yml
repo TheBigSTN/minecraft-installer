@@ -44,12 +44,26 @@ jobs:
     - name: Publish the application
       run: dotnet publish $env:Project_Path -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:TrimMode=link -o Release
 
-    # Get Project Version
+    # Get Project Version using PowerShell
     - name: Get Project Version
       id: project_version
       run: |
-        VERSION=$(grep -oP '<Version>(.*?)</Version>' ${{ env.Project_Path }} | sed -e 's/<Version>//g' -e 's/<\/Version>//g')
-        echo "PROJECT_VERSION=$VERSION" >> $GITHUB_OUTPUT
+        $csprojContent = Get-Content -Path "${{ env.Project_Path }}" -Raw
+        $versionMatch = $csprojContent -match '<Version>(.*?)</Version>'
+        if ($versionMatch) {
+          $version = $Matches[1]
+          echo "PROJECT_VERSION=$version" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "Eroare: Tag-ul <Version> nu a fost găsit în fișierul .csproj."
+          exit 1
+        }
+
+    # Log files under ${{ github.workspace }}/Release
+    - name: Log Release Files
+      run: |
+        echo "--- Listing files in ${{ github.workspace }}/Release ---"
+        ls ${{ github.workspace }}/Release
+        echo "--- End of file listing ---"
 
     # Create GitHub Release
     - name: Create Release
@@ -60,6 +74,7 @@ jobs:
         name: Release v${{ steps.project_version.outputs.PROJECT_VERSION }}
         draft: false
         prerelease: ${{ contains(steps.project_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.project_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.project_version.outputs.PROJECT_VERSION, '-rc') }}
-        files: ${{ github.workspace }}/Release/${{ env.Executable_Name }}
+        files: |
+          Release/${{ env.Executable_Name }}
         body: |
           For you to get started you need to download the ${{ env.Executable_Name }}
