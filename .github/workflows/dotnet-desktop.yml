@@ -11,12 +11,13 @@ jobs:
     runs-on: windows-latest
 
     env:
+      # Paths relative to repo root
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
       Wix_Project_Path: MSI_Builder/MSI_Builder.wixproj
       Wix_Output: MSI_Builder/bin/Release/net8.0-windows/MSI_Builder.msi
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup .NET SDK
@@ -24,43 +25,31 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Ensure WiX 3.14 is on PATH
+      - name: Add WiX 3.14 to PATH
         shell: pwsh
         run: |
-          $wixBin = 'C:\Program Files (x86)\WiX Toolset v3.14\bin'
-          if (Test-Path $wixBin) {
-            Write-Host "Adding WiX to PATH"
-            $env:PATH += ";$wixBin"
-          } else {
-            Write-Error "WiX path not found: $wixBin"
-            exit 1
-          }
+          $w = 'C:\Program Files (x86)\WiX Toolset v3.14\bin'
+          if (Test-Path $w) { $env:PATH += ";$w" }
+          else { Write-Error "WiX not found at $w"; exit 1 }
 
       - name: Restore .NET project
-        run: dotnet restore "${{ env.Project_Path }}"
+        run: dotnet restore ${{ env.Project_Path }}
 
       - name: Publish application
-        shell: pwsh
-        run: |
-          dotnet publish "${{ env.Project_Path }}" `
-            -c Release `                   # PowerShell line‑continuation: backtick, not backslash :contentReference[oaicite:0]{index=0}  
-            -r win-x64 `
-            --self-contained false `
-            -p:PublishSingleFile=false `
-            -p:TrimMode=link `
-            -o Release
+        # one‐liner avoids backtick issues
+        run: dotnet publish ${{ env.Project_Path }} -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:TrimMode=link -o Release
 
       - name: Build MSI via MSBuild
         shell: pwsh
-        run: msbuild "${{ env.Wix_Project_Path }}" /p:Configuration=Release
+        run: msbuild ${{ env.Wix_Project_Path }} /p:Configuration=Release
 
       - name: Get Project Version
         id: get_version
         shell: pwsh
         run: |
-          [xml]$csproj = Get-Content "${{ env.Project_Path }}"
-          $ver = $csproj.Project.PropertyGroup.Version
-          echo "PROJECT_VERSION=$ver" >> $env:GITHUB_OUTPUT
+          [xml]$proj = Get-Content ${{ env.Project_Path }}
+          $v = $proj.Project.PropertyGroup.Version
+          echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -68,9 +57,9 @@ jobs:
           tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
           name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
           draft: false
-          prerelease: ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') 
-                         || contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') 
-                         || contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
+          prerelease: ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') ||
+                         contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') ||
+                         contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
           files: ${{ env.Wix_Output }}
           body: |
-            Download the latest MyCSharpApp.exe and the MSI installer.
+            Download the latest **MyCSharpApp.exe** and the MSI installer.
