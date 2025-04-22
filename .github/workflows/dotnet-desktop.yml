@@ -34,6 +34,12 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
+    # Install WiX Toolset v3.11
+    - name: Install WiX Toolset v3.11
+      run: |
+        Invoke-WebRequest -Uri https://github.com/wixtoolset/wix3/releases/download/wix311/wix311-binaries-x64.exe -OutFile wix311-binaries-x64.exe
+        Start-Process -FilePath wix311-binaries-x64.exe -ArgumentList '/quiet', '/install' -Wait
+
     # Restore dependencies
     - name: Restore dependencies
       run: dotnet restore $env:Solution_Name
