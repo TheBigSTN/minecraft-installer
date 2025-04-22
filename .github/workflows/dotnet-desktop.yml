@@ -38,7 +38,7 @@ jobs:
     - name: Install WiX Toolset v3.11
       run: |
         # Descarcă și instalează WiX Toolset
-        Invoke-WebRequest -Uri https://github.com/wixtoolset/wix3/releases/download/wix311/wix311-binaries-x64.exe -OutFile wix311-binaries-x64.exe
+        Invoke-WebRequest -Uri https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314.exe -OutFile wix311-binaries-x64.exe
         Start-Process -FilePath wix311-binaries-x64.exe -ArgumentList '/quiet', '/install' -Wait
         # Curăță fișierul de instalare
         Remove-Item wix311-binaries-x64.exe
