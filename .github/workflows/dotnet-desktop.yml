@@ -26,11 +26,16 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Install WiX Toolset v3.11.2
+      - name: Ensure WiX Toolset is in PATH
         shell: pwsh
         run: |
-          choco install wixtoolset --version=3.11.2 -y
-          $env:PATH += ';C:\Program Files (x86)\WiX Toolset v3.11\bin'
+          $wixPath = 'C:\Program Files (x86)\WiX Toolset v3.14\bin'
+          if (Test-Path $wixPath) {
+            $env:PATH += ";$wixPath"
+          } else {
+            Write-Error "WiX Toolset path not found at $wixPath"
+            exit 1
+          }
 
       - name: Restore dependencies
         run: dotnet restore ${{ env.Solution_Name }}
