@@ -14,7 +14,7 @@ jobs:
       GitToken: ${{ secrets.TOKEN }}
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
       Wix_Project_Path: MSIPackage/MSIPackage.wixproj
-      Wix_Output: MSIPackage\bin\Release\en-US\MSIPackage.msi
+      Wix_Output: .\MSIPackage\bin\Release\en-US\MSIPackage.msi
 
     steps:
       - name: Checkout repository
