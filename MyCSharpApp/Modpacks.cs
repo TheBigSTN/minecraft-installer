@@ -5,9 +5,10 @@ using Github;
 
 namespace MyCSharpApp {
     public static class Modpacks {
-        public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versionsa");
+        public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versions");
 
         public static List<Modpack> GetModpacks() {
+            Directory.CreateDirectory(modpacksPath);
             List<Modpack> modpackdata = [];
 
                 string[] modpacks = Directory.GetDirectories(modpacksPath);

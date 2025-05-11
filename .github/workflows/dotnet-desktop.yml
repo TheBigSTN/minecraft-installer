@@ -11,10 +11,10 @@ jobs:
     runs-on: windows-latest
 
     env:
-      # Paths relative to repo root
+      GitToken: ${{ secrets.TOKEN }}
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
-      Wix_Project_Path: MSI_Builder/MSI_Builder.wixproj
-      Wix_Output: MSI_Builder/bin/Release/MSI_Builder.msi
+      Wix_Project_Path: MSIPackage/MSIPackage.wixproj
+      Wix_Output: MSIPackage\bin\x64\Release\en-US\MSIPackage.msi
 
     steps:
       - name: Checkout repository
@@ -36,22 +36,13 @@ jobs:
         run: dotnet restore ${{ env.Project_Path }}
 
       - name: Publish application
-        run: dotnet publish MyCSharpApp/MyCSharpApp.csproj `
-          -c Release `
-          -r win-x64 `
-          --self-contained false `
-          -p:PublishSingleFile=false `
-          -p:TrimMode=link `
-          -p:OutputType=WinExe `
-          -p:UseAppHost=true `
-          -o Release
+        run: dotnet publish ${{ env.Project_Path }} `
+            -c Release  `
+            -r win-x64  `
+            /p:GitToken=${{ env.GitToken }}
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v2
-
-      - name: Build MSI via MSBuild
-        shell: pwsh
-        run: msbuild ${{ env.Wix_Project_Path }} /p:Configuration=Release
+      - name: Build MSI
+        run: dotnet build ${{ env.Wix_Project_Path }} /p:Configuration=Release
 
       - name: Get Project Version
         id: get_version

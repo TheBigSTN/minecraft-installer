@@ -1,0 +1,41 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" 
+	 xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal"
+	 xmlns:netfx="http://wixtoolset.org/schemas/v4/wxs/netfx"
+	 xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Bundle 
+	  Id="ModpackInstalller" 
+	  Name="Installer" 
+	  Manufacturer="Myself" 
+	  Version="1.0.0.0">
+
+	  <BootstrapperApplication>
+		  <bal:WixStandardBootstrapperApplication
+			  LicenseUrl="https://www.example.com/license"
+			  Theme="hyperlinkLicense" />
+	  </BootstrapperApplication>
+	<!-- Condition to detect if .NET Runtime 9.0.4 is already installed -->
+	<util:RegistrySearch
+		Id="NetCoreRuntimeExists"
+		Variable="NetCoreRuntimeExists"
+		Root="HKLM"
+		Key="SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost"
+		Value="Version" />
+
+    <Chain>
+		<MsiPackage SourceFile="MSIPackage.msi" />
+
+		<!-- Include .NET Runtime 9.0.4 -->
+		<ExePackage
+			Id="DotNetCoreRuntime"
+			SourceFile="https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.203/dotnet-sdk-9.0.203-win-x64.exe"
+			Name="Microsoft .NET Runtime 9.0.4"
+			DownloadUrl="https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.203/dotnet-sdk-9.0.203-win-x64.exe"
+			DetectCondition="NetCoreRuntimeExists"
+			InstallCondition="NOT NetCoreRuntimeExists"
+			UninstallArguments="/uninstall /quiet /norestart">
+
+		</ExePackage>
+    </Chain>
+
+  </Bundle>
+</Wix>

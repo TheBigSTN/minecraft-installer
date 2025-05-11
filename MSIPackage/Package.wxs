@@ -1,15 +1,36 @@
-﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+	 xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package
 	  Id="MSIPackage"
 	  Name="MSIPackage"
 	  Manufacturer="Myself"
 	  Version="1.0.0.0">
     <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
-	  
 	<MediaTemplate EmbedCab="yes" />
 
     <Feature Id="Main">
-      <ComponentGroupRef Id="AppComponents" />
-    </Feature>
+		<ComponentGroupRef Id="AppFiles" />
+		<Component Id="DesktopShortcut" Guid="470F0B57-7FED-41AD-85D8-73A9F6F0BBFB">
+			<Shortcut
+				Id="ApplicationDesktopShortcut"
+				Directory="DesktopFolder"
+				Name="My Application"
+				Target="[INSTALLFOLDER]MyCSharpApp.exe"
+				WorkingDirectory="INSTALLFOLDER"
+				Icon="MyApplicationIcon" />
+			<RemoveFolder Id="DesktopFolder" On="uninstall" />
+			<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+		</Component>
+	</Feature>
+	  
+	<Icon Id="MyApplicationIcon" SourceFile="..\MyCSharpApp\image-1.ico" />
+	  
+	<ui:WixUI
+        Id="WixUI_InstallDir"
+        InstallDirectory="INSTALLFOLDER"
+        />
+
+  
+
   </Package>
 </Wix>
