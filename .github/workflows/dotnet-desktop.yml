@@ -44,6 +44,9 @@ jobs:
       - name: Build MSI
         run: dotnet build ${{ env.Wix_Project_Path }} -c Release 
 
+      - name: Debug MSI output
+        run: dir /s MSIPackage\bin\Release\en-US
+
       - name: Get Project Version
         id: get_version
         shell: pwsh
