@@ -46,7 +46,8 @@ jobs:
         run: dotnet build ${{ env.Wix_Project_Path }} -c Release
 
       - name: Rename MSI file
-        run: rename ${{ env.Wix_Output }} ${{ env.Wix_Rename }}
+        shell: pwsh
+        run: Rename-Item -Path ${{ env.Wix_Output }} -NewName MyCSharpApp_Installer.msi
 
       - name: Get Project Version
         id: get_version
