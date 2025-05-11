@@ -33,7 +33,7 @@ jobs:
           else { Write-Error "WiX not found at $w"; exit 1 }
 
       - name: Restore .NET project
-        run: dotnet restore ${{ env.Project_Path }}
+        run: dotnet restore
 
       - name: Publish application
         run: dotnet publish ${{ env.Project_Path }} `
@@ -42,7 +42,7 @@ jobs:
             /p:GitToken=${{ env.GitToken }}
 
       - name: Build MSI
-        run: dotnet build ${{ env.Wix_Project_Path }} /p:Configuration=Release
+        run: dotnet build ${{ env.Wix_Project_Path }} -c Release 
 
       - name: Get Project Version
         id: get_version
