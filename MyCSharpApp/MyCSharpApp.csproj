@@ -1,22 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <Version>1.1.0</Version>
-    <FileVersion>1.0.0.0</FileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <InformationalVersion>1.0.0-beta</InformationalVersion>
-    <UseWPF>true</UseWPF>
-    <PackageIcon>image-1.png</PackageIcon>
-    <ApplicationIcon>image-1.ico</ApplicationIcon>
-    <Platforms>AnyCPU;x64</Platforms>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net9.0-windows</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Version>1.1.0</Version>
+        <FileVersion>1.0.0.0</FileVersion>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <InformationalVersion>1.0.0-beta</InformationalVersion>
+        <UseWPF>true</UseWPF>
+        <PackageIcon>image-1.png</PackageIcon>
+        <ApplicationIcon>image-1.ico</ApplicationIcon>
+        <Platforms>AnyCPU;x64</Platforms>
+    </PropertyGroup>
 
   <ItemGroup>
     <Content Include="image-1.ico" />
+	<AssemblyMetadata Include="GitToken" Value="$(GitToken)" />
   </ItemGroup>
 
   <ItemGroup>

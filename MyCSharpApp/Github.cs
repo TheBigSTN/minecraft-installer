@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,7 +13,7 @@ using static MyCSharpApp.Modpacks;
 
 namespace Github {
     public class GithubHelper {
-        public static string Token { get; set; } = Environment.GetEnvironmentVariable("GitToken") ?? throw new Exception("No token found");
+        public static string Token { get; set; } = GetGitToken();
 
         public static async Task<GitHubTree> GetGitHubTreeAsync(bool recursive = true, string tree = "main") {
             var url = recursive
@@ -91,8 +92,8 @@ namespace Github {
 
         public static async Task<JsonDocument> GetGitLauncherDataAsync(string modpackSha, string modpackName) {
             var headers = new Dictionary<string, string> {
-        { "Authorization", "Bearer " + Token }
-    };
+                { "Authorization", "Bearer " + Token }
+            };
 
             GitHubTree tree = await GetGitHubTreeAsync(true, modpackSha);
 
@@ -130,8 +131,23 @@ namespace Github {
                 throw new Exception("The 'content' field was not found in the blob JSON.");
             }
         }
-    }
+        private static string GetGitToken() {
+            var attributes = Assembly
+                .GetExecutingAssembly()
+                .GetCustomAttributes<AssemblyMetadataAttribute>();
 
+            foreach (var attr in attributes) {
+                if (attr.Key == "GitToken" && !string.IsNullOrEmpty(attr.Value))
+                    return attr.Value;
+            }
+
+            var envToken = Environment.GetEnvironmentVariable("GitToken");
+            if (!string.IsNullOrEmpty(envToken))
+                return envToken;
+
+            throw new Exception("No token found");
+        }
+    }
     public class GitHubTree {
         [JsonPropertyName("sha")]
         public required string Sha { get; set; }
