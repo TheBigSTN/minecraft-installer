@@ -1,10 +1,10 @@
-name: .NET Core Desktop Release
+name: App Builder
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -14,7 +14,8 @@ jobs:
       GitToken: ${{ secrets.TOKEN }}
       Project_Path: MyCSharpApp/MyCSharpApp.csproj
       Wix_Project_Path: MSIPackage/MSIPackage.wixproj
-      Wix_Output: MSIPackage\bin\x64\Release\en-US\MSIPackage.msi
+      Wix_Output: MSIPackage/bin/Release/en-US/MSIPackage.msi
+      Wix_Rename: MSIPackage/bin/Release/en-US/MyCSharpApp_Installer.msi
 
     steps:
       - name: Checkout repository
@@ -23,7 +24,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
 
       - name: Add WiX 3.14 to PATH
         shell: pwsh
@@ -33,16 +34,19 @@ jobs:
           else { Write-Error "WiX not found at $w"; exit 1 }
 
       - name: Restore .NET project
-        run: dotnet restore ${{ env.Project_Path }}
+        run: dotnet restore
 
       - name: Publish application
         run: dotnet publish ${{ env.Project_Path }} `
-            -c Release  `
-            -r win-x64  `
-            /p:GitToken=${{ env.GitToken }}
+          -c Release  `
+          -r win-x64  `
+          /p:GitToken=${{ env.GitToken }}
 
       - name: Build MSI
-        run: dotnet build ${{ env.Wix_Project_Path }} /p:Configuration=Release
+        run: dotnet build ${{ env.Wix_Project_Path }} -c Release
+
+      - name: Rename MSI file
+        run: rename ${{ env.Wix_Output }} ${{ env.Wix_Rename }}
 
       - name: Get Project Version
         id: get_version
@@ -58,9 +62,10 @@ jobs:
           tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
           name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
           draft: false
-          prerelease: ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') ||
-                         contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') ||
-                         contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
-          files: ${{ env.Wix_Output }}
+          prerelease:
+            ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') ||
+            contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') ||
+            contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
+          files: ${{ env.Wix_Rename }}
           body: |
-            Download the latest **MyCSharpApp.exe** and the MSI installer.
+            Download the latest **MyCSharpApp_Installer.msi** to get started.
