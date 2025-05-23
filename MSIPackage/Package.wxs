@@ -14,7 +14,7 @@
 			<Shortcut
 				Id="ApplicationDesktopShortcut"
 				Directory="DesktopFolder"
-				Name="My Application"
+				Name="Minecraft Modpack Installer"
 				Target="[INSTALLFOLDER]MyCSharpApp.exe"
 				WorkingDirectory="INSTALLFOLDER"
 				Icon="MyApplicationIcon" />
