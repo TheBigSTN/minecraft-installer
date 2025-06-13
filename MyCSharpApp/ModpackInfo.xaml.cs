@@ -163,49 +163,13 @@ namespace MyCSharpApp {
                             return;
                         }
 
-                        // Step 3: Build lookup sets
-                        var mineloaderPaths = new HashSet<string>(
-                            mineloaderMods
-                                .Where(mod => mod.Path != null)
-                                .Select(mod => mod.Path.ToString()!)
-                        );
+                        UpdateTLauncherMods(rootModsArray, remoteModsArray, mineloaderMods);
 
-                        var remoteModLookup = remoteModsArray
-                            .Where(remoteMod => remoteMod?["version"]?["metadata"]?["path"] != null)
-                            .GroupBy(mod => mod!["version"]!["metadata"]!["path"]!.ToString()!)
-                            .ToDictionary(
-                                group => group.Key,
-                                group => group.First() // ia primul mod cu acel path
-                            );
-
-                        // Step 4: Remove mods that exist in mineloaderMods but not in remote
-                        var modsToRemove = rootModsArray
-                            .Where(mod => {
-                                string? path = mod?["Path"]?.ToString();
-                                return path != null && mineloaderPaths.Contains(path) && !remoteModLookup.ContainsKey(path);
-                            })
-                            .ToList();
-
-                        foreach (var mod in modsToRemove) {
-                            rootModsArray.Remove(mod);
-                        }
-
-                        // Step 5: Add mods that exist in remote but not in mineloader
-                        foreach (var remoteEntry in remoteModLookup) {
-                            string path = remoteEntry.Key;
-                            JsonNode remoteMod = remoteEntry.Value;
-
-                            if (!mineloaderPaths.Contains(path)) {
-                                JsonNode clonedNode = JsonNode.Parse(remoteMod.ToJsonString())!;
-                                rootModsArray.Add(clonedNode);
-                            }
-                        }
-
-                        // Step 6: Save the updated rootNode back to file
+                        // Scrie înapoi în fișier
                         File.WriteAllText(jsonFilePath, rootNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-                    await JsonSerializer.SerializeAsync(createStream, data, options);
-                    MessageBox.Show("Update complete!", "Done", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
+                        await JsonSerializer.SerializeAsync(createStream, data, options);
+                        MessageBox.Show("Update complete!", "Done", MessageBoxButton.OK, MessageBoxImage.Information);
+
                     catch (Exception ex) {
                         MessageBox.Show("Eroare la procesare: " + ex.Message);
                     }
@@ -219,4 +183,50 @@ namespace MyCSharpApp {
         }
 
     }
-}
+    private void UpdateTLauncherMods(JsonArray rootModsArray, JsonArray remoteModsArray, List<MineLoaderMod> mineloaderMods) {
+            // 1. Extrage căile din remoteModsArray
+            var remotePaths = new HashSet<string>(
+                remoteModsArray
+                    .Where(mod => mod?["version"]?["metadata"]?["path"] != null)
+                    .Select(mod => mod!["version"]!["metadata"]!["path"]!.ToString()!)
+            );
+
+            // 2. Creează un lookup rapid pentru remote
+            var remoteModLookup = remoteModsArray
+                .Where(mod => mod?["version"]?["metadata"]?["path"] != null)
+                .ToDictionary(
+                    mod => mod!["version"]!["metadata"]!["path"]!.ToString()!,
+                    mod => mod!
+                );
+
+            // 3. Creează o listă a modurilor existente (din TLauncherAdditional.json)
+            var existingPaths = new HashSet<string>(
+                rootModsArray
+                    .Where(mod => mod?["Path"] != null)
+                    .Select(mod => mod!["Path"]!.ToString()!)
+            );
+
+            // 4. Elimină modurile din rootModsArray care nu mai există în remote
+            var modsToRemove = rootModsArray
+                .Where(mod => {
+                    string? path = mod?["Path"]?.ToString();
+                    return path != null && !remotePaths.Contains(path);
+                })
+                .ToList();
+
+            foreach (var mod in modsToRemove)
+                rootModsArray.Remove(mod);
+
+            // 5. Adaugă modurile care sunt în remote dar nu în rootModsArray
+            foreach (var remoteEntry in remoteModLookup) {
+                string path = remoteEntry.Key;
+                JsonNode remoteMod = remoteEntry.Value;
+
+                if (!existingPaths.Contains(path)) {
+                    JsonNode clonedNode = JsonNode.Parse(remoteMod.ToJsonString())!;
+                    rootModsArray.Add(clonedNode);
+                }
+            }
+        }
+
+    }
