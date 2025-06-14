@@ -91,7 +91,7 @@ namespace MyCSharpApp {
 
                 if (modpackElement.TryGetProperty("version", out JsonElement versionElement) &&
                     versionElement.TryGetProperty("mods", out JsonElement modsElement)) {
-                    mods = ParseMods(modsElement);
+                    mods = ParseTlauncerMods(modsElement);
                 }
             }
 
@@ -99,25 +99,12 @@ namespace MyCSharpApp {
         }
 
         private static MineLoaderData ParseMineLoaderData(JsonElement mineloaderroot) {
-            string modpackname = mineloaderroot.GetProperty("ModpackName").GetString() ?? "Unknown";
-
-            List<Mod> mods = [];
-            if (mineloaderroot.TryGetProperty("Mods", out JsonElement modsElement)) {
-                mods = ParseMods(modsElement);
-            }
-
-            GitHubTree? tree = null;
-
-            if (mineloaderroot.TryGetProperty("Tree", out var treeElement)) {
-                tree = treeElement.Deserialize<GitHubTree>();
-            }
-
-            return new MineLoaderData(modpackname, mods, tree);
+            return mineloaderroot.Deserialize<MineLoaderData>();
         }
 
 
 
-        private static List<Mod> ParseMods(JsonElement modsElement) {
+        private static List<Mod> ParseTlauncerMods(JsonElement modsElement) {
             List<Mod> mods = [];
 
             foreach (JsonElement mod in modsElement.EnumerateArray()) {
