@@ -1,0 +1,59 @@
+name: App Builder macOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    env:
+      Project_Path: MyCSharpApp/MyCSharpApp.csproj
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore .NET project
+        run: dotnet restore
+
+      - name: Publish application
+        run: dotnet publish ${{ env.Project_Path }} -c Release -r osx-arm64 --self-contained false
+
+      - name: Create .pkg installer
+        run: |
+          mkdir -p pkg-root/Applications/MyCSharpApp
+          cp -R MyCSharpApp/bin/Release/net9.0/osx-arm64/publish/* pkg-root/Applications/MyCSharpApp/
+          pkgbuild \
+            --root pkg-root/Applications/MyCSharpApp \
+            --identifier com.example.mycsharpapp \
+            --version 1.0.0 \
+            --install-location /Applications/MyCSharpApp \
+            MyCSharpApp_macOS_arm64.pkg
+
+      - name: Get Project Version
+        id: get_version
+        shell: pwsh
+        run: |
+          [xml]$proj = Get-Content ${{ env.Project_Path }}
+          $v = $proj.Project.PropertyGroup.Version
+          echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
+          name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
+          files: MyCSharpApp_macOS_arm64.pkg
+          body: |
+            Download the latest **MyCSharpApp_macOS_arm64.pkg** to get started on macOS.
