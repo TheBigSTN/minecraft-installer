@@ -13,6 +13,7 @@
         <PackageIcon>image-1.png</PackageIcon>
         <ApplicationIcon>image-1.ico</ApplicationIcon>
         <Platforms>AnyCPU;x64</Platforms>
+        <EnableWindowsTargeting>true</EnableWindowsTargeting>
     </PropertyGroup>
 
   <ItemGroup>
