@@ -2,9 +2,9 @@ name: App Builder macOS
 
 on:
   push:
-    branches: [main]
+    branches: [main, workflows]
   pull_request:
-    branches: [main]
+    branches: [main, workflows]
 
 jobs:
   build-mac:
