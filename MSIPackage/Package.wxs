@@ -21,6 +21,17 @@
 			<RemoveFolder Id="DesktopFolder" On="uninstall" />
 			<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
 		</Component>
+		<Component Id="StartMenuShortcut" Guid="A-UNIQUE-GUID-HERE">
+			<Shortcut
+				Id="ApplicationStartMenuShortcut"
+				Directory="ProgramMenuFolder"
+				Name="Minecraft Modpack Installer"
+				Target="[INSTALLFOLDER]ModpackInstaller.Desktop.exe"
+				WorkingDirectory="INSTALLFOLDER"
+				Icon="MyApplicationIcon" />
+			<RemoveFolder Id="ProgramMenuFolder" On="uninstall" />
+			<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="startmenu" Type="integer" Value="1" KeyPath="yes" />
+		</Component>
 	</Feature>
 	  
 	<Icon Id="MyApplicationIcon" SourceFile="..\ModpackInstaller\Assets\image-1.ico" />
