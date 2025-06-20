@@ -37,16 +37,44 @@ jobs:
           [xml]$proj = Get-Content ${{ env.Project_Path }}
           $v = $proj.Project.PropertyGroup.Version
           echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
+      
+      - name: Create .app bundle
+        shell: bash
+        run: |
+          APP_NAME="ModpackInstaller.Desktop"
+          APP_BUNDLE="$APP_NAME.app"
+          PUBLISH_DIR="ModpackInstaller.Desktop/bin/Release/net8.0/osx-arm64/publish"
+          mkdir -p "$APP_BUNDLE/Contents/MacOS"
+          mkdir -p "$APP_BUNDLE/Contents/Resources"
+          cp -R "$PUBLISH_DIR/"* "$APP_BUNDLE/Contents/MacOS/"
+          cat > "$APP_BUNDLE/Contents/Info.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key>
+            <string>$APP_NAME</string>
+            <key>CFBundleExecutable</key>
+            <string>$APP_NAME</string>
+            <key>CFBundleIdentifier</key>
+            <string>ro.veteran.$APP_NAME</string>
+            <key>CFBundleVersion</key>
+            <string>${{ steps.get_version.outputs.PROJECT_VERSION }}</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+          </dict>
+          </plist>
+          EOF
 
       - name: Create .pkg installer
         run: |
-          mkdir -p pkg-root/Applications/ModpackInstaller.Desktop
-          cp -R ${{ env.Project_Output }}/* pkg-root/Applications/ModpackInstaller.Desktop/
+          mkdir -p pkg-root/Applications
+          cp -R ModpackInstaller.Desktop.app pkg-root/Applications/
           pkgbuild \
-            --root pkg-root/Applications/ModpackInstaller.Desktop \
-            --identifier com.veteran.mycsharpapp \
+            --root pkg-root/Applications \
+            --identifier com.veteran.modpackinstaller \
             --version ${{ steps.get_version.outputs.PROJECT_VERSION }} \
-            --install-location /Applications/ModpackInstaller.Desktop \
+            --install-location /Applications \
             ${{ env.Pkg_Output }}
 
       - name: Create GitHub Release
