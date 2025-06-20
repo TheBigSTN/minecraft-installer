@@ -9,7 +9,7 @@
     </HarvestDirectory>
   </ItemGroup>
   <ItemGroup>
-    <BindPath Include="..\MyCSharpApp\bin\Release\net9.0-windows\win-x64\publish" />
+    <BindPath Include="..\ModpackInstaller.Desktop\bin\Release\net8.0\win-x64\publish\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="WixToolset.Heat" Version="6.0.0" />
