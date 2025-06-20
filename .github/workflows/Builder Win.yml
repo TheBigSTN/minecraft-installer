@@ -52,7 +52,7 @@ jobs:
           echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
 
       - name: Build MSI
-        run: dotnet build ${{ env.Wix_Project_Path }} -c Release -p:ProductVersion=${{ steps.get_version.outputs.PROJECT_VERSION }}
+        run: dotnet build ${{ env.Wix_Project_Path }} -c Release -p:DefineConstants="ProductVersion=${{ steps.get_version.outputs.PROJECT_VERSION }}"
 
       - name: Rename MSI file
         shell: pwsh
