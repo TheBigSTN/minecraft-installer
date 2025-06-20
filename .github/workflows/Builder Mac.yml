@@ -41,7 +41,7 @@ jobs:
       - name: Create .pkg installer
         run: |
           mkdir -p pkg-root/Applications/ModpackInstaller.Desktop
-          cp -R ${{ env.Project_Output }}* pkg-root/Applications/ModpackInstaller.Desktop/
+          cp -R ${{ env.Project_Output }}/* pkg-root/Applications/ModpackInstaller.Desktop/
           pkgbuild \
             --root pkg-root/Applications/ModpackInstaller.Desktop \
             --identifier com.veteran.mycsharpapp \
