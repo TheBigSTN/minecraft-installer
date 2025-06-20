@@ -11,7 +11,9 @@ jobs:
     runs-on: macos-latest
 
     env:
-      Project_Path: MyCSharpApp/MyCSharpApp.csproj
+      Project_Path: ModpackInstaller.Desktop/ModpackInstaller.Desktop.csproj
+      Project_Output: ModpackInstaller.Desktop/bin/Release/net9.0-windows/osx-arm64/publish
+      Pkg_Output: ModpackInstaller_macOS_arm64.pkg
 
     steps:
       - name: Checkout repository
@@ -38,14 +40,14 @@ jobs:
 
       - name: Create .pkg installer
         run: |
-          mkdir -p pkg-root/Applications/MyCSharpApp
-          cp -R MyCSharpApp/bin/Release/net9.0-windows/osx-arm64/publish/* pkg-root/Applications/MyCSharpApp/
+          mkdir -p pkg-root/Applications/ModpackInstaller.Desktop
+          cp -R ${{ env.Project_Output }}* pkg-root/Applications/ModpackInstaller.Desktop/
           pkgbuild \
-            --root pkg-root/Applications/MyCSharpApp \
+            --root pkg-root/Applications/ModpackInstaller.Desktop \
             --identifier com.veteran.mycsharpapp \
             --version ${{ steps.get_version.outputs.PROJECT_VERSION }} \
-            --install-location /Applications/MyCSharpApp \
-            MyCSharpApp_macOS_arm64.pkg
+            --install-location /Applications/ModpackInstaller.Desktop \
+            ${{ env.Pkg_Output }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -53,7 +55,10 @@ jobs:
           tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
           name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
           draft: false
-          prerelease: ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') || contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') || contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
-          files: MyCSharpApp_macOS_arm64.pkg
+          prerelease:
+            ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') || 
+            contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') || 
+            contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
+          files: ${{ env.Pkg_Output }}
           body: |
-            Download the latest **MyCSharpApp_macOS_arm64.pkg** to get started on macOS.
+            Download the latest verision of the app by installing the macOs version or the win 64 version.
