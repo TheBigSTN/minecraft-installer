@@ -12,7 +12,7 @@ jobs:
 
     env:
       Project_Path: ModpackInstaller.Desktop/ModpackInstaller.Desktop.csproj
-      Project_Output: ModpackInstaller.Desktop/bin/Release/net9.0-windows/osx-arm64/publish
+      Project_Output: ModpackInstaller.Desktop/bin/Release/net8.0/osx-arm64/publish
       Pkg_Output: ModpackInstaller_macOS_arm64.pkg
 
     steps:
