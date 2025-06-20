@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ModpackInstaller.Views.ModpackInfo">
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+
+		<Grid.RowDefinitions>
+			<RowDefinition Height="50"/>
+			<RowDefinition Height="60"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+
+		<!-- Modpack name -->
+		<TextBlock x:Name="ModpackNameText"
+				   FontSize="20"
+				   Foreground="White"
+				   HorizontalAlignment="Center"
+				   VerticalAlignment="Center"
+				   Text="Lorem Ipsum Lorem Ipsum"
+				   Grid.ColumnSpan="2"
+				   Height="27"
+				   Width="236" />
+
+		<!-- Check for update button -->
+		<Button x:Name="CheckUpdateButton"
+				Content="Check for Updates"
+				Width="180"
+				Height="40"
+				HorizontalAlignment="Center"
+				Grid.Row="1"
+				Click="CheckUpdate_Click" />
+
+		<!-- Update button (disabled by default) -->
+	</Grid>
+</UserControl>
