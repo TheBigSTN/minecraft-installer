@@ -12,10 +12,11 @@ jobs:
 
     env:
       GitToken: ${{ secrets.TOKEN }}
-      Project_Path: MyCSharpApp/MyCSharpApp.csproj
+      Project_Path: ModpackInstaller.Desktop/ModpackInstaller.Desktop.csproj
       Wix_Project_Path: MSIPackage/MSIPackage.wixproj
       Wix_Output: MSIPackage/bin/Release/en-US/MSIPackage.msi
-      Wix_Rename: MSIPackage/bin/Release/en-US/MyCSharpApp_Installer.msi
+      Wix_RenameTo: ModpackInstaller.Desktop_Installer.msi
+      Wix_Rename: MSIPackage/bin/Release/en-US/ModpackInstaller.Desktop_Installer.msi
 
     steps:
       - name: Checkout repository
@@ -47,7 +48,7 @@ jobs:
 
       - name: Rename MSI file
         shell: pwsh
-        run: Rename-Item -Path ${{ env.Wix_Output }} -NewName MyCSharpApp_Installer.msi
+        run: Rename-Item -Path ${{ env.Wix_Output }} -NewName ${{ env.Wix_RenameTo }}
 
       - name: Get Project Version
         id: get_version
@@ -69,4 +70,4 @@ jobs:
             contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
           files: ${{ env.Wix_Rename }}
           body: |
-            Download the latest **MyCSharpApp_Installer.msi** to get started.
+            Download the latest verision of the app by installing the macOs version or the win 64 version.
