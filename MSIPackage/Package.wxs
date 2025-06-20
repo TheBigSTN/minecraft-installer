@@ -1,10 +1,11 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
 	 xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package
-	  Id="MSIPackage"
+	  Id="*"
 	  Name="ModpackInstaller"
 	  Manufacturer="Veteran"
-	  Version="$(var.ProductVersion)">
+	  Version="$(var.ProductVersion)"
+	  UpgradeCode="CF9F5E8B-CC83-49BF-B69C-736560351360">
     <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
 	<MediaTemplate EmbedCab="yes" />
 
