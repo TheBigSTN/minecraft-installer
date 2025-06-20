@@ -1,7 +1,6 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
 	 xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package
-	  Id="*"
 	  Name="ModpackInstaller"
 	  Manufacturer="Veteran"
 	  Version="$(var.ProductVersion)"
