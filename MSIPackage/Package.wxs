@@ -4,7 +4,7 @@
 	  Id="MSIPackage"
 	  Name="MSIPackage"
 	  Manufacturer="Myself"
-	  Version="1.0.0.0">
+	  Version="$(var.ProductVersion)">
     <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
 	<MediaTemplate EmbedCab="yes" />
 
@@ -15,7 +15,7 @@
 				Id="ApplicationDesktopShortcut"
 				Directory="DesktopFolder"
 				Name="Minecraft Modpack Installer"
-				Target="[INSTALLFOLDER]MyCSharpApp.exe"
+				Target="[INSTALLFOLDER]ModpackInstaller.Desktop.exe"
 				WorkingDirectory="INSTALLFOLDER"
 				Icon="MyApplicationIcon" />
 			<RemoveFolder Id="DesktopFolder" On="uninstall" />
@@ -23,7 +23,7 @@
 		</Component>
 	</Feature>
 	  
-	<Icon Id="MyApplicationIcon" SourceFile="..\MyCSharpApp\image-1.ico" />
+	<Icon Id="MyApplicationIcon" SourceFile="..\ModpackInstaller\Assets\image-1.ico" />
 	  
 	<ui:WixUI
         Id="WixUI_InstallDir"

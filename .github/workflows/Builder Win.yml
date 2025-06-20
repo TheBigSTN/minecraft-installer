@@ -43,13 +43,6 @@ jobs:
           -r win-x64  `
           /p:GitToken=${{ env.GitToken }}
 
-      - name: Build MSI
-        run: dotnet build ${{ env.Wix_Project_Path }} -c Release
-
-      - name: Rename MSI file
-        shell: pwsh
-        run: Rename-Item -Path ${{ env.Wix_Output }} -NewName ${{ env.Wix_RenameTo }}
-
       - name: Get Project Version
         id: get_version
         shell: pwsh
@@ -57,6 +50,13 @@ jobs:
           [xml]$proj = Get-Content ${{ env.Project_Path }}
           $v = $proj.Project.PropertyGroup.Version
           echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Build MSI
+        run: dotnet build ${{ env.Wix_Project_Path }} -c Release -p:ProductVersion=${{ steps.get_version.outputs.PROJECT_VERSION }}
+
+      - name: Rename MSI file
+        shell: pwsh
+        run: Rename-Item -Path ${{ env.Wix_Output }} -NewName ${{ env.Wix_RenameTo }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
