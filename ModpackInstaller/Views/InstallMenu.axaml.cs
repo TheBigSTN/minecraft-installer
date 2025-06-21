@@ -70,7 +70,7 @@ public partial class InstallMenu : UserControl {
             }
         }
         
-        await Github.DownloadModpack(modpackTree.Sha, modpack_name);
+        await Github.DownloadModpack(modpackTree.Sha, modpack_name, modpack.GetMineLoaderData().AutoUpdate);
 
         var msg = MessageBoxManager
         .GetMessageBoxStandard(new MessageBoxStandardParams {
