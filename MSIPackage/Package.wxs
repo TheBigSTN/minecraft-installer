@@ -21,7 +21,7 @@
 			<RemoveFolder Id="DesktopFolder" On="uninstall" />
 			<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
 		</Component>
-		<Component Id="StartMenuShortcut" Guid="A-UNIQUE-GUID-HERE">
+		<Component Id="StartMenuShortcut" Guid="FDEA4B46-101C-4F78-822C-F9F553AC496E">
 			<Shortcut
 				Id="ApplicationStartMenuShortcut"
 				Directory="ProgramMenuFolder"
