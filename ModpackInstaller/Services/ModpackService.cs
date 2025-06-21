@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ModpackInstaller.Services {
     public static class ModpackService {
-        public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versionsa");
+        public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versions");
         public static readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = true };
 
         public static List<Modpack> ListInstalledModpacks() {
