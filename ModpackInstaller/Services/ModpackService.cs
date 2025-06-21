@@ -9,7 +9,8 @@ using System.Threading.Tasks;
 
 namespace ModpackInstaller.Services {
     public static class ModpackService {
-        public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versions");
+        public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versionsa");
+        public static readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = true };
 
         public static List<Modpack> ListInstalledModpacks() {
             Directory.CreateDirectory(modpacksPath);
@@ -74,7 +75,7 @@ namespace ModpackInstaller.Services {
         }
 
         private static MineLoaderData ParseMineLoaderData(JsonElement mineloaderRoot) {
-            return mineloaderRoot.Deserialize<MineLoaderData>();
+            return mineloaderRoot.Deserialize<MineLoaderData>() ?? new MineLoaderData();
         }
 
         private static List<Mod> ParseTlauncerMods(JsonElement modsElement) {
@@ -109,7 +110,8 @@ namespace ModpackInstaller.Services {
                         Url = "",
                         Tree = new List<GitHubTreeItem>(),
                         Truncated = false
-                    }
+                    },
+                    false
                 );
             }
         }
@@ -133,14 +135,17 @@ namespace ModpackInstaller.Services {
         }
 
         public class MineLoaderData {
+            public int v = 1;
             public string ModpackName { get; set; }
             public List<Mod> Mods { get; set; }
             public GitHubTree FileTree { get; set; }
+            public bool AutoUpdate { get; set; }
 
-            public MineLoaderData(string modpackname, List<Mod> mods, GitHubTree tree) {
+            public MineLoaderData(string modpackname, List<Mod> mods, GitHubTree tree, bool? update) {
                 ModpackName = modpackname;
                 Mods = mods;
                 FileTree = tree;
+                AutoUpdate = update ?? false;
             }
 
             public MineLoaderData()
@@ -154,6 +159,7 @@ namespace ModpackInstaller.Services {
                     Tree = [],
                     Truncated = false
                 };
+                AutoUpdate = false;
             }
         }
         public class Mod {

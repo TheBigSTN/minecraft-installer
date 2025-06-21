@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" x:Class="ModpackInstaller.RepairMenu"
+			 Height="350" Width="350" Background="#FF1E1E1E"
+			 Opacity="0.9">
+	<Grid>
+		<!-- TextBlock displaying the message -->
+		<TextBlock x:Name="Text"
+				   FontSize="20"
+				   Foreground="White"
+				   TextAlignment="Center"
+				   Margin="16,20,16,4"
+				   RenderTransformOrigin="0.5,0.5"
+				   TextWrapping="Wrap"
+				   VerticalAlignment="Top"
+				   xml:space="default">
+			Ce modpack dorești repari?
+			Orice modpack pe care il repari va
+			pierde modurile instalate manual 
+			si va fi updatat la ultima versiune.
+		</TextBlock>
+
+		<TextBlock
+				   x:Name="Loading_Text"
+				   FontSize="20"
+				   Foreground="White"
+				   TextAlignment="Center"
+				   Margin="16,150,16,4"
+				   RenderTransformOrigin="0.5,0.5"
+				   TextWrapping="Wrap"
+				   VerticalAlignment="Top"
+				   Text="Se incarca..."/>
+
+		<!-- ComboBox for user to select a modpack -->
+		<ComboBox x:Name="Modpack_List"
+				  HorizontalAlignment="Center"
+				  VerticalAlignment="Top"
+				  Margin="0,150,0,0"
+				  Width="250"
+				  FontSize="16"
+				  ToolTip.Tip="Selectează modpack‑ul pe care vrei să îl repari"
+				  SelectionChanged="ModpackList_SelectionChanged"
+				  IsVisible="False"
+				  >
+			<ComboBoxItem IsEnabled="False" IsSelected="True" Foreground="Gray">Selecteaza un modpack...</ComboBoxItem>
+		</ComboBox>
+
+		<!-- Button for installing modpack -->
+		<Button x:Name="Repair_Button"
+				Content="Repair Modpack"
+				HorizontalAlignment="Center"
+				VerticalAlignment="Top"
+				Margin="0,200,0,0"
+				Width="200"
+				Height="50"
+				FontSize="22"
+				BorderThickness="2"
+				IsDefault="True"
+				IsEnabled="False"
+				Click="Repair_Click" />
+	</Grid>
+</UserControl>

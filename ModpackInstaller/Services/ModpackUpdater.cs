@@ -14,7 +14,7 @@ using MsBox.Avalonia;
 
 namespace ModpackInstaller.Services;
 public static class ModpackUpdater {
-    public async static Task Update(String modpackId) {
+    public async static Task Update(string modpackId) {
         Modpack modpack = new(modpackId);
 
         ModpackService.Modpack localModpack = modpack.GetInformation();
@@ -44,12 +44,11 @@ public static class ModpackUpdater {
 
         using JsonDocument remoteTLauncherData = await Github.GetGitLauncherDataAsync(remoteTree.Sha, modpackId);
 
-        JsonSerializerOptions options = new() { WriteIndented = true };
-
         var data = new ModpackService.MineLoaderData(
             modpackId,
             ModpackService.ParseTLauncherData(remoteTLauncherData.RootElement).Mods,
-            remoteTree
+            remoteTree,
+            localModpack.MineLoader.AutoUpdate
         );
         try {
             // 5. Update TLauncher file. (The hard part)
@@ -73,7 +72,7 @@ public static class ModpackUpdater {
         using FileStream mineloaderWriteStream = File.Create(modpack.mineloaderAdditionalPath);
 
         // 7. Write files to disc
-        await JsonSerializer.SerializeAsync(mineloaderWriteStream, data, options);
+        await JsonSerializer.SerializeAsync(mineloaderWriteStream, data, ModpackService.jsonOptions);
 
         var mb = MessageBoxManager
             .GetMessageBoxStandard(new MessageBoxStandardParams {
@@ -150,12 +149,16 @@ public static class ModpackUpdater {
         // Step 4: Remove mods that exist in mineloaderMods but not in remote
         var modsToRemove = localModsArray
             .Where(mod => {
-                string? path = mod?["Path"]?.ToString();
+                string? path = mod?["version"]?["metadata"]?["path"]?.ToString();
                 return path != null && mineloaderPaths.Contains(path) && !remoteModLookup.ContainsKey(path);
             })
             .ToList();
 
         foreach (var mod in modsToRemove) {
+            string modPath = mod?["version"]?["metadata"]?["path"]?.ToString() ?? "";
+            string fullModPath = Path.Combine(ModpackService.modpacksPath, localModpack.MineLoader.ModpackName, modPath);
+            if (File.Exists(fullModPath))
+                File.Delete(fullModPath);
             localModsArray.Remove(mod);
         }
 

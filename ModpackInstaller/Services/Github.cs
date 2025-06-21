@@ -11,27 +11,53 @@ using System.Threading.Tasks;
 namespace ModpackInstaller.Services;
 public class Github {
     public static string Token { get; set; } = GetGitToken();
+    private static readonly Dictionary<string, string> headers = new() { { "Authorization", "Bearer " + Token } };
 
     public static async Task<GitHubTree> GetAllRemoteModpacks(string tree = "main") {
-        return await GetGitHubTreeAsync(false, tree);
+        var fileTree = await GetGitHubTreeAsync(false, tree);
+        fileTree.Tree = fileTree.Tree
+            .Where(i => i.Type == "tree")
+            .ToList();
+        return fileTree;
     }
 
     public static async Task<GitHubTree> GetGitHubTreeAsync(bool recursive = true, string tree = "main") {
-        var url = recursive
-         ? $"https://api.github.com/repos/TheBigSTN/modpacks/git/trees/{tree}?recursive={recursive}"
-         : $"https://api.github.com/repos/TheBigSTN/modpacks/git/trees/{tree}";
 
-        var response = await WebService.Get(url);
+        string url = recursive
+               ? $"https://api.github.com/repos/TheBigSTN/modpacks/git/trees/{tree}?recursive=true"
+               : $"https://api.github.com/repos/TheBigSTN/modpacks/git/trees/{tree}";
 
+        if (recursive) {
+            if (Cache.Recursive.cachedAt is DateTime cached && Cache.Recursive.GitHubTree is not null) {
+                if ((DateTime.UtcNow - cached) < TimeSpan.FromMinutes(5))
+                    return Cache.Recursive.GitHubTree;
+            }
+        }
+        else {
+            if (Cache.NonRecursive.cachedAt is DateTime cached && Cache.NonRecursive.GitHubTree is not null) {
+                if ((DateTime.UtcNow - cached) < TimeSpan.FromMinutes(5))
+                    return Cache.NonRecursive.GitHubTree;
+            }
+        }
+
+        // Fă request
+        var response = await WebService.Get(url, headers);
         var treeres = JsonSerializer.Deserialize<GitHubTree>(response)
             ?? throw new Exception("Did not get a tree");
 
+        // Salvează în cache
+        if (recursive) {
+            Cache.Recursive.GitHubTree = treeres;
+            Cache.Recursive.cachedAt = DateTime.UtcNow;
+        }
+        else {
+            Cache.NonRecursive.GitHubTree = treeres;
+            Cache.NonRecursive.cachedAt = DateTime.UtcNow;
+        }
+
         return treeres;
     }
-    public static async Task DownloadModpack(string modpacksha, string modpackname) {
-        var headers = new Dictionary<string, string> {
-                { "Authorization", "Bearer " + Token }
-            };
+    public static async Task DownloadModpack(string modpacksha, string modpackname, bool autoUpdate) {
 
         GitHubTree gittree = await GetGitHubTreeAsync(true, modpacksha);
 
@@ -64,14 +90,14 @@ public class Github {
         var data = new ModpackService.MineLoaderData(
             modpackname,
             ModpackService.ParseTLauncherData(launcherData.RootElement).Mods,
-            gittree
+            gittree,
+            autoUpdate
         );
 
         using FileStream createStream = File.Create(Path.Combine(ModpackService.modpacksPath, modpackname, "mineloader-Aditional.json"));
         await JsonSerializer.SerializeAsync(createStream, data, options);
         await createStream.FlushAsync();
     }
-
     public static async Task<GitHubTree> GetModpackWithName(string modpack_name) {
         GitHubTree fullTree = await GetGitHubTreeAsync(false); // arborele principal, non-recursiv
 
@@ -80,13 +106,16 @@ public class Github {
 
         if (modpack == null) {
             Console.WriteLine($"Modpack '{modpack_name}' not found in GitHub tree.");
-            return null;
+            return new GitHubTree {
+                Sha = string.Empty,
+                Url = string.Empty,
+                Tree = []
+            };
         }
 
         GitHubTree modpackTree = await GetGitHubTreeAsync(true, modpack.Sha); // recursiv în folderul respectiv
         return modpackTree;
     }
-
     public static async Task<JsonDocument> GetGitLauncherDataAsync(string modpackSha, string modpackName) {
         var headers = new Dictionary<string, string> {
                 { "Authorization", "Bearer " + Token }
@@ -144,7 +173,28 @@ public class Github {
 
         throw new Exception("No token found");
     }
+    public static void InvalidateCache() {
+        Cache.Recursive.GitHubTree = null;
+        Cache.Recursive.cachedAt = null;
 
+        Cache.NonRecursive.GitHubTree = null;
+        Cache.NonRecursive.cachedAt = null;
+    }
+    private static class Cache {
+
+        public static class Recursive {
+            public static GitHubTree? GitHubTree { get; set; }
+
+            public static DateTime? cachedAt;
+
+        }
+        public static class NonRecursive {
+            public static GitHubTree? GitHubTree { get; set; }
+
+            public static DateTime? cachedAt;
+
+        }
+    }
 }
 
 public class GitHubTree {
@@ -178,3 +228,4 @@ public class GitHubTreeItem {
     [JsonPropertyName("url")]
     public required string Url { get; set; }
 }
+

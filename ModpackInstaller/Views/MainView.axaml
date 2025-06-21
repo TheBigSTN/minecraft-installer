@@ -60,7 +60,38 @@
             Orientation="Horizontal"
             Height="49"
             Grid.ColumnSpan="2">
-			<Button x:Name="Install_Button" Content="Install Modpack" Height="NaN" Foreground="White" Cursor="Hand" Width="168" VerticalAlignment="Stretch" Click="Install_Button_Click">
+			<Button x:Name="Install_Button" 
+					Content="Install Modpack" 
+					Height="NaN" 
+					Foreground="White" 
+					Cursor="Hand" 
+					Width="168" 
+					VerticalAlignment="Stretch" 
+					Click="Install_Button_Click">
+				<Button.Effect>
+					<DropShadowEffect/>
+				</Button.Effect>
+			</Button>
+			<Button x:Name="Refresh_Button"
+					Content="Refresh"
+					Height="NaN"
+					Foreground="White"
+					Cursor="Hand"
+					Width="168"
+					VerticalAlignment="Stretch"
+					Click="Refresh_Click">
+				<Button.Effect>
+					<DropShadowEffect/>
+				</Button.Effect>
+			</Button>
+			<Button x:Name="Repair_Button"
+					Content="Repair"
+					Height="NaN"
+					Foreground="White"
+					Cursor="Hand"
+					Width="168"
+					VerticalAlignment="Stretch"
+					Click="Repair_Click">
 				<Button.Effect>
 					<DropShadowEffect/>
 				</Button.Effect>

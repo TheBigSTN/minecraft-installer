@@ -65,7 +65,7 @@ public partial class InstallMenu : UserControl {
 
             var result = await mb.ShowAsync();
 
-            if (result != ButtonResult.No) {
+            if (result == ButtonResult.No) {
                 return;
             }
         }

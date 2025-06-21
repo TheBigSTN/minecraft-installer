@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Styling;
 using ModpackInstaller.Services;
 
@@ -22,7 +24,30 @@ public partial class MainView : UserControl
         }
     }
 
-    public void Install_Button_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs? e) {
+    public void Refresh_Click(object? sender, RoutedEventArgs? e) {
+        var modpacks = ModpackService.ListInstalledModpacks();
+        Github.InvalidateCache();
+
+        AddModpackButtons(modpacks);
+    }
+
+    public void Repair_Click(object? sender, RoutedEventArgs? e) {
+        RepairMenu repairMenu = new();
+
+        repairMenu.OnFinished += () => {
+            var modpacks = ModpackService.ListInstalledModpacks();
+
+            AddModpackButtons(modpacks);
+
+            BodyContent.Content = null;
+            Sidebar.IsVisible = true;
+            TopBar.IsVisible = true;
+        };
+
+        BodyContent.Content = repairMenu;
+    }
+
+    public void Install_Button_Click(object? sender, RoutedEventArgs? e) {
         InstallMenu installModpackWindow = new();
 
         // Te abonezi la evenimentul onModpackInstalled
