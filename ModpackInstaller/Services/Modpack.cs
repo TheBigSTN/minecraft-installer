@@ -87,7 +87,7 @@ public class Modpack {
             using JsonDocument mineloaderDoc = JsonDocument.Parse(File.ReadAllText(mineloaderAdditionalPath));
             JsonElement root = mineloaderDoc.RootElement;
 
-            int version = root.TryGetProperty("v", out var vElement) && vElement.TryGetInt32(out int v) ? v : 0;
+            int version = root.TryGetProperty("V", out var vElement) && vElement.TryGetInt32(out int v) ? v : 0;
 
             if ( version < 1 ) {
                 migration = true;
@@ -104,7 +104,7 @@ public class Modpack {
                     ModpackName = root.TryGetProperty("ModpackName", out var name) ? name.GetString()! : "",
                     FileTree = root.TryGetProperty("Tree", out var oldTree) ? oldTree.Deserialize<GitHubTree>()! : fallbackGitTree,
                     AutoUpdate = false,
-                    v = 1
+                    V = 1
                 };
 
                 // Scrii înapoi versiunea actualizată, dacă vrei

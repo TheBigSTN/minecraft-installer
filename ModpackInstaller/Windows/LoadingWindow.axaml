@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        Width="400" Height="200" Title="Actualizare..."
+        x:Class="ModpackInstaller.LoadingWindow">
+	<StackPanel HorizontalAlignment="Center" 
+				VerticalAlignment="Center" 
+				Spacing="10"
+				>
+		<TextBlock x:Name="StatusText" 
+				   Text="Se verifică actualizările..." 
+				   FontSize="16" 
+				   HorizontalAlignment="Center"
+				   />
+		<ProgressBar IsIndeterminate="True" 
+					 Width="300"
+					 />
+	</StackPanel>
+</Window>

@@ -135,7 +135,7 @@ namespace ModpackInstaller.Services {
         }
 
         public class MineLoaderData {
-            public int v = 1;
+            public int V { get; set; } = 1;
             public string ModpackName { get; set; }
             public List<Mod> Mods { get; set; }
             public GitHubTree FileTree { get; set; }
