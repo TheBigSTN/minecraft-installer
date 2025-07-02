@@ -4,7 +4,17 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+
+	<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+
+	<AppGitToken></AppGitToken>
   </PropertyGroup>
+
+	<ItemGroup>
+		<AssemblyMetadata Include="GitToken" Value="$(AppGitToken)" Condition="'$(AppGitToken)' != ''" />
+		<AssemblyMetadata Include="GitToken" Value="DefaultLocalDevTokenOrEmpty" Condition="'$(AppGitToken)' == ''" />
+
+	</ItemGroup>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
