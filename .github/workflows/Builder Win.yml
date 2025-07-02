@@ -42,7 +42,7 @@ jobs:
         run: dotnet publish ${{ env.Project_Path }} `
           -c Release  `
           -r win-x64  `
-          /p:AssemblyMetadata=GitToken=${{ env.GitToken }}
+          /p:AppGitToken=${{ env.GitToken }}
 
       - name: Get Project Version
         id: get_version
