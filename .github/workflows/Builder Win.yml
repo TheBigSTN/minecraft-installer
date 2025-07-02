@@ -38,10 +38,11 @@ jobs:
         run: dotnet restore
 
       - name: Publish application
+        shell: pwsh
         run: dotnet publish ${{ env.Project_Path }} `
           -c Release  `
           -r win-x64  `
-          /p:GitToken=${{ env.GitToken }}
+          /p:AssemblyMetadata=GitToken=${{ env.GitToken }}
 
       - name: Get Project Version
         id: get_version
