@@ -12,7 +12,7 @@
 
 	<ItemGroup>
 		<AssemblyMetadata Include="GitToken" Value="$(AppGitToken)" Condition="'$(AppGitToken)' != ''" />
-		<AssemblyMetadata Include="GitToken" Value="DefaultLocalDevTokenOrEmpty" Condition="'$(AppGitToken)' == ''" />
+		<AssemblyMetadata Include="GitToken" Value="" Condition="'$(AppGitToken)' == ''" />
 
 	</ItemGroup>
 

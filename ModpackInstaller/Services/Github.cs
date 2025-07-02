@@ -162,14 +162,15 @@ public class Github {
             .GetExecutingAssembly()
             .GetCustomAttributes<AssemblyMetadataAttribute>();
 
+        var envToken = Environment.GetEnvironmentVariable("GitToken");
+        if (!string.IsNullOrEmpty(envToken))
+            return envToken;
+
         foreach (var attr in attributes) {
             if (attr.Key == "GitToken" && !string.IsNullOrEmpty(attr.Value))
                 return attr.Value;
         }
 
-        var envToken = Environment.GetEnvironmentVariable("GitToken");
-        if (!string.IsNullOrEmpty(envToken))
-            return envToken;
 
         throw new Exception("No token found");
     }
