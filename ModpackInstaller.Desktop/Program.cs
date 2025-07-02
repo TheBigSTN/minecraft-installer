@@ -7,8 +7,12 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls;
 using Avalonia.ReactiveUI;
+using Avalonia.Threading;
 using ModpackInstaller.Services;
+using System.Reflection;
 namespace ModpackInstaller.Desktop;
 
 class Program
@@ -20,16 +24,58 @@ class Program
     public static async Task<int> Main(string[] args) {
 
         if (args.Length > 0 && args[0] == "--update") {
-            Console.WriteLine("Running in update mode...");
 
             await RunAutoUpdateLogic();
 
             LaunchTLauncher();
-
             return 0;
         }
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        try {
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex) {
+            try {
+                // === Setup folder ===
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string logFolder = Path.Combine(appData, "Modpack Installer", "logs");
+                Directory.CreateDirectory(logFolder);
+
+                // === Generate unique filename ===
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                string logFileName = $"crash-{timestamp}.log";
+                string logPath = Path.Combine(logFolder, logFileName);
+
+                // === Get extra info ===
+                string appVersion = Assembly.GetExecutingAssembly()
+                                            .GetName()
+                                            .Version?.ToString() ?? "unknown";
+                string dotnetVersion = Environment.Version.ToString();
+                string os = Environment.OSVersion.ToString();
+                string arch = RuntimeInformation.OSArchitecture.ToString();
+                string processArch = RuntimeInformation.ProcessArchitecture.ToString();
+
+                // === Build crash report ===
+                string report = $"""
+                    ========== Modpack Installer Crash Report ==========
+                    Timestamp     : {DateTime.Now}
+                    App Version   : {appVersion}
+                    .NET Version  : {dotnetVersion}
+                    OS            : {os} ({arch})
+                    Process Arch  : {processArch}
+                    ====================================================
+
+                    Exception:
+                    {ex}
+
+                    ====================================================
+                """;
+
+                // === Save log ===
+                File.WriteAllText(logPath, report);
+            }
+            catch { }
+        }
 
         return 0;
     }
@@ -40,7 +86,6 @@ class Program
         var updateTasks = installedModpacks
             .Where(mp => mp.MineLoader.AutoUpdate)
             .Select(mp => ModpackUpdater.Update(mp.MineLoader.ModpackName));
-
         await Task.WhenAll(updateTasks);
     }
 
