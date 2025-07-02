@@ -22,7 +22,6 @@ public partial class MainView : UserControl
             TopBar.IsVisible = false;
             Install_Button_Click(null, null);
         }
-        throw new Exception("This is a test exception to check if the error handling works correctly.");
     }
 
     public void Refresh_Click(object? sender, RoutedEventArgs? e) {
