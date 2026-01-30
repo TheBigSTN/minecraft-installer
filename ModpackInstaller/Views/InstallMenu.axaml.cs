@@ -58,8 +58,8 @@ public partial class InstallMenu : UserControl {
                     .GetMessageBoxStandard(new MessageBoxStandardParams {
                         ButtonDefinitions = ButtonEnum.YesNo,
                         Icon = Icon.Warning,
-                        ContentTitle = "Modpack deja instalat",
-                        ContentMessage = $"Modpack ul \"{modpack_name}\" este deja instalat. Vrei sa il rescrii?",
+                        ContentTitle = "ModpackInfo deja instalat",
+                        ContentMessage = $"ModpackInfo ul \"{modpack_name}\" este deja instalat. Vrei sa il rescrii?",
                         WindowStartupLocation = WindowStartupLocation.CenterOwner
                     });
 
@@ -77,7 +77,7 @@ public partial class InstallMenu : UserControl {
             ButtonDefinitions = ButtonEnum.Ok,
             Icon = Icon.Success,
             ContentTitle = "Succes!",
-            ContentMessage = "Modpack Installed if you have tlauncer open press the reload button",
+            ContentMessage = "ModpackInfo Installed if you have tlauncer open press the reload button",
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         });
 

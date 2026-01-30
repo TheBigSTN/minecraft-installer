@@ -47,17 +47,17 @@ public class Modpack {
         var allModpacks = await Github.GetAllRemoteModpacks();
         var modpack = allModpacks.Tree.Find(item => item.Path == modpackId);
         return modpack == null
-            ? throw new InvalidOperationException($"Modpack with ID '{modpackId}' not found in the remote tree.")
+            ? throw new InvalidOperationException($"ModpackInfo with ID '{modpackId}' not found in the remote tree.")
             : modpack.Sha;
     }
 
-    public async Task<GitHubTree> GetModpackRemoteTree() {
+    public async Task<GitHubTree> GetModpackRemoteFileTree() {
         var modpackSha = await GetModpackSha();
         return await Github.GetGitHubTreeAsync(true, modpackSha);
     }
 
-    public ModpackService.Modpack GetInformation() {
-        ModpackService.Modpack modpackdata = new();
+    public ModpackService.ModpackInfo GetInformation() {
+        ModpackService.ModpackInfo modpackdata = new();
         try {
             modpackdata.TLauncher = GetLauncherData();
            

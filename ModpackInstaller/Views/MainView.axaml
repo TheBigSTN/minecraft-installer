@@ -61,7 +61,7 @@
             Height="49"
             Grid.ColumnSpan="2">
 			<Button x:Name="Install_Button" 
-					Content="Install Modpack" 
+					Content="Install Moadpack" 
 					Height="NaN" 
 					Foreground="White" 
 					Cursor="Hand" 

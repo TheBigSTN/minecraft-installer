@@ -12,9 +12,9 @@ namespace ModpackInstaller.Services {
         public static readonly string modpacksPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versions");
         public static readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = true };
 
-        public static List<Modpack> ListInstalledModpacks() {
+        public static List<ModpackInfo> ListInstalledModpacks() {
             Directory.CreateDirectory(modpacksPath);
-            List<Modpack> modpackdata = [];
+            List<ModpackInfo> modpackdata = [];
 
             string[] modpacks = Directory.GetDirectories(modpacksPath);
             foreach (string modpack in modpacks) {
@@ -30,7 +30,7 @@ namespace ModpackInstaller.Services {
                         using JsonDocument mineloaderdoc = JsonDocument.Parse(mineloaderContent);
                         JsonElement mineloaderroot = mineloaderdoc.RootElement;
 
-                        Modpack parsedModpacks = ParseModpack(root, mineloaderroot);
+                        ModpackInfo parsedModpacks = ParseModpack(root, mineloaderroot);
                         modpackdata.Add(parsedModpacks);
                     }
                 }
@@ -50,11 +50,11 @@ namespace ModpackInstaller.Services {
             return launcherData;
         }
 
-        private static Modpack ParseModpack(JsonElement launcerRoot, JsonElement mineloaderRoot) {
+        private static ModpackInfo ParseModpack(JsonElement launcerRoot, JsonElement mineloaderRoot) {
             TLauncherData tlauncherData = ParseTLauncherData(launcerRoot);
             MineLoaderData mineLoaderData = ParseMineLoaderData(mineloaderRoot);
 
-            return new Modpack(tlauncherData, mineLoaderData);
+            return new ModpackInfo(tlauncherData, mineLoaderData);
         }
 
         public static TLauncherData ParseTLauncherData(JsonElement launcerRoot) {
@@ -96,11 +96,11 @@ namespace ModpackInstaller.Services {
             return mods;
         }
 
-        public class Modpack {
+        public class ModpackInfo {
             public TLauncherData TLauncher { get; set; }
             public MineLoaderData MineLoader { get; set; }
 
-            public Modpack(TLauncherData tlauncher = null!, MineLoaderData mineLoader = null!) {
+            public ModpackInfo(TLauncherData tlauncher = null!, MineLoaderData mineLoader = null!) {
                 TLauncher = tlauncher ?? new TLauncherData("Default", "Unknown", new List<Mod>());
                 MineLoader = mineLoader ?? new MineLoaderData(
                     "Default",

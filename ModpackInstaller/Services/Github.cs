@@ -105,7 +105,7 @@ public class Github {
             i.Type == "tree" && i.Path.Equals(modpack_name, StringComparison.OrdinalIgnoreCase));
 
         if (modpack == null) {
-            Console.WriteLine($"Modpack '{modpack_name}' not found in GitHub tree.");
+            Console.WriteLine($"ModpackInfo '{modpack_name}' not found in GitHub tree.");
             return new GitHubTree {
                 Sha = string.Empty,
                 Url = string.Empty,

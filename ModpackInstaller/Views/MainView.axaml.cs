@@ -57,7 +57,7 @@ public partial class MainView : UserControl
         BodyContent.Content = installModpackWindow;
     }
 
-    private void AddModpackButtons(List<ModpackService.Modpack> modpacks) {
+    private void AddModpackButtons(List<ModpackService.ModpackInfo> modpacks) {
         SidebarButtonPanel.Children.Clear();
 
 

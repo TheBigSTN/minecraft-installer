@@ -11,14 +11,15 @@ using Avalonia.Controls;
 using MsBox.Avalonia.Dto;
 using MsBox.Avalonia.Enums;
 using MsBox.Avalonia;
+using DynamicData;
 
 namespace ModpackInstaller.Services;
 public static class ModpackUpdater {
     public async static Task Update(string modpackId) {
         Modpack modpack = new(modpackId);
 
-        ModpackService.Modpack localModpack = modpack.GetInformation();
-        GitHubTree remoteTree = await modpack.GetModpackRemoteTree();
+        ModpackService.ModpackInfo localModpack = modpack.GetInformation();
+        GitHubTree remoteTree = await modpack.GetModpackRemoteFileTree();
         // 2. Diff remote vs. local MineLoader tree.
         List<GitHubTreeItem> remoteFiles = remoteTree.Tree;          // Remote list
         List<GitHubTreeItem> localFiles = localModpack.MineLoader.FileTree.Tree; // Local tree items
@@ -86,7 +87,7 @@ public static class ModpackUpdater {
         await mb.ShowAsync();
     }
 
-    private static async Task UpdateTlauncerFile(ModpackService.Modpack localModpack, string jsonFilePath, JsonDocument remoteTLauncherData) {
+    private static async Task UpdateTlauncerFile(ModpackService.ModpackInfo localModpack, string jsonFilePath, JsonDocument remoteTLauncherData) {
         var mineloaderMods = localModpack.MineLoader.Mods;
 
         // Step 1: Parse the modifiable rootNode from file
@@ -219,7 +220,105 @@ public static class ModpackUpdater {
     private static void ProcessDeletedFiles(List<GitHubTreeItem> filesToDelete, String modpackName) {
         foreach (var item in filesToDelete) {
             // Calculate the full path to the file/folder.
-            string localPath = System.IO.Path.Combine(ModpackService.modpacksPath, modpackName, item.Path);
+            string localPath = Path.Combine(ModpackService.modpacksPath, modpackName, item.Path);
+            try {
+                if (item.Path == "TLauncherAdditional.json") continue;
+                if (item.Type == "blob" && File.Exists(localPath))
+                    File.Delete(localPath);
+                else if (item.Type == "tree" && Directory.Exists(localPath))
+                    Directory.Delete(localPath, true); // delete recursively
+            }
+            catch (Exception ex) {
+                // Log or handle deletion exceptions.
+                Debug.WriteLine($"Failed to delete {localPath}: " + ex.Message);
+            }
+        }
+    }
+
+    public async static Task Main(string modpackId) {
+        Modpack modpack = new(modpackId);
+
+        ModpackService.ModpackInfo localModpackInfo = modpack.GetInformation();
+        GitHubTree remoteFileTree = await modpack.GetModpackRemoteFileTree();
+
+        await NewRemoteFiles(modpack, remoteFileTree);
+
+        DeletedRemoteFiles(modpack, remoteFileTree);
+
+
+        var mb = MessageBoxManager
+            .GetMessageBoxStandard(new MessageBoxStandardParams {
+                ButtonDefinitions = ButtonEnum.Ok,
+                Icon = Icon.Info,
+                ContentTitle = "Update complete!",
+                ContentMessage = "Done",
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            });
+
+        await mb.ShowAsync();
+    }
+
+    public async static Task NewRemoteFiles(Modpack modpack, GitHubTree remoteFileTree) {
+        ModpackService.MineLoaderData mineloader = modpack.GetMineLoaderData();
+        GitHubTree localUnchangedFileTree = mineloader.FileTree;
+
+        var FisiereAdaugate = remoteFileTree.Tree
+            .Where(x => !localUnchangedFileTree.Tree.Any(y => y.Path == x.Path))
+            .ToList();
+
+        if (FisiereAdaugate.Count == 0) {
+            // No new files to download.
+            return;
+        }
+
+
+
+        var headers = new Dictionary<string, string> {
+                        { "Authorization", "Bearer " + Github.Token }
+                    };
+
+        // Make sure the base directory exists.
+        Directory.CreateDirectory(modpack.installLocation);
+
+        var downloadTasks = new List<Task>();
+
+        foreach (var item in FisiereAdaugate) {
+            // If the item is a directory (tree), create it.
+            if (item.Type == "tree") {
+                string dirPath = Path.Combine(modpack.installLocation, item.Path);
+                Directory.CreateDirectory(dirPath);
+            }
+            // If it's a blob (file), download it.
+            else if (item.Type == "blob") {
+                // Build the destination path.
+                string destPath = Path.Combine(modpack.installLocation, item.Path);
+
+                if (item.Path == "TLauncherAdditional.json") continue;
+                // Download the file.
+                downloadTasks.Add(WebService.GetFile(item.Url, destPath, headers));
+
+                // For performance you could batch these tasks.
+                if (downloadTasks.Count == 10) {
+                    await Task.WhenAll(downloadTasks);
+                    downloadTasks.Clear();
+                }
+            }
+        }
+        if (downloadTasks.Count > 0)
+            await Task.WhenAll(downloadTasks);
+    }
+
+    public static void DeletedRemoteFiles(Modpack modpack, GitHubTree remoteFileTree) {
+        ModpackService.MineLoaderData mineloader = modpack.GetMineLoaderData();
+        GitHubTree localUnchangedFileTree = mineloader.FileTree;
+
+        List<GitHubTreeItem> filesToDelete = localUnchangedFileTree.Tree
+            .Where(l => !remoteFileTree.Tree.Any(r => r.Path.Equals(l.Path, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        foreach (var item in filesToDelete) {
+            // Calculate the full path to the file/folder.
+            string localPath = Path.Combine(modpack.installLocation, item.Path);
             try {
                 if (item.Path == "TLauncherAdditional.json") continue;
                 if (item.Type == "blob" && File.Exists(localPath))

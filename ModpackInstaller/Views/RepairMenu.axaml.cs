@@ -60,7 +60,7 @@ public partial class RepairMenu : UserControl
 
         ModpackService.MineLoaderData mineLoaderData = new() {
             ModpackName = Path.GetFileName(modpack.installLocation),
-            FileTree = await modpack.GetModpackRemoteTree(),
+            FileTree = await modpack.GetModpackRemoteFileTree(),
             Mods = tlauncherData.Mods
 
         };

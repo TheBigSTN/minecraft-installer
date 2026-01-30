@@ -38,7 +38,7 @@ class Program
             try {
                 // === Setup folder ===
                 string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string logFolder = Path.Combine(appData, "Modpack Installer", "logs");
+                string logFolder = Path.Combine(appData, "ModpackInfo Installer", "logs");
                 Directory.CreateDirectory(logFolder);
 
                 // === Generate unique filename ===
@@ -57,7 +57,7 @@ class Program
 
                 // === Build crash report ===
                 string report = $"""
-                    ========== Modpack Installer Crash Report ==========
+                    ========== ModpackInfo Installer Crash Report ==========
                     Timestamp     : {DateTime.Now}
                     App Version   : {appVersion}
                     .NET Version  : {dotnetVersion}
@@ -81,7 +81,7 @@ class Program
     }
 
     static async Task RunAutoUpdateLogic() {
-        List<ModpackService.Modpack> installedModpacks = ModpackService.ListInstalledModpacks();
+        List<ModpackService.ModpackInfo> installedModpacks = ModpackService.ListInstalledModpacks();
 
         var updateTasks = installedModpacks
             .Where(mp => mp.MineLoader.AutoUpdate)

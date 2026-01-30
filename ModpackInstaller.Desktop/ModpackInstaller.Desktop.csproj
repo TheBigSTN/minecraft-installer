@@ -9,6 +9,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
 	  <Version>2.1.3</Version>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="0.0.1298" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ModpackInstaller\ModpackInstaller.csproj" />

@@ -11,7 +11,7 @@ namespace ModpackInstaller.Views;
 
 public partial class ModpackInfo : UserControl {
     private string modpackName;
-    public ModpackInfo(ModpackService.Modpack modpack) {
+    public ModpackInfo(ModpackService.ModpackInfo modpack) {
         InitializeComponent();
         ModpackNameText.Text = modpack.MineLoader.ModpackName;
         modpackName = modpack.MineLoader.ModpackName;
@@ -19,7 +19,7 @@ public partial class ModpackInfo : UserControl {
 
     public ModpackInfo() {
         InitializeComponent();
-        ModpackNameText.Text = "Unknown Modpack";
+        ModpackNameText.Text = "Unknown ModpackInfo";
         modpackName = "Unknown";
     }
 
