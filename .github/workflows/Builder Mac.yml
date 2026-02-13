@@ -15,78 +15,78 @@ jobs:
       Project_Output: ModpackInstaller.Desktop/bin/Release/net8.0/osx-arm64/publish
       Pkg_Output: ModpackInstaller_macOS_arm64.pkg
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    # steps:
+    #   - name: Checkout repository
+    #     uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "9.0.x"
+    #   - name: Setup .NET SDK
+    #     uses: actions/setup-dotnet@v4
+    #     with:
+    #       dotnet-version: "9.0.x"
 
-      - name: Restore .NET project
-        run: dotnet restore
+    #   - name: Restore .NET project
+    #     run: dotnet restore
 
-      - name: Publish application
-        run: dotnet publish ${{ env.Project_Path }} -c Release -r osx-arm64 --self-contained false
+    #   - name: Publish application
+    #     run: dotnet publish ${{ env.Project_Path }} -c Release -r osx-arm64 --self-contained false
 
-      - name: Get Project Version
-        id: get_version
-        shell: pwsh
-        run: |
-          [xml]$proj = Get-Content ${{ env.Project_Path }}
-          $v = $proj.Project.PropertyGroup.Version
-          echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
-      
-      - name: Create .app bundle
-        shell: bash
-        run: |
-          APP_NAME="ModpackInstaller.Desktop"
-          APP_BUNDLE="$APP_NAME.app"
-          PUBLISH_DIR="ModpackInstaller.Desktop/bin/Release/net8.0/osx-arm64/publish"
-          mkdir -p "$APP_BUNDLE/Contents/MacOS"
-          mkdir -p "$APP_BUNDLE/Contents/Resources"
-          cp -R "$PUBLISH_DIR/"* "$APP_BUNDLE/Contents/MacOS/"
-          cat > "$APP_BUNDLE/Contents/Info.plist" <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>CFBundleName</key>
-            <string>$APP_NAME</string>
-            <key>CFBundleExecutable</key>
-            <string>$APP_NAME</string>
-            <key>CFBundleIdentifier</key>
-            <string>ro.veteran.$APP_NAME</string>
-            <key>CFBundleVersion</key>
-            <string>${{ steps.get_version.outputs.PROJECT_VERSION }}</string>
-            <key>CFBundlePackageType</key>
-            <string>APPL</string>
-          </dict>
-          </plist>
-          EOF
+    #   - name: Get Project Version
+    #     id: get_version
+    #     shell: pwsh
+    #     run: |
+    #       [xml]$proj = Get-Content ${{ env.Project_Path }}
+    #       $v = $proj.Project.PropertyGroup.Version
+    #       echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
 
-      - name: Create .pkg installer
-        run: |
-          mkdir -p pkg-root/Applications
-          cp -R ModpackInstaller.Desktop.app pkg-root/Applications/
-          pkgbuild \
-            --root pkg-root/Applications \
-            --identifier com.veteran.modpackinstaller \
-            --version ${{ steps.get_version.outputs.PROJECT_VERSION }} \
-            --install-location /Applications \
-            ${{ env.Pkg_Output }}
+    #   - name: Create .app bundle
+    #     shell: bash
+    #     run: |
+    #       APP_NAME="ModpackInstaller.Desktop"
+    #       APP_BUNDLE="$APP_NAME.app"
+    #       PUBLISH_DIR="ModpackInstaller.Desktop/bin/Release/net8.0/osx-arm64/publish"
+    #       mkdir -p "$APP_BUNDLE/Contents/MacOS"
+    #       mkdir -p "$APP_BUNDLE/Contents/Resources"
+    #       cp -R "$PUBLISH_DIR/"* "$APP_BUNDLE/Contents/MacOS/"
+    #       cat > "$APP_BUNDLE/Contents/Info.plist" <<EOF
+    #       <?xml version="1.0" encoding="UTF-8"?>
+    #       <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    #       <plist version="1.0">
+    #       <dict>
+    #         <key>CFBundleName</key>
+    #         <string>$APP_NAME</string>
+    #         <key>CFBundleExecutable</key>
+    #         <string>$APP_NAME</string>
+    #         <key>CFBundleIdentifier</key>
+    #         <string>ro.veteran.$APP_NAME</string>
+    #         <key>CFBundleVersion</key>
+    #         <string>${{ steps.get_version.outputs.PROJECT_VERSION }}</string>
+    #         <key>CFBundlePackageType</key>
+    #         <string>APPL</string>
+    #       </dict>
+    #       </plist>
+    #       EOF
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
-          name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
-          draft: false
-          prerelease:
-            ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') || 
-            contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') || 
-            contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
-          files: ${{ env.Pkg_Output }}
-          body: |
-            Download the latest verision of the app by installing the macOs version or the win 64 version.
+    #   - name: Create .pkg installer
+    #     run: |
+    #       mkdir -p pkg-root/Applications
+    #       cp -R ModpackInstaller.Desktop.app pkg-root/Applications/
+    #       pkgbuild \
+    #         --root pkg-root/Applications \
+    #         --identifier com.veteran.modpackinstaller \
+    #         --version ${{ steps.get_version.outputs.PROJECT_VERSION }} \
+    #         --install-location /Applications \
+    #         ${{ env.Pkg_Output }}
+
+    #   - name: Create GitHub Release
+    #     uses: softprops/action-gh-release@v1
+    #     with:
+    #       tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
+    #       name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
+    #       draft: false
+    #       prerelease:
+    #         ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') ||
+    #         contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') ||
+    #         contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
+    #       files: ${{ env.Pkg_Output }}
+    #       body: |
+    #         Download the latest verision of the app by installing the macOs version or the win 64 version.
