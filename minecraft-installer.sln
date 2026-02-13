@@ -2,8 +2,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyCSharpApp", "MyCSharpApp\MyCSharpApp.csproj", "{58056028-A20C-7DA6-590A-4FAFCDFF489D}"
-EndProject
 Project("{B7DD6F7E-DEF8-4E67-B5B7-07EF123DB6F0}") = "MSIPackage", "MSIPackage\MSIPackage.wixproj", "{D574FDAC-3CCE-4F19-B2BF-4E1736310157}"
 EndProject
 Project("{B7DD6F7E-DEF8-4E67-B5B7-07EF123DB6F0}") = "INSBundle", "INSBundle\INSBundle.wixproj", "{088419CD-C649-4325-8077-7D32CACECD56}"
@@ -28,26 +26,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|ARM.Build.0 = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|ARM64.ActiveCfg = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|ARM64.Build.0 = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|x64.Build.0 = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Debug|x86.Build.0 = Debug|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|Any CPU.ActiveCfg = Release|x64
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|Any CPU.Build.0 = Release|x64
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|ARM.ActiveCfg = Release|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|ARM.Build.0 = Release|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|ARM64.ActiveCfg = Release|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|ARM64.Build.0 = Release|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|x64.ActiveCfg = Release|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|x64.Build.0 = Release|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|x86.ActiveCfg = Release|Any CPU
-		{58056028-A20C-7DA6-590A-4FAFCDFF489D}.Release|x86.Build.0 = Release|Any CPU
 		{D574FDAC-3CCE-4F19-B2BF-4E1736310157}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{D574FDAC-3CCE-4F19-B2BF-4E1736310157}.Debug|Any CPU.Build.0 = Debug|x64
 		{D574FDAC-3CCE-4F19-B2BF-4E1736310157}.Debug|ARM.ActiveCfg = Debug|x64

@@ -2,9 +2,22 @@
 using System.Collections.Generic;
 using System.IO;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
+using ModpackInstaller.Infrastructure;
+using ModpackInstaller.Models;
 using ModpackInstaller.Services;
+using ModpackInstaller.Services.Modpack;
+using ModpackInstaller.ViewModels;
+using ModpackInstaller.ViewModels.Body;
+using ModpackInstaller.ViewModels.Topbars;
+using ModpackInstaller.Windows;
+using MsBox.Avalonia.Enums;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Dto;
+using System.Diagnostics;
 
 namespace ModpackInstaller.Views;
 
@@ -13,81 +26,88 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
-        var modpacks = ModpackService.ListInstalledModpacks();
-        if (modpacks.Count > 0) {
-            AddModpackButtons(modpacks);
-        }
-        else {
-            Sidebar.IsVisible = false;
-            TopBar.IsVisible = false;
-            Install_Button_Click(null, null);
-        }
-    }
 
-    public void Refresh_Click(object? sender, RoutedEventArgs? e) {
-        var modpacks = ModpackService.ListInstalledModpacks();
-        Github.InvalidateCache();
+        //this.AttachedToVisualTree += (_, _) => {
+        //    if (DataContext is not MainViewModel mainVm)
+        //        return;
 
-        AddModpackButtons(modpacks);
-    }
+        //    if (mainVm.TopBarView is GlobalTopBarView topBar &&
+        //        topBar.DataContext is GlobalTopBarViewModel topBarVm) {
+        //        topBarVm.ShowCreateModpackDialog += async () => {
+        //            var window = this.GetVisualRoot() as Window;
+        //            var dialog = new CreateModpackWindow() {
+        //                DataContext = new CreateModpackViewModel()
+        //            };
+        //            return await dialog.ShowDialog<ModpackMetadata?>(window);
+        //        };
+        //    }
+        //};
+        this.AttachedToVisualTree += (_, _) => {
+            if (DataContext is not MainViewModel mainVm)
+                return;
 
-    public void Repair_Click(object? sender, RoutedEventArgs? e) {
-        RepairMenu repairMenu = new();
+            if (mainVm.TopBarViewModel is GlobalTopBarViewModel topBarVm) {
+                topBarVm.ShowCreateModpackDialog += async () => {
+                    var window = this.GetVisualRoot() as Window;
 
-        repairMenu.OnFinished += () => {
-            var modpacks = ModpackService.ListInstalledModpacks();
+                    // creez ViewModel
+                    var vm = new CreateModpackViewModel(mainVm.InstallPath);
 
-            AddModpackButtons(modpacks);
+                    // creez dialog
+                    var dialog = new CreateModpackWindow {
+                        DataContext = vm
+                    };
 
-            BodyContent.Content = null;
-            Sidebar.IsVisible = true;
-            TopBar.IsVisible = true;
+                    // wiring: când ViewModel vrea să se închidă
+                    vm.CloseRequested += result => {
+                        dialog.Close(result);
+                    };
+
+                    // afișez dialog și aștept rezultatul
+                    var metadata = await dialog.ShowDialog<ModpackMetadata?>(window);
+
+                    // 🔹 dacă user a creat efectiv un modpack, salvez
+                    if (metadata != null) {
+                        var messageBoxCustomParams = new MessageBoxStandardParams {
+                            ContentTitle = "Confirmare Creare Modpack",
+                            ContentMessage =    $"Because of development reasons before creating the modpack '{metadata.Name}'?\n\n" +
+                                                $"You need in the app {mainVm.InstallTarget} to create a modpack with:\n" +
+                                                $"The name: {metadata.Name}\n" +
+                                                $"The Minecraft version: {metadata.GameVersion}\n" +
+                                                $"The loader: {metadata.Loader}\n" +
+                                                $"The loader version: {metadata.LoaderVersion}",
+                            ButtonDefinitions = ButtonEnum.YesNo,
+                            Icon = Icon.Info,
+                            WindowStartupLocation = WindowStartupLocation.CenterOwner
+                        };
+
+                        var messageBox = MessageBoxManager.GetMessageBoxStandard(messageBoxCustomParams);
+                        var result = await messageBox.ShowWindowAsync();
+
+                        // 2. Dacă utilizatorul a ales "No", oprim execuția
+                        if (result == ButtonResult.No ||
+                            result == ButtonResult.Abort) {
+                            return null;
+                        }
+                        Debug.WriteLine(result);
+
+
+                        // instanță ModpackMedatataService cu path-ul principal
+                        var registry = new ModpackMedatataService(AppVariables.InstallerRoot);
+
+                        // creez / salvez metadata
+                        registry.Create(metadata);
+
+                        // 🔹 eventual: deschide modpack-ul în UI
+                        mainVm.OpenModpack(metadata);
+
+                        // 🔹 eventual: refresh listă modpack-uri în UI
+                        mainVm.RefreshModpackList();
+                    }
+
+                    return metadata;
+                };
+            }
         };
-
-        BodyContent.Content = repairMenu;
-    }
-
-    public void Install_Button_Click(object? sender, RoutedEventArgs? e) {
-        InstallMenu installModpackWindow = new();
-
-        // Te abonezi la evenimentul onModpackInstalled
-        installModpackWindow.OnModpackInstalled += InstallModpackWindow_ModpackInstalled;
-
-        // Înlocuiește conținutul din BodyContent cu InstallMenu
-        BodyContent.Content = installModpackWindow;
-    }
-
-    private void AddModpackButtons(List<ModpackService.ModpackInfo> modpacks) {
-        SidebarButtonPanel.Children.Clear();
-
-
-        foreach (var modpack in modpacks) {
-
-            var modpackButton = new Button {
-                Content = modpack.MineLoader.ModpackName
-            };
-
-            modpackButton.Classes.Add("modpack-button");
-
-            modpackButton.Click += (sender, e) =>
-            {
-                var detailsControl = new ModpackInfo(modpack);
-                BodyContent.Content = detailsControl;
-            };
-
-            SidebarButtonPanel.Children.Add(modpackButton);
-        }
-    }
-
-    private void InstallModpackWindow_ModpackInstalled(object? sender, EventArgs e) {
-        // După ce instalarea modpack-ului este completă, poți reîncărca lista de modpack-uri
-        var modpacks = ModpackService.ListInstalledModpacks();
-
-        // Actualizează butoanele din sidebar pentru a reflecta modpack-urile noi
-        AddModpackButtons(modpacks);
-
-        BodyContent.Content = null;
-        Sidebar.IsVisible = true;
-        TopBar.IsVisible = true;
     }
 }

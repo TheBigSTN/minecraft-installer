@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ModpackInstaller.Infrastructure;
 
 namespace ModpackInstaller.Services;
 public class WebService {
@@ -124,4 +125,24 @@ public class WebService {
             response?.Dispose();
         }
     }
+
+    public static async Task<T?> GetJson<T>(string url, Dictionary<string, string>? headers = null) {
+        // Apelăm metoda Get pe care o ai deja pentru a obține string-ul JSON
+        string json = await Get(url, headers);
+
+        if (string.IsNullOrEmpty(json)) {
+            return default;
+        }
+
+        try {
+            // Configurăm deserializarea să ignore diferențele de litere mari/mici (Case Insensitive)
+            // pentru că API-urile web nu respectă mereu stilul C# PascalCase
+            return JsonSerializer.Deserialize<T>(json, AppVariables.WebJsonOptions);
+        }
+        catch (JsonException ex) {
+            Console.WriteLine($"JSON Parse Error: {ex.Message}");
+            return default;
+        }
+    }
+
 }

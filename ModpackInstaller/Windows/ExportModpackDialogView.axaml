@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:ModpackInstaller.ViewModels"
+        mc:Ignorable="d"
+        d:DesignWidth="800"
+        d:DesignHeight="450"
+        x:Class="ModpackInstaller.Views.ExportModpackDialogView"
+        x:DataType="vm:ExportModpackDialogViewModel"
+        Width="350"
+        Height="280"
+        WindowStartupLocation="CenterOwner"
+        Title="Export Modpack">
+	<StackPanel Margin="20" Spacing="10">
+
+		<TextBlock Text="Choose export type:"
+				   FontSize="16"
+				   FontWeight="Bold"/>
+
+		<Button Content="Export as ZIP"
+				Command="{Binding ExportZipCommand}" />
+
+		<Button Content="Upload Public"
+				Command="{Binding ExportPublicCommand}"
+				ToolTip.Tip="This modpack is already published on the server."/>
+
+		<Button Content="Upload Unlisted"
+				Command="{Binding ExportUnlistedCommand}"
+				ToolTip.Tip="This modpack is already published on the server."/>
+
+		<Separator/>
+
+		<Button Content="Cancel"
+				Command="{Binding CancelCommand}" />
+
+	</StackPanel>
+
+</Window>

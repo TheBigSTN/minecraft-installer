@@ -1,4 +1,4 @@
-name: App Builder Win
+name: App Builder Win (Velopack)
 
 on:
   push:
@@ -6,43 +6,29 @@ on:
   pull_request:
     branches: [main, workflows]
 
+# Permisiuni necesare pentru ca Velopack să poată crea Release-uri
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
 
     env:
-      GitToken: ${{ secrets.TOKEN }}
       Project_Path: ModpackInstaller.Desktop/ModpackInstaller.Desktop.csproj
-      Wix_Project_Path: MSIPackage/MSIPackage.wixproj
-      Wix_Output: MSIPackage/bin/Release/en-US/MSIPackage.msi
-      Wix_RenameTo: ModpackInstaller.Desktop_Installer.msi
-      Wix_Rename: MSIPackage/bin/Release/en-US/ModpackInstaller.Desktop_Installer.msi
+      # ID-ul unic al aplicației tale (folosit pentru calea de instalare)
+      App_Id: ModpackInstaller
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Important pentru Velopack să vadă tag-urile
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
-
-      - name: Add WiX 3.14 to PATH
-        shell: pwsh
-        run: |
-          $w = 'C:\Program Files (x86)\WiX Toolset v3.14\bin'
-          if (Test-Path $w) { $env:PATH += ";$w" }
-          else { Write-Error "WiX not found at $w"; exit 1 }
-
-      - name: Restore .NET project
-        run: dotnet restore
-
-      - name: Publish application
-        shell: pwsh
-        run: dotnet publish ${{ env.Project_Path }} `
-          -c Release  `
-          -r win-x64  `
-          /p:AppGitToken=${{ env.GitToken }}
 
       - name: Get Project Version
         id: get_version
@@ -52,23 +38,40 @@ jobs:
           $v = $proj.Project.PropertyGroup.Version
           echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
 
-      - name: Build MSI
-        run: dotnet build ${{ env.Wix_Project_Path }} -c Release -p:DefineConstants="ProductVersion=${{ steps.get_version.outputs.PROJECT_VERSION }}"
+      - name: Publish application
+        run: |
+          dotnet publish ${{ env.Project_Path }} `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -o ./publish
 
-      - name: Rename MSI file
+      - name: Create & Upload Velopack Release
         shell: pwsh
-        run: Rename-Item -Path ${{ env.Wix_Output }} -NewName ${{ env.Wix_RenameTo }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. Instalare tool Velopack
+          dotnet tool install -g vpk
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.get_version.outputs.PROJECT_VERSION }}
-          name: Release v${{ steps.get_version.outputs.PROJECT_VERSION }}
-          draft: false
-          prerelease:
-            ${{ contains(steps.get_version.outputs.PROJECT_VERSION, '-beta') ||
-            contains(steps.get_version.outputs.PROJECT_VERSION, '-alpha') ||
-            contains(steps.get_version.outputs.PROJECT_VERSION, '-rc') }}
-          files: ${{ env.Wix_Rename }}
-          body: |
-            Download the latest verision of the app by installing the macOs version or the win 64 version.
+          # 2. Descarcă release-ul anterior pentru a genera "Delta Updates" (update-uri mici)
+          # Dacă e primul release, comanda va ignora eroarea sau va descărca ce găsește
+          vpk download github --repoUrl https://github.com/${{ github.repository }}
+
+          # 3. Impachetează aplicația
+          # -u: ID-ul aplicației
+          # -v: Versiunea extrasă din csproj
+          # -p: Folderul unde am făcut publish mai sus
+          # -e: Numele executabilului principal
+          vpk pack -u ${{ env.App_Id }} `
+                   -v ${{ steps.get_version.outputs.PROJECT_VERSION }} `
+                   -p ./publish `
+                   -e ModpackInstaller.Desktop.exe
+
+          # 4. Upload pe GitHub Releases
+          # --publish: Face release-ul public imediat
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} `
+                            --publish `
+                            --releaseName "Release v${{ steps.get_version.outputs.PROJECT_VERSION }}" `
+                            --tag v${{ steps.get_version.outputs.PROJECT_VERSION }} `
+                            --token ${{ secrets.GITHUB_TOKEN }}

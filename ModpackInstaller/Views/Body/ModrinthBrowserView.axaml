@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:ModpackInstaller.Models"
+			 xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Body"
+			 xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             x:Class="ModpackInstaller.Views.Body.ModrinthBrowserView"
+             x:DataType="vm:ModrinthBrowserViewModel">
+
+
+
+	<ListBox 
+		Name="ModsList"
+		ItemsSource="{Binding Mods}"
+		ScrollViewer.ScrollChanged="ListBox_ScrollChanged">
+		<ListBox.ItemTemplate>
+			<DataTemplate x:DataType="models:Modrinth.ModrinthProject">
+				<Grid Margin="10">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*" />
+						<!-- icon + text -->
+						<ColumnDefinition Width="Auto" />
+						<!-- buton -->
+					</Grid.ColumnDefinitions>
+
+					<!-- ICON + TEXT -->
+					<StackPanel Orientation="Horizontal" Spacing="10">
+						<Image Width="48"
+							   Height="48"
+							   Stretch="UniformToFill"
+							   asyncImageLoader:ImageLoader.Source="{Binding IconURL}" />
+
+						<StackPanel Spacing="4">
+							<TextBlock Text="{Binding Title}" FontWeight="Bold"/>
+							<TextBlock Text="{Binding Description}"
+									   FontSize="12"
+									   Foreground="#AAA"
+									   TextWrapping="Wrap"/>
+						</StackPanel>
+					</StackPanel>
+
+					<!-- BUTON ADD -->
+					<Button Grid.Column="1"
+							Content="Install"
+							x:CompileBindings="False"
+							Command="{Binding DataContext.AddModCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+							CommandParameter="{Binding}" />
+				</Grid>
+			</DataTemplate>
+		</ListBox.ItemTemplate>
+	</ListBox>
+
+
+</UserControl>

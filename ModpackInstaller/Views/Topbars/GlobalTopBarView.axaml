@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Topbars"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ModpackInstaller.Views.Topbars.GlobalTopBarView"
+             x:DataType="vm:GlobalTopBarViewModel">
+	<Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
+		<StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+			<Button Content="+ Create Modpack"
+                    Classes="topbar"
+                    Command="{Binding CreateModpack}"/>
+			<ComboBox Width="160"
+                      ItemsSource="{Binding InstallTargets}"
+                      SelectedItem="{Binding SelectedInstallTarget}"
+                      HorizontalContentAlignment="Center"/>
+			<Button Content="Settings"
+                    Classes="topbar"
+                    Command="{Binding OpenSettings}"/>
+		</StackPanel>
+	</Grid>
+</UserControl>

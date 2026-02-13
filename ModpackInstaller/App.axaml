@@ -1,37 +1,90 @@
 <Application xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="ModpackInstaller.App"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:viewsTopbars="clr-namespace:ModpackInstaller.Views.Topbars"
+			 xmlns:viewsSidebars="clr-namespace:ModpackInstaller.Views.Sidebars"
+			 xmlns:viewsBody="clr-namespace:ModpackInstaller.Views.Body"
+			 xmlns:vmTopbars="clr-namespace:ModpackInstaller.ViewModels.Topbars"
+			 xmlns:vmSidebars="clr-namespace:ModpackInstaller.ViewModels.Sidebars"
+			 xmlns:vmBody="clr-namespace:ModpackInstaller.ViewModels.Body"
+			 xmlns:converters="clr-namespace:ModpackInstaller.Converters"
+			 x:Class="ModpackInstaller.App"
+			 RequestedThemeVariant="Dark">
 
 	<Application.Styles>
+		<!-- Tema Fluent -->
 		<FluentTheme/>
 
-		<!-- Stil general pentru Button -->
-		<Style Selector="Button">
-			<!--<Setter Property="Background" Value="#FF2D2D30"/>
+		<!-- Stiluri generale pentru butoane -->
+		<Style Selector="Button.nav">
+			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="Foreground" Value="White"/>
-			<Setter Property="BorderBrush" Value="Transparent"/> -->
-			<Setter Property="Padding" Value="10"/>
-			<Setter Property="FontSize" Value="14"/>
-			<Setter Property="FontWeight" Value="Bold"/>
-			<Setter Property="HorizontalAlignment" Value="Stretch"/>
-			<Setter Property="VerticalAlignment" Value="Center"/>
-			<Setter Property="Height" Value="40"/>
+			<Setter Property="Padding" Value="12"/>
+			<Setter Property="CornerRadius" Value="8"/>
+			<Setter Property="HorizontalContentAlignment" Value="Left"/>
+		</Style>
+
+		<Style Selector="Button.nav:pointerover">
+			<Setter Property="Background" Value="#2A2A2A"/>
+		</Style>
+
+		<Style Selector="Button.primary">
+			<Setter Property="Background" Value="#4F8CFF"/>
+			<Setter Property="Foreground" Value="White"/>
 			<Setter Property="CornerRadius" Value="10"/>
-			<Setter Property="HorizontalContentAlignment" Value="Center"/>
-			<Setter Property="VerticalContentAlignment" Value="Center"/>
+			<Setter Property="Padding" Value="10,6"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
 		</Style>
 
-		<!-- Stil pentru hover -->
-		<Style Selector="Button:pointerover">
-			<Setter Property="Background" Value="#444"/>
+		<Style Selector="Button.primary:pointerover">
+			<Setter Property="Background" Value="#6AA1FF"/>
 		</Style>
 
-		<!-- Stil pentru apăsat -->
-		<Style Selector="Button:pressed">
-			<Setter Property="Background" Value="#222"/>
+		<Style Selector="Button.ghost">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Foreground" Value="#AAAAAA"/>
+		</Style>
+
+		<!-- ScrollViewer modern -->
+		<Style Selector="ScrollViewer">
+			<Setter Property="Background" Value="#1E1E1E"/>
+		</Style>
+
+		<Style Selector="Button.topbar">
+			<Setter Property="Background" Value="#4F8CFF"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="Padding" Value="10,6"/>
+			<Setter Property="CornerRadius" Value="6"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="HorizontalAlignment" Value="Center"/>
+		</Style>
+
+		<Style Selector="Button.topbar:pointerover">
+			<Setter Property="Background" Value="#3A70D1"/>
 		</Style>
 	</Application.Styles>
-	
+
+	<Application.DataTemplates>
+		<DataTemplate DataType="vmTopbars:GlobalTopBarViewModel">
+			<viewsTopbars:GlobalTopBarView />
+		</DataTemplate>
+		<DataTemplate DataType="vmTopbars:ModpackTopBarViewModel">
+			<viewsTopbars:ModpackTopBarView />
+		</DataTemplate>
+		<DataTemplate DataType="vmSidebars:ModpackListViewModel">
+			<viewsSidebars:ModpackListView />
+		</DataTemplate>
+		<DataTemplate DataType="vmSidebars:ModListViewModel">
+			<viewsSidebars:ModListView />
+		</DataTemplate>
+		<DataTemplate DataType="vmBody:ModpackInfoViewModel">
+			<viewsBody:ModpackInfoView />
+		</DataTemplate>
+		<DataTemplate DataType="vmBody:ModrinthBrowserViewModel">
+			<viewsBody:ModrinthBrowserView />
+		</DataTemplate>
+	</Application.DataTemplates>
+
+	<Application.Resources>
+		<converters:NegateBoolConverter x:Key="NegateBool"/>
+	</Application.Resources>
 </Application>

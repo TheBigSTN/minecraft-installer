@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Body"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:Class="ModpackInstaller.Views.Body.ModpackInfoView"
+			 x:DataType="vm:ModpackInfoViewModel">
+	<Grid>
+		<!-- Mesaj când NU e selectat modpack -->
+		<TextBlock
+			Text="Select a modpack"
+			IsVisible="{Binding HasModpack, Converter={StaticResource NegateBool}}"
+			VerticalAlignment="Center"
+			HorizontalAlignment="Center"
+			FontSize="18"
+			FontWeight="SemiBold"
+			Opacity="0.6"/>
+
+		<!-- Informații modpack -->
+		<StackPanel
+			Spacing="12"
+			Margin="20"
+			IsVisible="{Binding HasModpack}">
+
+			<!-- Header -->
+			<TextBlock
+				Text="{Binding Modpack.Name}"
+				FontSize="22"
+				FontWeight="Bold"/>
+
+			<!-- Info detaliu -->
+			<StackPanel Spacing="4">
+				<TextBlock Text="Minecraft:" FontWeight="SemiBold"/>
+				<TextBlock Text="{Binding Modpack.GameVersion}"/>
+
+				<TextBlock Text="Loader:" FontWeight="SemiBold"/>
+				<TextBlock Text="{Binding Modpack.Loader}"/>
+
+				<TextBlock Text="Loader version:" FontWeight="SemiBold"/>
+				<TextBlock Text="{Binding Modpack.LoaderVersion}"/>
+
+				<TextBlock Text="Install path:" FontWeight="SemiBold"/>
+				<TextBlock
+					Text="{Binding Modpack.InstallPath}"
+					TextWrapping="Wrap"/>
+			</StackPanel>
+
+			<!-- Butoane -->
+			<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+				<Button
+					Content="Publish new update"
+					Command="{Binding PBUpdateModpackCommand}"
+					Width="80"/>
+				<!--
+				<Button
+					Content="Update"
+					Command="{Binding EditModpackCommand}"
+					Width="80"/>
+				-->
+				<Button
+					Content="Edit"
+					Command="{Binding EditModpackCommand}"
+					Width="80"/>
+				<Button
+					Content="Export"
+					Command="{Binding ExportModpackCommand}"
+					Width="80"/>
+				<Button
+					Content="Delete"
+					Command="{Binding DeleteModpackCommand}"
+					Width="80"
+					Background="Red"
+					Foreground="White"/>
+			</StackPanel>
+		</StackPanel>
+	</Grid>
+
+</UserControl>

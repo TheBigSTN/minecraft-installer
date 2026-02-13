@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Sidebars"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ModpackInstaller.Views.Sidebars.ModListView"
+			 x:DataType="vm:ModListViewModel">
+	<ListBox ItemsSource="{Binding Mods}">
+		<ListBox.ItemTemplate>
+			<DataTemplate>
+				<CheckBox Content="{Binding Title}"
+						  IsChecked="{Binding Enabled}">
+					<CheckBox.ContextMenu>
+						<ContextMenu>
+							<MenuItem Header="Șterge Mod"
+									  Command="{Binding $parent[ListBox].DataContext.DeleteModCommand}"
+									  CommandParameter="{Binding}" />
+						</ContextMenu>
+					</CheckBox.ContextMenu>
+				</CheckBox>
+			</DataTemplate>
+		</ListBox.ItemTemplate>
+	</ListBox>
+</UserControl>

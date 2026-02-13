@@ -13,6 +13,8 @@ using Avalonia.ReactiveUI;
 using Avalonia.Threading;
 using ModpackInstaller.Services;
 using System.Reflection;
+using ModpackInstaller.Infrastructure;
+using Velopack;
 namespace ModpackInstaller.Desktop;
 
 class Program
@@ -21,15 +23,10 @@ class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static async Task<int> Main(string[] args) {
+    public static int Main(string[] args) {
 
-        if (args.Length > 0 && args[0] == "--update") {
-
-            await RunAutoUpdateLogic();
-
-            LaunchTLauncher();
-            return 0;
-        }
+        // Velopack is important if it's not this important it either doesn't work or the process gets killed after 30s or so
+        VelopackApp.Build().Run();
 
         try {
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
@@ -38,7 +35,7 @@ class Program
             try {
                 // === Setup folder ===
                 string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string logFolder = Path.Combine(appData, "ModpackInfo Installer", "logs");
+                string logFolder = Path.Combine(AppVariables.InstallerRoot, "crash_reports");
                 Directory.CreateDirectory(logFolder);
 
                 // === Generate unique filename ===
@@ -78,53 +75,6 @@ class Program
         }
 
         return 0;
-    }
-
-    static async Task RunAutoUpdateLogic() {
-        List<ModpackService.ModpackInfo> installedModpacks = ModpackService.ListInstalledModpacks();
-
-        var updateTasks = installedModpacks
-            .Where(mp => mp.MineLoader.AutoUpdate)
-            .Select(mp => ModpackUpdater.Update(mp.MineLoader.ModpackName));
-        await Task.WhenAll(updateTasks);
-    }
-
-    static void LaunchTLauncher() {
-        string tlauncherPath = GetTLauncherPath();
-
-        if (!File.Exists(tlauncherPath)) {
-            Console.WriteLine($"TLauncher nu a fost găsit la: {tlauncherPath}");
-            return;
-        }
-
-        try {
-            Process.Start(new ProcessStartInfo {
-                FileName = tlauncherPath,
-                UseShellExecute = true // pentru macOS și Windows
-            });
-
-            Console.WriteLine("TLauncher pornit.");
-        }
-        catch (Exception ex) {
-            Console.WriteLine($"Eroare la pornirea TLauncher: {ex.Message}");
-        }
-    }
-
-    static string GetTLauncherPath() {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            return Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                ".minecraft",
-                "TLauncher.exe"
-            );
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            return "/Applications/TLauncher.app"; // sau caută în alt path
-        }
-        else // Linux
-        {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".tlauncher", "TLauncher.sh");
-        }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
