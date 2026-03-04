@@ -17,67 +17,40 @@ using ModpackInstaller.Infrastructure;
 using Velopack;
 namespace ModpackInstaller.Desktop;
 
-class Program
-{
-    // Initialization code. Don't use any Avalonia, third-party APIs or any
-    // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
-    // yet and stuff might break.
+class Program {
     [STAThread]
     public static int Main(string[] args) {
+        // Global crash hooks FIRST
+        AppDomain.CurrentDomain.UnhandledException += (s, e) => {
+            CrashReporter.Log(e.ExceptionObject as Exception, "AppDomain");
+        };
 
-        // Velopack is important if it's not this important it either doesn't work or the process gets killed after 30s or so
-        VelopackApp.Build().Run();
+        TaskScheduler.UnobservedTaskException += (s, e) => {
+            CrashReporter.Log(e.Exception, "TaskScheduler");
+            e.SetObserved();
+        };
 
         try {
-            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            VelopackApp.Build().Run();
         }
         catch (Exception ex) {
-            try {
-                // === Setup folder ===
-                string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string logFolder = Path.Combine(AppVariables.InstallerRoot, "crash_reports");
-                Directory.CreateDirectory(logFolder);
-
-                // === Generate unique filename ===
-                string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-                string logFileName = $"crash-{timestamp}.log";
-                string logPath = Path.Combine(logFolder, logFileName);
-
-                // === Get extra info ===
-                string appVersion = Assembly.GetExecutingAssembly()
-                                            .GetName()
-                                            .Version?.ToString() ?? "unknown";
-                string dotnetVersion = Environment.Version.ToString();
-                string os = Environment.OSVersion.ToString();
-                string arch = RuntimeInformation.OSArchitecture.ToString();
-                string processArch = RuntimeInformation.ProcessArchitecture.ToString();
-
-                // === Build crash report ===
-                string report = $"""
-                    ========== ModpackInfo Installer Crash Report ==========
-                    Timestamp     : {DateTime.Now}
-                    App Version   : {appVersion}
-                    .NET Version  : {dotnetVersion}
-                    OS            : {os} ({arch})
-                    Process Arch  : {processArch}
-                    ====================================================
-
-                    Exception:
-                    {ex}
-
-                    ====================================================
-                """;
-
-                // === Save log ===
-                File.WriteAllText(logPath, report);
-            }
-            catch { }
+            CrashReporter.Log(ex, "Velopack");
+            return -1;
         }
 
-        return 0;
+        try {
+            BuildAvaloniaApp()
+                .StartWithClassicDesktopLifetime(args);
+
+            return 0;
+        }
+        catch (Exception ex) {
+            CrashReporter.Log(ex, "Main");
+
+            return -1;
+        }
     }
 
-    // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()

@@ -3,11 +3,12 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Body"
-			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 mc:Ignorable="d"
 			 x:Class="ModpackInstaller.Views.Body.ModpackInfoView"
 			 x:DataType="vm:ModpackInfoViewModel">
+
 	<Grid>
-		<!-- Mesaj când NU e selectat modpack -->
+
 		<TextBlock
 			Text="Select a modpack"
 			IsVisible="{Binding HasModpack, Converter={StaticResource NegateBool}}"
@@ -15,65 +16,155 @@
 			HorizontalAlignment="Center"
 			FontSize="18"
 			FontWeight="SemiBold"
-			Opacity="0.6"/>
+			Opacity="0.5"/>
 
-		<!-- Informații modpack -->
-		<StackPanel
-			Spacing="12"
+		<Border
+			IsVisible="{Binding HasModpack}"
 			Margin="20"
-			IsVisible="{Binding HasModpack}">
+			Padding="24"
+			CornerRadius="14"
+			Background="#1E1E1E"
+			BorderBrush="#2E2E2E"
+			BorderThickness="1">
 
-			<!-- Header -->
-			<TextBlock
-				Text="{Binding Modpack.Name}"
-				FontSize="22"
-				FontWeight="Bold"/>
+			<StackPanel Spacing="22">
 
-			<!-- Info detaliu -->
-			<StackPanel Spacing="4">
-				<TextBlock Text="Minecraft:" FontWeight="SemiBold"/>
-				<TextBlock Text="{Binding Modpack.GameVersion}"/>
+				<!-- HEADER -->
+				<StackPanel Spacing="6">
 
-				<TextBlock Text="Loader:" FontWeight="SemiBold"/>
-				<TextBlock Text="{Binding Modpack.Loader}"/>
+					<TextBlock
+						Text="{Binding Modpack.Name}"
+						FontSize="26"
+						FontWeight="Bold"/>
 
-				<TextBlock Text="Loader version:" FontWeight="SemiBold"/>
-				<TextBlock Text="{Binding Modpack.LoaderVersion}"/>
+					<!-- Version + Badge -->
+					<StackPanel Orientation="Horizontal" Spacing="10">
 
-				<TextBlock Text="Install path:" FontWeight="SemiBold"/>
-				<TextBlock
-					Text="{Binding Modpack.InstallPath}"
-					TextWrapping="Wrap"/>
+						<TextBlock FontSize="14">
+							<Run Text="v"/>
+							<Run Text="{Binding Modpack.Version}"/>
+						</TextBlock>
+
+						<!-- Latest badge -->
+						<Border
+							CornerRadius="6"
+							Padding="6,2"
+							Background="#1F7A1F"
+							IsVisible="{Binding HasUpdate, Converter={StaticResource NegateBool}}">
+							<TextBlock Text="LATEST"
+									   FontSize="11"
+									   FontWeight="SemiBold"
+									   Foreground="White"/>
+						</Border>
+
+						<!-- Update available badge -->
+						<Border
+							CornerRadius="6"
+							Padding="6,2"
+							Background="#B8860B"
+							IsVisible="{Binding HasUpdate}">
+							<TextBlock Text="UPDATE AVAILABLE"
+									   FontSize="11"
+									   FontWeight="SemiBold"
+									   Foreground="White"/>
+						</Border>
+
+					</StackPanel>
+
+					<!-- Author + Source row -->
+					<StackPanel Orientation="Horizontal" Spacing="20">
+
+						<TextBlock>
+							<Run Text="Author: " FontWeight="SemiBold"/>
+							<Run Text="{Binding Modpack.Author}"/>
+						</TextBlock>
+
+						<TextBlock>
+							<Run Text="Source: " FontWeight="SemiBold"/>
+							<Run Text="{Binding Modpack.Source}"/>
+						</TextBlock>
+
+					</StackPanel>
+
+				</StackPanel>
+
+				<!-- DESCRIPTION -->
+				<Border
+					Padding="14"
+					CornerRadius="10"
+					Background="#252525"
+					IsVisible="{Binding Modpack.Description, Converter={StaticResource StringNotEmpty}}">
+					<TextBlock
+						Text="{Binding Modpack.Description}"
+						TextWrapping="Wrap"
+						Opacity="0.9"/>
+				</Border>
+
+				<!-- DETAILS -->
+				<Grid ColumnDefinitions="Auto,*"
+					  RowDefinitions="Auto,Auto,Auto"
+					  ColumnSpacing="14"
+					  RowSpacing="10">
+
+					<TextBlock Grid.Row="0" Grid.Column="0"
+							   Text="Minecraft"
+							   Opacity="0.6"/>
+
+					<TextBlock Grid.Row="0" Grid.Column="1"
+							   Text="{Binding Modpack.GameVersion}"/>
+
+					<TextBlock Grid.Row="1" Grid.Column="0"
+							   Text="Loader"
+							   Opacity="0.6"/>
+
+					<TextBlock Grid.Row="1" Grid.Column="1">
+						<Run Text="{Binding Modpack.Loader}"/>
+						<Run Text=" "/>
+						<Run Text="{Binding Modpack.LoaderVersion}"/>
+					</TextBlock>
+
+					<TextBlock Grid.Row="2" Grid.Column="0"
+							   Text="Install Path"
+							   Opacity="0.6"/>
+
+					<TextBlock Grid.Row="2" Grid.Column="1"
+							   Text="{Binding Modpack.InstallPath}"
+							   TextWrapping="Wrap"/>
+
+				</Grid>
+
+				<!-- ACTIONS -->
+				<StackPanel Orientation="Horizontal"
+							HorizontalAlignment="Right"
+							Spacing="12">
+
+					<Button
+						Content="Update"
+						Command="{Binding UpdateModpackCommand}"
+						IsVisible="{Binding HasUpdate}"
+						Classes="Accent"/>
+
+					<Button
+						Content="Publish update"
+						Command="{Binding PBUpdateModpackCommand}"/>
+
+					<Button
+						Content="Edit"
+						Command="{Binding EditModpackCommand}"/>
+
+					<Button
+						Content="Export"
+						Command="{Binding ExportModpackCommand}"/>
+
+					<Button
+						Content="Delete"
+						Command="{Binding DeleteModpackCommand}"
+						Background="#C42B1C"
+						Foreground="White"/>
+
+				</StackPanel>
+
 			</StackPanel>
-
-			<!-- Butoane -->
-			<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
-				<Button
-					Content="Publish new update"
-					Command="{Binding PBUpdateModpackCommand}"
-					Width="80"/>
-				<!--
-				<Button
-					Content="Update"
-					Command="{Binding EditModpackCommand}"
-					Width="80"/>
-				-->
-				<Button
-					Content="Edit"
-					Command="{Binding EditModpackCommand}"
-					Width="80"/>
-				<Button
-					Content="Export"
-					Command="{Binding ExportModpackCommand}"
-					Width="80"/>
-				<Button
-					Content="Delete"
-					Command="{Binding DeleteModpackCommand}"
-					Width="80"
-					Background="Red"
-					Foreground="White"/>
-			</StackPanel>
-		</StackPanel>
+		</Border>
 	</Grid>
-
 </UserControl>

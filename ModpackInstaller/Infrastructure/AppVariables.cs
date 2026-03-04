@@ -36,9 +36,14 @@ public static class AppVariables {
             new JsonStringEnumConverter()
         }
     };
-//#if DEBUG
-//    public static string AppApiBaseUrl { get; } = "http://localhost:8080";
-//#else
-    public static string AppApiBaseUrl { get; } = "https://minte.go.ro:5005";
-//#endif
+
+    public static string AppApiBaseUrl {
+        get {
+#if DEBUG
+        return "http://192.168.0.189:8080";
+#else
+        return "https://minte.go.ro:5005/modpack-service";
+#endif
+        }
+    }
 }

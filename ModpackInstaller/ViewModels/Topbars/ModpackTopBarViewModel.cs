@@ -24,7 +24,7 @@ public class ModpackTopBarViewModel : ViewModelBase {
 
         GoBackCommand = ReactiveCommand.Create(() => {
             // Aici setezi body-ul la lista de modpack-uri
-            _main.ShowGlobal();
+            _main.ShowGlobal(_main.SelectedModpack);
         });
     }
 }

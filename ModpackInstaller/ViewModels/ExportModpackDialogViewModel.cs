@@ -25,8 +25,10 @@ public class ExportModpackDialogViewModel : ViewModelBase {
 
     public ExportModpackDialogViewModel(ModpackMetadata modpack) {
         _localModpack = modpack;
-
-        var canPublish = Observable.Return(string.IsNullOrEmpty(_localModpack.ModpackPassword));
+        
+        var canPublish = Observable.Return(!(
+            !string.IsNullOrEmpty(_localModpack.ModpackPassword) ||
+            _localModpack.Source == ModpackSource.Remote));
 
         ExportZipCommand = ReactiveCommand.Create(() =>
             Close(ModpackExportMode.LocalZip));

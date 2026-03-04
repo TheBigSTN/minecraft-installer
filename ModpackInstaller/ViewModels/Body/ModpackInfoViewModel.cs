@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ModpackInstaller.Infrastructure;
 using ModpackInstaller.Models;
+using ModpackInstaller.Services;
 using ModpackInstaller.Services.Modpack;
 using ReactiveUI;
 
@@ -35,7 +36,15 @@ public class ModpackInfoViewModel : ViewModelBase {
 	public ReactiveCommand<Unit, Unit> ExportModpackCommand { get; }
 	public ReactiveCommand<Unit, Unit> DeleteModpackCommand { get; }
 
-	public ModpackInfoViewModel(ModpackMetadata? modpack, MainViewModel main) {
+    private bool _hasUpdate;
+    public bool HasUpdate {
+        get => _hasUpdate;
+        set => this.RaiseAndSetIfChanged(ref _hasUpdate, value);
+    }
+
+    public ReactiveCommand<Unit, Unit> UpdateModpackCommand { get; }
+
+    public ModpackInfoViewModel(ModpackMetadata? modpack, MainViewModel main) {
 		Modpack = modpack!;
 		_main = main;
 
@@ -43,6 +52,28 @@ public class ModpackInfoViewModel : ViewModelBase {
             x => x.Modpack,
             (ModpackMetadata? mp) => mp != null && !string.IsNullOrEmpty(mp.ModpackPassword)
         );
+
+        _ = CheckForUpdateAsync();
+
+        UpdateModpackCommand = ReactiveCommand.CreateFromTask(async () =>
+        {
+            if (Modpack == null) return;
+
+            try {
+                await ModpackInstallService.UpdateModpack(Modpack);
+
+                _medatataService.Save(Modpack);
+
+                HasUpdate = false;
+
+                _main.RefreshModpackList();
+
+                Console.WriteLine("Modpack updated successfully.");
+            }
+            catch (Exception ex) {
+                Console.WriteLine($"Update error: {ex.Message}");
+            }
+        });
 
         PBUpdateModpackCommand = ReactiveCommand.CreateFromTask(async () => {
             try {
@@ -55,13 +86,12 @@ public class ModpackInfoViewModel : ViewModelBase {
                 // 2. Incrementăm versiunea locală pentru noul fișier
                 Modpack.Version++;
 
-                _medatataService.Save(Modpack);
-
                 // 3. Urcăm noul ZIP pentru noua versiune
                 await publicizeService.UploadNewVersionAsync();
 
+                _medatataService.Save(Modpack);
                 // 4. Salvăm modificările (noua versiune) local pe disc
-                // ModpackMetadataService.Save(Modpack);
+                //ModpackMetadataService.Save(Modpack);
 
                 Console.WriteLine("Update realizat cu succes!");
             }
@@ -128,6 +158,23 @@ public class ModpackInfoViewModel : ViewModelBase {
 		});
 	}
 
-	// helperi pt UI (opțional, dar util)
-	public bool HasModpack => Modpack != null;
+    public async Task CheckForUpdateAsync() {
+        if (Modpack == null)
+            return;
+
+        try {
+            var serverInfo = await ModpackApiService.GetMetadataAsync(Modpack.Id, Modpack.SharingCode);
+
+            if (serverInfo == null)
+                return;
+
+            HasUpdate = serverInfo.LatestVersion > Modpack.Version;
+        }
+        catch (Exception e) {
+            HasUpdate = false;
+        }
+    }
+
+    // used in xaml do not delete
+    public bool HasModpack => Modpack != null;
 }

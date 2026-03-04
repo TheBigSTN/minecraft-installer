@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:models="clr-namespace:ModpackInstaller.Models"
+             xmlns:models="clr-namespace:ModpackInstaller.Models.DTOs"
              xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Body"
              x:Class="ModpackInstaller.Views.Body.ModpackDiscoveryView"
              x:DataType="vm:ModpackDiscoveryViewModel">
@@ -13,7 +13,7 @@
 
 		<ListBox Grid.Row="1" ItemsSource="{Binding DiscoveryModpacks}">
 			<ListBox.ItemTemplate>
-				<DataTemplate x:DataType="models:ModpackMetadata">
+				<DataTemplate x:DataType="models:PublicModpackRequestResponse">
 					<Grid Margin="10">
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="*" />
@@ -22,7 +22,7 @@
 
 						<StackPanel Spacing="5">
 							<StackPanel Orientation="Horizontal" Spacing="10">
-								<TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="LightBlue"/>
+								<TextBlock Text="{Binding ModpackName}" FontSize="16" FontWeight="Bold" Foreground="LightBlue"/>
 								<Border Background="#444" CornerRadius="4" Padding="4,2">
 									<TextBlock Text="{Binding GameVersion}" FontSize="10"/>
 								</Border>
@@ -35,7 +35,7 @@
                                        MaxLines="2"/>
 
 							<StackPanel Orientation="Horizontal" Spacing="15">
-								<TextBlock Text="{Binding Author, StringFormat='By: {0}'}" FontSize="11" Foreground="#888"/>
+								<TextBlock Text="{Binding AuthorName, StringFormat='By: {0}'}" FontSize="11" Foreground="#888"/>
 								<TextBlock Text="{Binding Loader, StringFormat='Type: {0}'}" FontSize="11" Foreground="#888"/>
 							</StackPanel>
 						</StackPanel>

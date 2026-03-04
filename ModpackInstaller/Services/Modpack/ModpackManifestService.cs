@@ -20,9 +20,9 @@ public class ModpackManifestService {
 
     public ModpackManifest Manifest { get; private set; }
 
-    public ModpackManifestService(string installPath) {
-        _installPath = installPath;
-        _manifestPath = Path.Combine(installPath, "manifest.json");
+    public ModpackManifestService(string modpackInstallPath) {
+        _installPath = modpackInstallPath;
+        _manifestPath = Path.Combine(modpackInstallPath, "manifest.json");
         Manifest = Load();
     }
 
@@ -58,6 +58,15 @@ public class ModpackManifestService {
         }
     }
 
+    public static void Save(ModpackManifest modpackManifest, string manifestPath) {
+        // Ne asigurăm că folderul există înainte de scriere
+        var directory = Path.GetDirectoryName(manifestPath);
+        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+
+        var json = JsonSerializer.Serialize(modpackManifest, AppVariables.DefaultJsonOptions);
+        File.WriteAllText(manifestPath, json);
+    }
+
     public void Save() {
         // Ne asigurăm că folderul există înainte de scriere
         var directory = Path.GetDirectoryName(_manifestPath);
@@ -67,13 +76,58 @@ public class ModpackManifestService {
         File.WriteAllText(_manifestPath, json);
     }
 
-    public InstalledModInfo AddMod(ModrinthProject project, ModrinthVersion version) {
+    public void ParseAllMods(Action<InstalledModInfo> action) {
+        foreach (InstalledModInfo modInfo in Manifest.InstalledMods) {
+            action.Invoke(modInfo);
+        }
+        Save();
+    }
+
+
+
+    public bool AddOrUpdateMod(InstalledModInfo modInfo, bool modpackInstall) {
+        var existing = Manifest.InstalledMods
+            .FirstOrDefault(m => m.ProjectId == modInfo.ProjectId);
+
+        if (existing == null) {
+            if (modpackInstall)
+                modInfo.Source = ModSource.Remote;
+
+            Manifest.InstalledMods.Add(modInfo);
+            Save();
+            return true; // added
+        }
+
+        if (existing.VersionId == modInfo.VersionId) {
+            return false; // same version, nothing changed
+        }
+
+        // Different version → update
+        RemoveMod(existing.ProjectId);
+
+        if (modpackInstall)
+            modInfo.Source = ModSource.Remote;
+
+        Manifest.InstalledMods.Add(modInfo);
+
+        Save();
+        return true; // updated
+    }
+
+    public void AddMod(InstalledModInfo installedModInfo, bool modpackInstall) {
+        if (modpackInstall) installedModInfo.Source = ModSource.Remote;
+        Manifest.InstalledMods.Add(installedModInfo);
+        Save();
+    }
+
+    public InstalledModInfo? AddMod(ModrinthProject project, ModrinthVersion version) {
         // Verificăm dacă există deja în lista de tip InstalledModInfo
         if (Manifest.InstalledMods.Any(m => m.ProjectId == project.Id))
             return null;
 
         var file = version.PrimaryFile;
-        if (file == null) return null;
+        if (file == null && version.Files.FirstOrDefault() == null) return null;
+        else file ??= version.Files.FirstOrDefault();
 
         // AICI: Creăm obiectul nou pentru listă
         var newItem = new InstalledModInfo {
@@ -82,7 +136,7 @@ public class ModpackManifestService {
             Title = project.Title,
             Filename = file.Filename,
             DownloadUrl = file.Url,
-            IconUrl = project.IconURL // Verifică dacă e IconURL sau IconUrl în clasa ta
+            IconUrl = project.IconURL
         };
 
         Manifest.InstalledMods.Add(newItem);
@@ -115,24 +169,58 @@ public class ModpackManifestService {
         }
     }
 
-    public async Task DownloadModAsync(InstalledModInfo modInfo, string installPath) {
+    public bool IsModInstalled(InstalledModInfo modInfo) {
+        var state = GetModInstallState(modInfo);
+        return state == ModInstallState.InstalledSameVersion
+            || state == ModInstallState.InstalledDifferentVersion;
+    }
+
+    public bool IsModInstalledDiferentVersion(InstalledModInfo modInfo) {
+        return GetModInstallState(modInfo) == ModInstallState.InstalledDifferentVersion;
+    }
+
+    public bool IsModInstalledSameVersion(InstalledModInfo modInfo) {
+        return GetModInstallState(modInfo) == ModInstallState.InstalledSameVersion;
+    }
+
+    public ModInstallState GetModInstallState(InstalledModInfo modInfo) {
+        var mod = Manifest.InstalledMods
+            .FirstOrDefault(m => m.ProjectId == modInfo.ProjectId);
+
+        if (mod == null)
+            return ModInstallState.NotInstalled;
+
+        if (mod.VersionId == modInfo.VersionId)
+            return ModInstallState.InstalledSameVersion;
+
+        return ModInstallState.InstalledDifferentVersion;
+    }
+
+    public async Task<bool> DownloadModAsync(InstalledModInfo modInfo, string installPath) {
         try {
             var modsFolder = Path.Combine(installPath, "mods");
-            if (!Directory.Exists(modsFolder)) Directory.CreateDirectory(modsFolder);
+            if (!Directory.Exists(modsFolder))
+                Directory.CreateDirectory(modsFolder);
 
             var filePath = Path.Combine(modsFolder, modInfo.Filename);
 
-            // Folosim un HttpClient simplu (poți refolosi instanța din WebService dacă e publică)
             using var client = new HttpClient();
             var data = await client.GetByteArrayAsync(modInfo.DownloadUrl);
             await File.WriteAllBytesAsync(filePath, data);
 
             Debug.WriteLine($"[Download] Finalizat: {modInfo.Title}");
+            return true;
         }
         catch (Exception ex) {
             Debug.WriteLine($"[Error] Descărcare eșuată pentru {modInfo.Title}: {ex.Message}");
+            return false;
         }
     }
+}
 
 
+public enum ModInstallState {
+    NotInstalled,
+    InstalledSameVersion,
+    InstalledDifferentVersion
 }

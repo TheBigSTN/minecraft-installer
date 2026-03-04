@@ -10,7 +10,10 @@ using System.IO;
 using ModpackInstaller.Services.Modpack;
 using ModpackInstaller.Infrastructure;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
+using ModpackInstaller.Services;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum InstallTarget {
 	TLauncher,
 	CurseForge,
@@ -54,11 +57,20 @@ public class MainViewModel : ViewModelBase {
 		ShowGlobal();
     }
 
+    public void ShowGlobal(ModpackMetadata? modpack) {
+        SidebarViewModel = new ModpackListViewModel(this);
+        TopBarViewModel = new GlobalTopBarViewModel(this);
+        BodyViewModel = new ModpackInfoViewModel(modpack, this);
+        _sidebarViewModel = SidebarViewModel;
+        _topBarViewModel = TopBarViewModel;
+        _bodyViewModel = BodyViewModel;
+    }
+
     [MemberNotNull(
-        nameof(_sidebarViewModel),
-        nameof(_topBarViewModel),
-        nameof(_bodyViewModel)
-        )]
+    nameof(_sidebarViewModel),
+    nameof(_topBarViewModel),
+    nameof(_bodyViewModel)
+    )]
     public void ShowGlobal() {
         SidebarViewModel = new ModpackListViewModel(this);
         TopBarViewModel = new GlobalTopBarViewModel(this);
@@ -84,6 +96,13 @@ public class MainViewModel : ViewModelBase {
         TopBarViewModel = new ModpackTopBarViewModel(this);
         BodyViewModel = new ModrinthBrowserViewModel(modpack, this);
     }
+
+    public void ShowDiscovery() {
+        SidebarViewModel = new ModpackListViewModel(this);
+        TopBarViewModel = new GlobalTopBarViewModel(this);
+        BodyViewModel = new ModpackDiscoveryViewModel(this, new DialogService());
+    }
+
     public void RefreshModpackList() {
         SidebarViewModel = new ModpackListViewModel(this);
     }

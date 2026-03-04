@@ -31,7 +31,7 @@ public class GlobalTopBarViewModel : ViewModelBase {
 
     public ReactiveCommand<Unit, Unit> CreateModpack { get; }
 	public ReactiveCommand<Unit, Unit> OpenSettings { get; }
-
+    public ReactiveCommand<Unit, Unit> OpenDiscovery { get; }
     public Func<Task<ModpackMetadata?>>? ShowCreateModpackDialog { get; set; }
 
     private readonly MainViewModel _main;
@@ -58,10 +58,15 @@ public class GlobalTopBarViewModel : ViewModelBase {
             _main.RefreshModpackList();
         });
 
-		OpenSettings = ReactiveCommand.Create(() =>
-		{
-			// logica deschidere settings
-			Console.WriteLine("Settings clicked");
-		});
-	}
+        OpenDiscovery = ReactiveCommand.Create(() =>
+        {
+            _main.ShowDiscovery();
+        });
+
+        //OpenSettings = ReactiveCommand.Create(() =>
+        //{
+        //	// logica deschidere settings
+        //	Console.WriteLine("Settings clicked");
+        //});
+    }
 }

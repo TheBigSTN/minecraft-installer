@@ -11,10 +11,16 @@
 			<Button Content="+ Create Modpack"
                     Classes="topbar"
                     Command="{Binding CreateModpack}"/>
+			
+			<Button Content="Discover"
+                    Classes="topbar"
+                    Command="{Binding OpenDiscovery}"/>
+			
 			<ComboBox Width="160"
                       ItemsSource="{Binding InstallTargets}"
                       SelectedItem="{Binding SelectedInstallTarget}"
                       HorizontalContentAlignment="Center"/>
+			
 			<Button Content="Settings"
                     Classes="topbar"
                     Command="{Binding OpenSettings}"/>

@@ -79,12 +79,16 @@
 		<DataTemplate DataType="vmBody:ModpackInfoViewModel">
 			<viewsBody:ModpackInfoView />
 		</DataTemplate>
+		<DataTemplate DataType="vmBody:ModpackDiscoveryViewModel">
+			<viewsBody:ModpackDiscoveryView />
+		</DataTemplate>
 		<DataTemplate DataType="vmBody:ModrinthBrowserViewModel">
 			<viewsBody:ModrinthBrowserView />
 		</DataTemplate>
 	</Application.DataTemplates>
 
 	<Application.Resources>
+		<converters:StringNotEmptyConverter x:Key="StringNotEmpty"/>
 		<converters:NegateBoolConverter x:Key="NegateBool"/>
 	</Application.Resources>
 </Application>

@@ -60,6 +60,6 @@ public class ModListViewModel : ViewModelBase {
 }
 
 public class ManifestChangedMessage {
-    public InstalledModInfo Mod { get; set; }
+    public required InstalledModInfo Mod { get; set; }
     public bool IsRemoved { get; set; }
 }

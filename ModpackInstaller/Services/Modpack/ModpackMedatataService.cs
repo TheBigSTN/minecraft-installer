@@ -17,6 +17,14 @@ public class ModpackMedatataService {
         Directory.CreateDirectory(_registryPath);
     }
 
+    /// <summary>
+    /// Uses default AppVariables.InstallerRoot
+    /// </summary>
+    public ModpackMedatataService() {
+        _registryPath = Path.Combine(AppVariables.InstallerRoot, "modpacks");
+        Directory.CreateDirectory(_registryPath);
+    }
+
     // 📌 Creează / înregistrează metadata
     public ModpackMetadata Create(ModpackMetadata metadata) {
         metadata.CreatedAt = DateTime.UtcNow;

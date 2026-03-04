@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-namespace ModpackInstaller.Services;
-
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using ModpackInstaller.Infrastructure;
 using ModpackInstaller.Models;
+using ModpackInstaller.Models.DTOs;
+using System.Text.Json.Serialization;
+
+namespace ModpackInstaller.Services;
 
 public record OwnerResponse(string OwnerToken, string Nickname);
 
@@ -28,6 +28,54 @@ public record ModpackRequest(
 );
 
 public class ModpackResponse : ModpackMetadata;
+
+public class ModpackResponseALT {
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string OwnerNickname { get; set; } = string.Empty;
+    public string? ModpackPassword { get; set; }
+
+    public OwnerResponseAT? Owner { get; set; }
+
+    public string? SharingCode { get; set; }
+    public int LatestVersion { get; set; }
+
+    public string GameVersion { get; set; } = string.Empty;
+    public string Loader { get; set; } = string.Empty;
+    public string LoaderVersion { get; set; } = string.Empty;
+
+    public string Author { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string InstallPath { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
+    public List<ModpackVersionResponse> Versions { get; set; } = new();
+
+    [JsonPropertyName("public")]
+    public bool IsPublic { get; set; }
+}
+
+public class OwnerResponseAT {
+    public string OwnerToken { get; set; } = string.Empty;
+    public string Nickname { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+
+    public List<string> Modpacks { get; set; } = new();
+}
+
+public class ModpackVersionResponse {
+    public Guid Id { get; set; }
+    public int VersionNumber { get; set; }
+
+    public string ZipPath { get; set; } = string.Empty;
+    public string PatchPath { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; }
+
+    public string Modpack { get; set; } = string.Empty;
+}
 
 public record ServerError(string Message, int Status, DateTime Timestamp);
 
@@ -100,6 +148,20 @@ public static class ModpackApiService {
         return JsonSerializer.Deserialize<ModpackResponse>(responseJson, AppVariables.WebJsonOptions);
     }
 
+    // =========================================
+    // 2. GET METADATA (PUT /api/v1/modpacks/{id})
+    // =========================================
+    public static async Task<ModpackResponseALT?> GetMetadataAsync(string modpackId, string? modpackShareCode) {
+        using var client = new HttpClient();
+
+        var response = await client.GetAsync($"{_baseUrl}/api/v1/modpacks/{modpackId}?code={modpackShareCode}");
+
+        if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
+
+        var responseJson = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<ModpackResponseALT>(responseJson, AppVariables.WebJsonOptions);
+    }
+
 
     // =========================================
     // 3. UPLOAD VERSION (POST /api/v1/modpacks/{id}/versions)
@@ -139,7 +201,15 @@ public static class ModpackApiService {
         }
     }
 
-
+    // =========================================
+    // GET PUBLIC MODPACKS
+    // (GET /api/v1/modpacks/public)
+    // =========================================
+    public static async Task<List<PublicModpackRequestResponse>?> GetPublicModpacksAsync() {
+        return await WebService.GetJson<List<PublicModpackRequestResponse>>(
+            $"{_baseUrl}/api/v1/modpacks/public"
+        );
+    }
 
 
 
@@ -160,12 +230,7 @@ public static class ModpackApiService {
     // =========================
     // DOWNLOAD PATCH FROM vN TO vM
     // =========================
-    public static async Task DownloadPatchAsync(
-        string modpackId,
-        int fromVersion,
-        int toVersion,
-        string savePath
-    ) {
+    public static async Task DownloadPatchAsync( string modpackId, int fromVersion, int toVersion, string savePath ) {
         var url =
             $"{_baseUrl}/api/v1/modpacks/{modpackId}/patch" +
             $"?from={fromVersion}&to={toVersion}";

@@ -85,6 +85,8 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
                 ownerToken,
                 _metadata.ModpackPassword!
             );
+        } catch (Exception e) {
+            _metadata.Version--;
         }
         finally {
             if (File.Exists(zipPath)) File.Delete(zipPath);

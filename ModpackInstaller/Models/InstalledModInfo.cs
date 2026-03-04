@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace ModpackInstaller.Models;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ModSource {
     Local,      // Mod adăugat manual de utilizator (drag & drop)
     Remote,     // Mod instalat prin modpack (descărcat de pe internet)
