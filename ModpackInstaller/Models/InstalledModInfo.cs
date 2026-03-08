@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using ModpackInstaller.Models.Modrinth;
 
 namespace ModpackInstaller.Models;
 
@@ -24,4 +25,7 @@ public class InstalledModInfo {
     public string DownloadUrl { get; set; } = "";
     public string IconUrl { get; set; } = "";
     public bool Enabled { get; set; } = true;
+
+    public SideSupport ClientSide { get; set; } = SideSupport.unknown;
+    public SideSupport ServerSide { get; set; } = SideSupport.unknown;
 }

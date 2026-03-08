@@ -127,10 +127,10 @@ public class MainViewModel : ViewModelBase {
                     _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)!, ".minecraft", "versions")
                 },
                 InstallTarget.CurseForge => Environment.OSVersion.Platform switch {
-                    PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "curseforge", "minecraft"),
-                    PlatformID.Unix => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".curseforge", "minecraft"),
-                    PlatformID.MacOSX => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, "Library", "Application Support", "minecraft", "mods"),
-                    _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)!, "curseforge", "minecraft")
+                    PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "curseforge", "minecraft", "Instances"),
+                    PlatformID.Unix => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".curseforge", "minecraft", "Instances"),
+                    PlatformID.MacOSX => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, "Library", "Application Support", "minecraft", "Instances"),
+                    _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)!, "curseforge", "minecraft", "Instances")
                 },
                 InstallTarget.Modrinth => Environment.OSVersion.Platform switch {
                     PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ModrinthApp", "profiles"),
@@ -140,7 +140,7 @@ public class MainViewModel : ViewModelBase {
                 },
                 _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)!, "Minecraft")
             };
-
+            
             return basePath;
         }
     }

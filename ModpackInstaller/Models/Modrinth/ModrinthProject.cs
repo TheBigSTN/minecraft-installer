@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 
 namespace ModpackInstaller.Models.Modrinth;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum SideSupport {
+    required,
+    optional,
+    unsupported,
+    unknown
+}
+
 public class ModrinthProject {
     [JsonPropertyName("id")]
     public string Id { get; set; } = "";
@@ -16,6 +24,12 @@ public class ModrinthProject {
 
     [JsonPropertyName("description")]
     public string Description { get; set; } = "";
+
+    [JsonPropertyName("client_side")]
+    public SideSupport ClientSide { get; set; }
+
+    [JsonPropertyName("server_side")]
+    public SideSupport ServerSide { get; set; }
 
     [JsonPropertyName("project_id")]
     public string ProjectIdSearch {

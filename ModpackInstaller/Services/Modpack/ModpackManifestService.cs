@@ -136,7 +136,11 @@ public class ModpackManifestService {
             Title = project.Title,
             Filename = file.Filename,
             DownloadUrl = file.Url,
-            IconUrl = project.IconURL
+            IconUrl = project.IconURL,
+            ClientSide = project.ClientSide,
+            ServerSide = project.ServerSide,
+            Source = ModSource.Local,
+            Enabled = true
         };
 
         Manifest.InstalledMods.Add(newItem);
