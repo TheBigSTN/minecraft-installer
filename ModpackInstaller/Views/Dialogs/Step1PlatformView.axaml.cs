@@ -4,9 +4,9 @@ using Avalonia.Markup.Xaml;
 
 namespace ModpackInstaller.Views;
 
-public partial class CreateModpackView : UserControl
+public partial class Step1PlatformView : UserControl
 {
-    public CreateModpackView()
+    public Step1PlatformView()
     {
         InitializeComponent();
     }

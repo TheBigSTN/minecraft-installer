@@ -1,0 +1,59 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:vm="clr-namespace:ModpackInstaller.ViewModels"
+        x:Class="ModpackInstaller.Views.ExportPickerView"
+		x:DataType="vm:ExportPickerViewModel"
+        Width="700"
+        Height="500"
+        Title="Select files to export"
+        WindowStartupLocation="CenterOwner">
+
+	<Grid RowDefinitions="Auto,*,Auto" Margin="10">
+
+		<!-- 🔹 Title -->
+		<TextBlock Text="Select which files to include in export"
+                   FontSize="16"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,10"/>
+
+		<!-- 🔹 Tree -->
+		<Border Grid.Row="1"
+                BorderBrush="#444"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="5">
+
+			<ScrollViewer>
+				<TreeView ItemsSource="{Binding Root.Children}">
+					<TreeView.ItemTemplate>
+						<DataTemplate>
+							<StackPanel Orientation="Horizontal" Spacing="4">
+								<CheckBox IsChecked="{Binding IsChecked}"
+                                          VerticalAlignment="Center"/>
+								<TextBlock Text="{Binding Name}"
+                                           VerticalAlignment="Center"/>
+							</StackPanel>
+						</DataTemplate>
+					</TreeView.ItemTemplate>
+				</TreeView>
+			</ScrollViewer>
+		</Border>
+
+		<!-- 🔹 Buttons -->
+		<StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="10"
+                    Margin="0,10,0,0">
+
+			<Button Content="Cancel"
+                    Width="100"
+                    Click="OnCancelClick"/>
+
+			<Button Content="Export"
+                    Width="100"
+                    Command="{Binding ConfirmCommand}"/>
+		</StackPanel>
+
+	</Grid>
+</Window>

@@ -12,6 +12,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using DynamicData;
 using ModpackInstaller.Infrastructure;
 using ModpackInstaller.Models;
 
@@ -20,97 +21,106 @@ public class ModpackPackageService() {
     // =========================
     // EXPORT MODPACK (full package)
     // =========================
-    public static string ExportFullAsync(string installPath, string outputZipPath) {
-        var tempFolder = CreateTempFolder();
+    public static string ExportFullAsync(string modpackInstallPath, string outputZipPath, IEnumerable<string> excludedPaths ) {
+        var tempFolderPath = CreateTempFolder();
 
         try {
-            // 1️⃣ Copiem manifest.json primul
-            AddToExport("manifest.json", installPath, tempFolder);
+            if (File.Exists(outputZipPath))
+                File.Delete(outputZipPath);
 
-            // 2️⃣ Încarci manifest pentru verificarea modurilor
-            // TODO: adaugă aici logica ta de încărcare manifest
-            var manifest = ModpackManifestService.Load(Path.Combine(tempFolder, "manifest.json"));
+            //AddToExport("manifest.json", modpackInstallPath, tempFolderPath);
 
-            // 3️⃣ Copiem mods filtrat (exclude modurile deja în manifest)
-            AddToExport("mods", installPath, tempFolder, fileName =>
-                !manifest.InstalledMods.Exists(m => m.Filename.Equals(fileName, StringComparison.OrdinalIgnoreCase)));
+            //var manifest = ModpackManifestService.Load(Path.Combine(tempFolderPath, "manifest.json"));
 
-            // 4️⃣ Copiem restul folderelor relevante
-            AddToExport("config", installPath, tempFolder);
-            AddToExport("resourcepacks", installPath, tempFolder);
+            //AddToExport("mods", modpackInstallPath, tempFolderPath, fileName =>
+            //    !manifest.InstalledMods.Exists(m => m.Filename.Equals(fileName, StringComparison.OrdinalIgnoreCase)));
+
+            //AddToExport("config", modpackInstallPath, tempFolderPath);
+            //AddToExport("resourcepacks", modpackInstallPath, tempFolderPath);
+
+
+            AddToExport(modpackInstallPath, modpackInstallPath, tempFolderPath, excludedPaths.ToList());
+
 
             Directory.CreateDirectory(Path.Combine(outputZipPath, ".."));
 
-            // 5️⃣ Creează ZIP-ul final
-            ZipFile.CreateFromDirectory(tempFolder, outputZipPath);
+            ZipFile.CreateFromDirectory(tempFolderPath, outputZipPath);
 
             return outputZipPath;
         }
         finally {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(tempFolderPath, true);
         }
     }
 
     // =========================
     // IMPORT MODPACK
     // =========================
-    public async Task ImportAsync(string zipPath, string installPath, ModpackMetadata metadata) {
-        var tempFolder = CreateTempFolder();
+    //public static async Task ImportAsync(string zipPath, string installPath, ModpackMetadata metadata) {
+    //    var tempFolder = CreateTempFolder();
 
-        try {
-            // 1️⃣ Extragem ZIP-ul temporar
-            ZipFile.ExtractToDirectory(zipPath, tempFolder);
+    //    try {
+    //        ZipFile.ExtractToDirectory(zipPath, tempFolder);
 
-            // 2️⃣ Copiem metadata la locul potrivit
-            // TODO: adaugă aici logica ta pentru salvarea metadata
-            var metadataPath = Path.Combine(installPath, "metadata.json");
-            await SaveJsonAsync(metadataPath, metadata);
+    //        var metadataPath = Path.Combine(installPath, "metadata.json");
+    //        await SaveJsonAsync(metadataPath, metadata);
 
-            // 3️⃣ Copiem folderele standard în folderul de instalare
-            foreach (var folder in new[] { "mods", "config", "resourcepacks", "serverdata", "overrides" }) {
-                AddToExport(folder, tempFolder, installPath);
-            }
-
-            // 4️⃣ TODO: reconciliere manifest / rebuild index
-        }
-        finally {
-            Directory.Delete(tempFolder, true);
-        }
-    }
+    //        foreach (var folder in new[] { "mods", "config", "resourcepacks", "serverdata", "overrides" }) {
+    //            AddToExport(folder, tempFolder, installPath);
+    //        }
+    //    }
+    //    finally {
+    //        Directory.Delete(tempFolder, true);
+    //    }
+    //}
 
     // =========================
     // HELPER: AddToExport
     // =========================
-    /// <summary>
-    /// Copiază un fișier sau folder din installPath în targetFolder.
-    /// Acceptă optional filter pentru fișiere.
-    /// </summary>
-    private static void AddToExport(string name, string installPath, string targetFolder, Func<string, bool>? filter = null) {
-        var sourcePath = Path.Combine(installPath, name);
-        if (string.IsNullOrEmpty(name) || (!Directory.Exists(sourcePath) && !File.Exists(sourcePath)))
+    //private static void AddToExport(string relativeFilePath, string sourceDirectory, string outputFolder, Func<string, bool>? filter = null) {
+    //    var sourcePath = Path.Combine(sourceDirectory, relativeFilePath);
+    //    if (string.IsNullOrEmpty(relativeFilePath) || (!Directory.Exists(sourcePath) && !File.Exists(sourcePath)))
+    //        return;
+
+    //    if (File.Exists(sourcePath)) {
+    //        var fileName = Path.GetFileName(sourcePath);
+    //        if (filter == null || filter(fileName)) {
+    //            Directory.CreateDirectory(outputFolder);
+    //            File.Copy(sourcePath, Path.Combine(outputFolder, fileName), true);
+    //        }
+    //        return;
+    //    }
+
+    //    var destDir = Path.Combine(outputFolder, relativeFilePath);
+    //    Directory.CreateDirectory(destDir);
+
+    //    foreach (var file in Directory.GetFiles(sourcePath)) {
+    //        var fileName = Path.GetFileName(file);
+    //        if (filter == null || filter(fileName))
+    //            File.Copy(file, Path.Combine(destDir, fileName), true);
+    //    }
+
+    //    foreach (var subDir in Directory.GetDirectories(sourcePath)) {
+    //        AddToExport(Path.GetFileName(subDir), sourcePath, destDir, filter);
+    //    }
+    //}
+
+    private static void AddToExport(string sourcePath, string sourceBasePath, string outputPath, List<string> exludedFipePaths) {
+        if (string.IsNullOrEmpty(sourcePath))
             return;
 
-        if (File.Exists(sourcePath)) {
-            var fileName = Path.GetFileName(sourcePath);
-            if (filter == null || filter(fileName)) {
-                Directory.CreateDirectory(targetFolder);
-                File.Copy(sourcePath, Path.Combine(targetFolder, fileName), true);
+        if(Directory.Exists(sourcePath)) {
+            foreach(var DirectoryPath in Directory.GetDirectories(sourcePath))
+                AddToExport(DirectoryPath, sourceBasePath, outputPath, exludedFipePaths);
+
+            foreach(var DirectoryPath in Directory.GetFiles(sourcePath))
+                AddToExport(DirectoryPath, sourceBasePath, outputPath, exludedFipePaths);
+        }
+        if(File.Exists(sourcePath)) {
+            if (!exludedFipePaths.Contains(sourcePath)) {
+                Directory.CreateDirectory(Path.Combine(outputPath, Path.GetDirectoryName(Path.GetRelativePath(sourceBasePath, sourcePath))!));
+                File.Copy(sourcePath, Path.Combine(outputPath, Path.GetRelativePath(sourceBasePath, sourcePath)));
             }
-            return;
-        }
-
-        // sourcePath este un folder
-        var destDir = Path.Combine(targetFolder, name);
-        Directory.CreateDirectory(destDir);
-
-        foreach (var file in Directory.GetFiles(sourcePath)) {
-            var fileName = Path.GetFileName(file);
-            if (filter == null || filter(fileName))
-                File.Copy(file, Path.Combine(destDir, fileName), true);
-        }
-
-        foreach (var subDir in Directory.GetDirectories(sourcePath)) {
-            AddToExport(Path.GetFileName(subDir), sourcePath, destDir, filter);
         }
     }
 

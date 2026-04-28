@@ -42,7 +42,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
         if (response != null) {
             _metadata.Id = response.Id;
             _metadata.ModpackPassword = response.ModpackPassword;
-            _metadata.IsPublic = response.IsPublic;
+            _metadata.IsPublic = isPublic;
             _metadata.SharingCode = response.SharingCode;
             _metadata.Author = _metadata.OwnerNickname = response.Author;
             // Aici ar trebui să apelezi salvarea metadata pe disk
@@ -66,7 +66,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
     // =========================================
     // 4. UPLOAD VERSIUNE NOUĂ (ZIP)
     // =========================================
-    public async Task UploadNewVersionAsync() {
+    public async Task UploadNewVersionAsync(List<string> excludedFilePaths) {
         string ownerToken = await GetValidToken();
         if (string.IsNullOrEmpty(_metadata.Id)) throw new Exception("ID Modpack lipsă.");
         if (string.IsNullOrEmpty(_metadata.ModpackPassword)) throw new Exception("Modpack not Published");
@@ -75,7 +75,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
 
         try {
             // Exportă fișierul fizic
-            ModpackPackageService.ExportFullAsync(_metadata.InstallPath, zipPath);
+            ModpackPackageService.ExportFullAsync(_metadata.InstallPath, zipPath, excludedFilePaths);
 
             // Trimite la server
             await ModpackApiService.UploadVersionAsync(
@@ -86,6 +86,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
                 _metadata.ModpackPassword!
             );
         } catch (Exception e) {
+            _ = e;
             _metadata.Version--;
         }
         finally {

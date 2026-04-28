@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using ModpackInstaller.Infrastructure;
-using ModpackInstaller.ViewModels;
+using ModpackInstaller.Models;
 
 namespace ModpackInstaller.Services.Modpack;
 
@@ -32,6 +32,7 @@ public class AppSettings {
             }
         }
         else {
+            Directory.CreateDirectory(appRoot);
             Config = new AppConfig();
             Save(); // scriem fișier default dacă nu exista
         }
@@ -58,7 +59,7 @@ public class AppSettings {
 
 // Clasa de config efectivă
 public class AppConfig {
-    public InstallTarget InstallTarget { get; set; } = InstallTarget.CurseForge;
+    public InstallPlatform InstallTarget { get; set; } = InstallPlatform.CurseForge;
 
     // Aceasta este "Parola User-ului" (Owner Token) primită la register
     public string? UserPasswordToken { get; set; }

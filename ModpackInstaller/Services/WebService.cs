@@ -15,7 +15,6 @@ public class WebService {
     public static async Task<string> Get(string url, Dictionary<string, string>? headers = null) {
         var requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
 
-        // Add custom headers if provided
         if (headers != null) {
             foreach (var header in headers) {
                 if (!string.IsNullOrEmpty(header.Value)) {
@@ -24,22 +23,19 @@ public class WebService {
             }
         }
 
-        // Ensure the User-Agent and Authorization headers are included (if not already)
-        requestMessage.Headers.Add("User-Agent", "MyCSharpApp");  // Default User-Agent
+        if (!requestMessage.Headers.Contains("User-Agent"))
+            requestMessage.Headers.Add("User-Agent", "MyCSharpApp");  // Default User-Agent
 
         try {
-            // Send the request
             HttpResponseMessage response = await client.SendAsync(requestMessage);
-            response.EnsureSuccessStatusCode(); // Throws an exception if not successful
+            response.EnsureSuccessStatusCode();
 
-            // Read and return the response body
             string responseBody = await response.Content.ReadAsStringAsync();
             return responseBody;
         }
         catch (HttpRequestException ex) {
-            // Handle HTTP-specific errors
             Console.WriteLine($"Error: {ex.Message}");
-            return string.Empty;  // Or return null, depending on your error handling strategy
+            return string.Empty;
         }
     }
 
@@ -127,7 +123,6 @@ public class WebService {
     }
 
     public static async Task<T?> GetJson<T>(string url, Dictionary<string, string>? headers = null) {
-        // Apelăm metoda Get pe care o ai deja pentru a obține string-ul JSON
         string json = await Get(url, headers);
 
         if (string.IsNullOrEmpty(json)) {
@@ -135,8 +130,6 @@ public class WebService {
         }
 
         try {
-            // Configurăm deserializarea să ignore diferențele de litere mari/mici (Case Insensitive)
-            // pentru că API-urile web nu respectă mereu stilul C# PascalCase
             return JsonSerializer.Deserialize<T>(json, AppVariables.WebJsonOptions);
         }
         catch (JsonException ex) {

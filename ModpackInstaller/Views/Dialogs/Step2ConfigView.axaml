@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+			 x:DataType="vm:ConfigureStepViewModel"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:Class="ModpackInstaller.Views.Step2ConfigView">
+	<StackPanel Spacing="12" Width="400">
+
+		<TextBox Watermark="Modpack name"
+				 Text="{Binding Name}" />
+
+		<ComboBox ItemsSource="{Binding Loaders}"
+				  SelectedItem="{Binding SelectedLoader}"
+				  />
+		<!--
+				  SelectionChanged="OnLoaderChanged" 
+		-->
+
+		<ComboBox ItemsSource="{Binding GameVersions}"
+				  SelectedItem="{Binding SelectedGameVersion}" 
+				  />
+		<!--
+				  SelectionChanged="OnLoaderVersionChanged" 
+		-->
+
+		<ComboBox ItemsSource="{Binding LoaderVersions}"
+				  SelectedItem="{Binding SelectedLoaderVersion}" />
+
+	</StackPanel>
+</UserControl>

@@ -32,8 +32,7 @@ class Program {
 
         try {
             VelopackApp.Build().Run();
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             CrashReporter.Log(ex, "Velopack");
             return -1;
         }
@@ -43,8 +42,7 @@ class Program {
                 .StartWithClassicDesktopLifetime(args);
 
             return 0;
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             CrashReporter.Log(ex, "Main");
 
             return -1;

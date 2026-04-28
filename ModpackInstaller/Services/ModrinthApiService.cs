@@ -105,9 +105,14 @@ public class ModrinthApiService {
         return await WebService.GetJson<ModrinthVersion>(url, DefaultHeaders);
     }
 
-    public async Task<ModrinthProject?> GetProjectAsync(string projectIdOrSlug) {
+    public static async Task<ModrinthProject?> GetProjectAsync(string projectIdOrSlug) {
         var url = $"{BaseUrl}/project/{projectIdOrSlug}";
         return await WebService.GetJson<ModrinthProject>(url, DefaultHeaders);
     }
 
+    public static async Task<ModrinthVersion?> GetVersionByHashAsync( string sha1 ) {
+        var url = $"{BaseUrl}/version_file/{sha1}";
+
+        return await WebService.GetJson<ModrinthVersion>(url, DefaultHeaders);
+    }
 }

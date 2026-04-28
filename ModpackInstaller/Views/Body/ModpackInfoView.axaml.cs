@@ -18,27 +18,27 @@ public partial class ModpackInfoView : ReactiveUserControl<ModpackInfoViewModel>
         InitializeComponent();
 
 
-            this.WhenActivated(disposables =>
-            {
-                this.WhenAnyValue(x => x.ViewModel)
-                    .Where(vm => vm != null)
-                    // SwitchToLatest ensures that if the VM changes, 
-                    // the old interaction handler is disposed of automatically.
-                    .Select(vm => vm.ShowExportDialog.RegisterHandler(async interaction => {
-                        var dialogVm = new ExportModpackDialogViewModel(vm.Modpack);
+        //this.WhenActivated(disposables =>
+        //{
+        //    this.WhenAnyValue(x => x.ViewModel)
+        //        .Where(vm => vm != null)
+        //        // SwitchToLatest ensures that if the VM changes, 
+        //        // the old interaction handler is disposed of automatically.
+        //        .Select(vm => vm.ShowExportDialog.RegisterHandler(async interaction => {
+        //            var dialogVm = new ExportModpackDialogViewModel(vm.Modpack);
 
-                        var dialog = new ExportModpackDialogView { DataContext = dialogVm };
+        //            var dialog = new ExportModpackDialogView { DataContext = dialogVm };
 
-                        dialogVm.CloseRequested += (result) => dialog.Close(result);
+        //            dialogVm.CloseRequested += (result) => dialog.Close(result);
 
-                        var window = this.GetVisualRoot() as Window;
-                        var result = await dialog.ShowDialog<ModpackExportMode?>(window);
+        //            var window = this.GetVisualRoot() as Window;
+        //            var result = await dialog.ShowDialog<ModpackExportMode?>(window);
 
-                        interaction.SetOutput(result);
-                    }))
-                    .Subscribe()
-                    .DisposeWith(disposables);
-            });
+        //            interaction.SetOutput(result);
+        //        }))
+        //        .Subscribe()
+        //        .DisposeWith(disposables);
+        //});
         //this.WhenActivated(disposables =>
         //{
         //    // Observăm când proprietatea ViewModel se schimbă

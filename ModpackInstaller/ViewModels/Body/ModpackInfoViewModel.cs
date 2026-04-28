@@ -15,9 +15,9 @@ using ReactiveUI;
 
 namespace ModpackInstaller.ViewModels.Body;
 public enum ModpackExportMode {
-    LocalZip,
-    Unlisted,
-    Public
+	LocalZip,
+	Unlisted,
+	Public
 }
 
 
@@ -26,116 +26,131 @@ public class ModpackInfoViewModel : ViewModelBase {
 	public ModpackMetadata? Modpack { get; set; }
 
 	private readonly MainViewModel _main;
-    private readonly ModpackMedatataService _medatataService = new(AppVariables.InstallerRoot);
+	private readonly ModpackMedatataService _medatataService = new(AppVariables.InstallerRoot);
 
-    public Interaction<Unit, ModpackExportMode?> ShowExportDialog { get; }
-    = new();
+	//public Interaction<Unit, ModpackExportMode?> ShowExportDialog { get; }
+	//= new();
 
-    public ReactiveCommand<Unit, Unit> PBUpdateModpackCommand { get; }
-    public ReactiveCommand<Unit, Unit> EditModpackCommand { get; }
+	public ReactiveCommand<Unit, Unit> PBUpdateModpackCommand { get; }
+	public ReactiveCommand<Unit, Unit> EditModpackCommand { get; }
 	public ReactiveCommand<Unit, Unit> ExportModpackCommand { get; }
 	public ReactiveCommand<Unit, Unit> DeleteModpackCommand { get; }
 
-    private bool _hasUpdate;
-    public bool HasUpdate {
-        get => _hasUpdate;
-        set => this.RaiseAndSetIfChanged(ref _hasUpdate, value);
-    }
+	private bool _hasUpdate;
+	public bool HasUpdate {
+		get => _hasUpdate;
+		set => this.RaiseAndSetIfChanged(ref _hasUpdate, value);
+	}
 
-    public ReactiveCommand<Unit, Unit> UpdateModpackCommand { get; }
+	public ReactiveCommand<Unit, Unit> UpdateModpackCommand { get; }
 
-    public ModpackInfoViewModel(ModpackMetadata? modpack, MainViewModel main) {
+	public ModpackInfoViewModel(ModpackMetadata? modpack, MainViewModel main) {
 		Modpack = modpack!;
 		_main = main;
 
-        var canUpdate = this.WhenAnyValue(
-            x => x.Modpack,
-            (ModpackMetadata? mp) => mp != null && !string.IsNullOrEmpty(mp.ModpackPassword)
-        );
+		var canUpdate = this.WhenAnyValue(
+			x => x.Modpack,
+			(ModpackMetadata? mp) => mp != null && !string.IsNullOrEmpty(mp.ModpackPassword)
+		);
 
-        _ = CheckForUpdateAsync();
+		_ = CheckForUpdateAsync();
 
-        UpdateModpackCommand = ReactiveCommand.CreateFromTask(async () =>
-        {
-            if (Modpack == null) return;
+		UpdateModpackCommand = ReactiveCommand.CreateFromTask(async () =>
+		{
+			if (Modpack == null) return;
 
-            try {
-                await ModpackInstallService.UpdateModpack(Modpack);
+			try {
+				await ModpackInstallService.UpdateModpack(Modpack);
 
-                _medatataService.Save(Modpack);
+				_medatataService.Save(Modpack);
 
-                HasUpdate = false;
+				HasUpdate = false;
 
-                _main.RefreshModpackList();
+				_main.RefreshModpackList();
 
-                Console.WriteLine("Modpack updated successfully.");
-            }
-            catch (Exception ex) {
-                Console.WriteLine($"Update error: {ex.Message}");
-            }
-        });
+				Console.WriteLine("Modpack updated successfully.");
+			}
+			catch (Exception ex) {
+				Console.WriteLine($"Update error: {ex.Message}");
+			}
+		});
 
-        PBUpdateModpackCommand = ReactiveCommand.CreateFromTask(async () => {
-            try {
-                ModpackPublicizeService publicizeService = new(Modpack);
+		PBUpdateModpackCommand = ReactiveCommand.CreateFromTask(async () => {
+			try {
+				ModpackPublicizeService publicizeService = new(Modpack);
 
-                //// 1. Actualizăm Metadata (Nume, Descriere, versiune joc, etc.)
-                //// Nu are sens deoarece server ul modifica singur versiunea
-                //await publicizeService.UpdateMetadataAsync();
+				//// 1. Actualizăm Metadata (Nume, Descriere, versiune joc, etc.)
+				//// Nu are sens deoarece server ul modifica singur versiunea
+				//await publicizeService.UpdateMetadataAsync();
+				List<string> excludedFilePaths = await _main.DialogService.ShowFileExcludePicker(Modpack.InstallPath);
 
                 // 2. Incrementăm versiunea locală pentru noul fișier
                 Modpack.Version++;
 
-                // 3. Urcăm noul ZIP pentru noua versiune
-                await publicizeService.UploadNewVersionAsync();
+				// 3. Urcăm noul ZIP pentru noua versiune
+				await publicizeService.UploadNewVersionAsync(excludedFilePaths);
 
-                _medatataService.Save(Modpack);
-                // 4. Salvăm modificările (noua versiune) local pe disc
-                //ModpackMetadataService.Save(Modpack);
+				_medatataService.Save(Modpack);
+				// 4. Salvăm modificările (noua versiune) local pe disc
+				//ModpackMetadataService.Save(Modpack);
 
-                Console.WriteLine("Update realizat cu succes!");
-            }
-            catch (Exception ex) {
-                // Aici ar trebui să trimiți eroarea către un dialog în UI
-                Console.WriteLine($"Eroare la update: {ex.Message}");
-            }
-        }, canUpdate);
+				Console.WriteLine("Update realizat cu succes!");
+			}
+			catch (Exception ex) {
+				// Aici ar trebui să trimiți eroarea către un dialog în UI
+				Console.WriteLine($"Eroare la update: {ex.Message}");
+			}
+		}, canUpdate);
 		
 		EditModpackCommand = ReactiveCommand.Create(() =>
 		{
 			if (Modpack == null) return;
 
 			// deschide pagina / dialogul cu mods
-			_main.EditModpack(modpack);
+			_main.EditModpack(Modpack);
 		});
 
-        ExportModpackCommand = ReactiveCommand.CreateFromTask(async () =>
-        {
+		ExportModpackCommand = ReactiveCommand.CreateFromTask(async () =>
+		{
 			string zipExportPath = Path.Combine(AppVariables.InstallerRoot, "exports", $"{Modpack.Name}_{DateTime.Now:yy-MM-dd-HH-mm-ss}.zip");
 
-            var result = await ShowExportDialog.Handle(Unit.Default);
+			if(modpack == null)
+				return;
 
-            if (result == null)
-                return;
+			var result = await _main.DialogService.ShowExportModpackDialog(modpack);
+
+			if (result == null)
+				return;
+
+			
 
 			ModpackPublicizeService modpackPublicize = new(modpack);
 
-            switch (result) {
-                case ModpackExportMode.LocalZip:
-                    ModpackPackageService.ExportFullAsync(modpack.InstallPath, zipExportPath);
-                    break;
+			switch (result) {
+				case ModpackExportMode.LocalZip:
+					List<string> filesToExclude = await _main.DialogService.ShowFileExcludePicker(modpack.InstallPath);
+					
+					ModpackPackageService.ExportFullAsync(modpack.InstallPath, zipExportPath, filesToExclude);
 
-                case ModpackExportMode.Unlisted:
-                    await modpackPublicize.CreateOnServerAsync(false, ModpackPublicizeService.GenerateCode());
-                    break;
+					Process.Start(new ProcessStartInfo {
+						FileName = "explorer.exe",
+						Arguments = $"/select,\"{zipExportPath}\"",
+						UseShellExecute = true
+					});
 
-                case ModpackExportMode.Public:
-                    await modpackPublicize.CreateOnServerAsync(true);
-                    break;
-            }
-        });
+					break;
 
-        DeleteModpackCommand = ReactiveCommand.Create(() =>
+				case ModpackExportMode.Unlisted:
+					await modpackPublicize.CreateOnServerAsync(false, ModpackPublicizeService.GenerateCode());
+					break;
+
+				case ModpackExportMode.Public:
+					await modpackPublicize.CreateOnServerAsync(true);
+					break;
+			}
+		});
+
+		DeleteModpackCommand = ReactiveCommand.Create(() =>
 		{
 			if (Modpack == null) return;
 
@@ -158,23 +173,22 @@ public class ModpackInfoViewModel : ViewModelBase {
 		});
 	}
 
-    public async Task CheckForUpdateAsync() {
-        if (Modpack == null)
-            return;
+	public async Task CheckForUpdateAsync() {
+		if (Modpack == null)
+			return;
 
-        try {
-            var serverInfo = await ModpackApiService.GetMetadataAsync(Modpack.Id, Modpack.SharingCode);
+		try {
+			var serverInfo = await ModpackApiService.GetMetadataAsync(Modpack.Id, Modpack.SharingCode);
 
-            if (serverInfo == null)
-                return;
+			if (serverInfo == null)
+				return;
 
-            HasUpdate = serverInfo.LatestVersion > Modpack.Version;
-        }
-        catch (Exception e) {
-            HasUpdate = false;
-        }
-    }
+			HasUpdate = serverInfo.LatestVersion > Modpack.Version;
+		} catch (Exception e) {
+			_ = e;
+			HasUpdate = false;
+		}
+	}
 
-    // used in xaml do not delete
-    public bool HasModpack => Modpack != null;
+	public bool HasModpack => Modpack != null;
 }

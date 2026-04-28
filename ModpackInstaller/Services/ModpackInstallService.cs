@@ -28,7 +28,7 @@ public class ModpackInstallService {
 
 		await Task.WhenAll(
 			 manifest.InstalledMods
-				 .Select(mod => manifestService.DownloadModAsync(mod, modpackMetadata.InstallPath))
+				 .Select(mod => ModpackManifestService.DownloadModAsync(mod, modpackMetadata.InstallPath))
 		 );
 
 	}
@@ -176,7 +176,7 @@ public class ModpackInstallService {
 					// Verificăm dacă trebuie să adăugăm / actualizăm
 					if (manifestService.AddOrUpdateMod(mod, true)) {
 						// Descarcă și verifică succesul
-						bool success = await manifestService.DownloadModAsync(mod, modpackInstallPath);
+						bool success = await ModpackManifestService.DownloadModAsync(mod, modpackInstallPath);
 
 						if (!success) {
 							// Dacă download-ul eșuează → eliminăm din manifest

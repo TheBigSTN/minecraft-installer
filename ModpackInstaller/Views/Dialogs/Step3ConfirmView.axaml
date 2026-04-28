@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+             x:DataType="vm:ConfirmStepViewModel"
+             mc:Ignorable="d"
+             x:Class="ModpackInstaller.Views.Step3ConfirmView">
+
+	<StackPanel Spacing="12" Width="400">
+
+		<TextBlock Text="Confirm Modpack Creation"
+                   FontSize="18"
+                   HorizontalAlignment="Center"/>
+
+		<Border Background="#1E1E1E"
+                BorderBrush="#444"
+                BorderThickness="1"
+                Padding="10"
+                CornerRadius="6">
+
+			<TextBlock Text="{Binding Message}"
+                       TextWrapping="Wrap"/>
+		</Border>
+
+		<StackPanel Spacing="6">
+
+			<TextBlock Text="Install Path:" FontWeight="Bold"/>
+			<TextBlock Text="{Binding InstallPath}"
+                       TextWrapping="Wrap"/>
+
+		</StackPanel>
+
+	</StackPanel>
+</UserControl>

@@ -5,65 +5,51 @@ using ModpackInstaller.ViewModels.Sidebars;
 using ModpackInstaller.ViewModels.Topbars;
 using ModpackInstaller.Models;
 using ReactiveUI;
-using System;
-using System.IO;
 using ModpackInstaller.Services.Modpack;
 using ModpackInstaller.Infrastructure;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
 using ModpackInstaller.Services;
+using ReactiveUI.SourceGenerators;
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum InstallTarget {
-	TLauncher,
-	CurseForge,
-	Modrinth,
-	Custom
-}
+public partial class MainViewModel : ViewModelBase {
+    public IDialogService DialogService;
 
-public class MainViewModel : ViewModelBase {
-
+    [Reactive]
     private ViewModelBase _sidebarViewModel;
-    public ViewModelBase SidebarViewModel {
-        get => _sidebarViewModel;
-        set => this.RaiseAndSetIfChanged(ref _sidebarViewModel, value);
-    }
 
+    [Reactive]
     private ViewModelBase _topBarViewModel;
-    public ViewModelBase TopBarViewModel {
-        get => _topBarViewModel;
-        set => this.RaiseAndSetIfChanged(ref _topBarViewModel, value);
-    }
 
+    [Reactive]
     private ViewModelBase _bodyViewModel;
-    public ViewModelBase BodyViewModel {
-        get => _bodyViewModel;
-        set => this.RaiseAndSetIfChanged(ref _bodyViewModel, value);
-    }
 
+    [Reactive]
     private string _searchQuery = "";
-    public string SearchQuery {
-        get => _searchQuery;
-        set => this.RaiseAndSetIfChanged(ref _searchQuery, value);
-    }
+
+
+    public ModpackManifestService modpackManifestService;
+
 
     public ModpackMetadata? SelectedModpack { get; private set; }
 
 	public AppSettings Settings { get; } = new AppSettings(AppVariables.InstallerRoot);
 
-    public MainViewModel() {
+    public MainViewModel(IDialogService dialogService) {
 		InstallTarget = Settings.Config.InstallTarget;
+        modpackManifestService = new ModpackManifestService();
 
-		ShowGlobal();
+        DialogService = dialogService;
+        
+        ShowGlobal();
     }
 
     public void ShowGlobal(ModpackMetadata? modpack) {
         SidebarViewModel = new ModpackListViewModel(this);
         TopBarViewModel = new GlobalTopBarViewModel(this);
         BodyViewModel = new ModpackInfoViewModel(modpack, this);
-        _sidebarViewModel = SidebarViewModel;
-        _topBarViewModel = TopBarViewModel;
-        _bodyViewModel = BodyViewModel;
+        //_sidebarViewModel = SidebarViewModel;
+        //_topBarViewModel = TopBarViewModel;
+        //_bodyViewModel = BodyViewModel;
     }
 
     [MemberNotNull(
@@ -75,9 +61,9 @@ public class MainViewModel : ViewModelBase {
         SidebarViewModel = new ModpackListViewModel(this);
         TopBarViewModel = new GlobalTopBarViewModel(this);
         BodyViewModel = new ModpackInfoViewModel(null, this);
-        _sidebarViewModel = SidebarViewModel;
-        _topBarViewModel = TopBarViewModel;
-        _bodyViewModel = BodyViewModel;
+        //_sidebarViewModel = SidebarViewModel;
+        //_topBarViewModel = TopBarViewModel;
+        //_bodyViewModel = BodyViewModel;
     }
 
     public void OpenModpack(ModpackMetadata modpack) {
@@ -92,7 +78,7 @@ public class MainViewModel : ViewModelBase {
     public void EditModpack(ModpackMetadata modpack) {
         SelectedModpack = modpack;
 
-        SidebarViewModel = new ModListViewModel(modpack);
+        SidebarViewModel = new ModListViewModel(this, modpack);
         TopBarViewModel = new ModpackTopBarViewModel(this);
         BodyViewModel = new ModrinthBrowserViewModel(modpack, this);
     }
@@ -100,16 +86,18 @@ public class MainViewModel : ViewModelBase {
     public void ShowDiscovery() {
         SidebarViewModel = new ModpackListViewModel(this);
         TopBarViewModel = new GlobalTopBarViewModel(this);
-        BodyViewModel = new ModpackDiscoveryViewModel(this, new DialogService());
+        BodyViewModel = new ModpackDiscoveryViewModel(this);
     }
 
     public void RefreshModpackList() {
-        SidebarViewModel = new ModpackListViewModel(this);
+        if (SidebarViewModel is ModpackListViewModel modpackList) {
+            modpackList.LoadModpacks();
+        }
     }
 
-    private InstallTarget _installTarget;
+    private InstallPlatform _installTarget;
 
-	public InstallTarget InstallTarget {
+	public InstallPlatform InstallTarget {
 		get => _installTarget;
 		set {
             this.RaiseAndSetIfChanged(ref _installTarget, value);
@@ -118,30 +106,6 @@ public class MainViewModel : ViewModelBase {
 	}
 	
     public string InstallPath {
-        get {
-            string basePath = InstallTarget switch {
-                InstallTarget.TLauncher => Environment.OSVersion.Platform switch {
-                    PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versions"),
-                    PlatformID.Unix => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".minecraft", "versions"),
-                    PlatformID.MacOSX => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".minecraft", "versions"),
-                    _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)!, ".minecraft", "versions")
-                },
-                InstallTarget.CurseForge => Environment.OSVersion.Platform switch {
-                    PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "curseforge", "minecraft", "Instances"),
-                    PlatformID.Unix => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".curseforge", "minecraft", "Instances"),
-                    PlatformID.MacOSX => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, "Library", "Application Support", "minecraft", "Instances"),
-                    _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)!, "curseforge", "minecraft", "Instances")
-                },
-                InstallTarget.Modrinth => Environment.OSVersion.Platform switch {
-                    PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ModrinthApp", "profiles"),
-                    PlatformID.Unix => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".modrinth"),
-                    PlatformID.MacOSX => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, "Library", "Application Support", "Modrinth"),
-                    _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)!, "ModrinthApp")
-                },
-                _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)!, "Minecraft")
-            };
-            
-            return basePath;
-        }
+        get => AppVariables.GetBaseInstallPathFromLauncer(InstallTarget);
     }
 }

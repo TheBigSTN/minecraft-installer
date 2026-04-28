@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive;
@@ -16,12 +17,12 @@ namespace ModpackInstaller.ViewModels.Topbars;
 
 public class GlobalTopBarViewModel : ViewModelBase {
 
-    public IEnumerable<InstallTarget> InstallTargets { get; } =
-        Enum.GetValues<InstallTarget>();
+    public IEnumerable<InstallPlatform> InstallTargets { get; } =
+        Enum.GetValues<InstallPlatform>();
 
-    private InstallTarget _selectedInstallTarget;
+    private InstallPlatform _selectedInstallTarget;
 
-    public InstallTarget SelectedInstallTarget {
+    public InstallPlatform SelectedInstallTarget {
         get => _selectedInstallTarget;
         set {
             this.RaiseAndSetIfChanged(ref _selectedInstallTarget, value);
@@ -32,7 +33,6 @@ public class GlobalTopBarViewModel : ViewModelBase {
     public ReactiveCommand<Unit, Unit> CreateModpack { get; }
 	public ReactiveCommand<Unit, Unit> OpenSettings { get; }
     public ReactiveCommand<Unit, Unit> OpenDiscovery { get; }
-    public Func<Task<ModpackMetadata?>>? ShowCreateModpackDialog { get; set; }
 
     private readonly MainViewModel _main;
 	public GlobalTopBarViewModel(MainViewModel main) {
@@ -42,10 +42,7 @@ public class GlobalTopBarViewModel : ViewModelBase {
 
         CreateModpack = ReactiveCommand.CreateFromTask(async () =>
         {
-            if (ShowCreateModpackDialog == null)
-                return;
-
-            var metadata = await ShowCreateModpackDialog();
+            var metadata = await _main.DialogService.ShowCreateModpackDialog(_main.InstallPath, _main.InstallTarget.ToString());
 
             if (metadata == null)
                 return;
@@ -63,10 +60,9 @@ public class GlobalTopBarViewModel : ViewModelBase {
             _main.ShowDiscovery();
         });
 
-        //OpenSettings = ReactiveCommand.Create(() =>
-        //{
-        //	// logica deschidere settings
-        //	Console.WriteLine("Settings clicked");
-        //});
+        OpenSettings = ReactiveCommand.Create(() => {
+            // logica deschidere settings
+            Console.WriteLine("Settings clicked");
+        });
     }
 }

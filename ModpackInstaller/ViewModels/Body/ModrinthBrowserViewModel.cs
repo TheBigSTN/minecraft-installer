@@ -20,7 +20,7 @@ namespace ModpackInstaller.ViewModels.Body {
 	public class ModrinthBrowserViewModel : ViewModelBase {
 		private readonly ModpackMetadata _modpack;
 		private readonly MainViewModel _main;
-        private readonly ModpackManifestService _manifestService;
+        //private readonly ModpackManifestService _manifestService;
 
         public ObservableCollection<ModrinthProject> Mods { get; } = new();
 
@@ -44,7 +44,8 @@ namespace ModpackInstaller.ViewModels.Body {
                 .DistinctUntilChanged()
                 .Subscribe(async _ => await SearchAsync());
 
-            _manifestService = new ModpackManifestService(modpack.InstallPath);
+            _main.modpackManifestService.OpenModpack(modpack.InstallPath);
+            //_manifestService = new ModpackManifestService(modpack.InstallPath);
 
             AddModCommand = ReactiveCommand.CreateFromTask<ModrinthProject, Unit>(async (project) => {
                 await InstallModRecursive(project.Id, null);
@@ -113,20 +114,20 @@ namespace ModpackInstaller.ViewModels.Body {
 
             // 2. Verificăm dacă e deja instalat (folosind ProjectId din versiunea găsită)
             // IMPORTANT: Modrinth returnează uneori ProjectId cu sau fără prefix, verifică consistența
-            if (_manifestService.Manifest.InstalledMods.Any(m => m.ProjectId == targetVersion.ProjectId))
+            if (_main.modpackManifestService.Manifest.InstalledMods.Any(m => m.ProjectId == targetVersion.ProjectId))
                 return;
 
             // 3. Obținem datele Proiectului pentru metadate (Icon, Title)
-            var targetProject = await apiService.GetProjectAsync(targetVersion.ProjectId);
+            var targetProject = await ModrinthApiService.GetProjectAsync(targetVersion.ProjectId);
             if (targetProject == null) return;
 
             // 4. Adăugăm în Manifest și pornim Download
             // Folosim obiectul returnat de AddMod direct, fără să îl mai căutăm cu .First()
-            var installedInfo = _manifestService.AddMod(targetProject, targetVersion);
+            var installedInfo = _main.modpackManifestService.AddMod(targetProject, targetVersion);
 
             if (installedInfo != null) {
                 // Pornim download-ul în fundal
-                _ = _manifestService.DownloadModAsync(installedInfo, _modpack.InstallPath);
+                _ = ModpackManifestService.DownloadModAsync(installedInfo, _modpack.InstallPath);
 
                 // Notificăm UI-ul că lista s-a schimbat
                 Dispatcher.UIThread.Post(() => {

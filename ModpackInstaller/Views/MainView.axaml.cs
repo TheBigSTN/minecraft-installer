@@ -42,72 +42,72 @@ public partial class MainView : UserControl
         //        };
         //    }
         //};
-        this.AttachedToVisualTree += (_, _) => {
-            if (DataContext is not MainViewModel mainVm)
-                return;
+        //this.AttachedToVisualTree += (_, _) => {
+        //    if (DataContext is not MainViewModel mainVm)
+        //        return;
 
-            if (mainVm.TopBarViewModel is GlobalTopBarViewModel topBarVm) {
-                topBarVm.ShowCreateModpackDialog += async () => {
-                    var window = this.GetVisualRoot() as Window;
+        //    if (mainVm.TopBarViewModel is GlobalTopBarViewModel topBarVm) {
+        //        topBarVm.ShowCreateModpackDialog += async () => {
+        //            var window = this.GetVisualRoot() as Window;
 
-                    // creez ViewModel
-                    var vm = new CreateModpackViewModel(mainVm.InstallPath);
+        //            // creez ViewModel
+        //            var vm = new CreateModpackViewModel(mainVm.InstallPath);
 
-                    // creez dialog
-                    var dialog = new CreateModpackWindow {
-                        DataContext = vm
-                    };
+        //            // creez dialog
+        //            var dialog = new CreateModpackWindow {
+        //                DataContext = vm
+        //            };
 
-                    // wiring: când ViewModel vrea să se închidă
-                    vm.CloseRequested += result => {
-                        dialog.Close(result);
-                    };
+        //            // wiring: când ViewModel vrea să se închidă
+        //            vm.CloseRequested += result => {
+        //                dialog.Close(result);
+        //            };
 
-                    // afișez dialog și aștept rezultatul
-                    var metadata = await dialog.ShowDialog<ModpackMetadata?>(window);
+        //            // afișez dialog și aștept rezultatul
+        //            var metadata = await dialog.ShowDialog<ModpackMetadata?>(window);
 
-                    // 🔹 dacă user a creat efectiv un modpack, salvez
-                    if (metadata != null) {
-                        var messageBoxCustomParams = new MessageBoxStandardParams {
-                            ContentTitle = "Confirmare Creare Modpack",
-                            ContentMessage =    $"Because of development reasons before creating the modpack '{metadata.Name}'?\n\n" +
-                                                $"You need in the app {mainVm.InstallTarget} to create a modpack with:\n" +
-                                                $"The name: {metadata.Name}\n" +
-                                                $"The Minecraft version: {metadata.GameVersion}\n" +
-                                                $"The loader: {metadata.Loader}\n" +
-                                                $"The loader version: {metadata.LoaderVersion}",
-                            ButtonDefinitions = ButtonEnum.YesNo,
-                            Icon = Icon.Info,
-                            WindowStartupLocation = WindowStartupLocation.CenterOwner
-                        };
+        //            // 🔹 dacă user a creat efectiv un modpack, salvez
+        //            if (metadata != null) {
+        //                var messageBoxCustomParams = new MessageBoxStandardParams {
+        //                    ContentTitle = "Confirmare Creare Modpack",
+        //                    ContentMessage =    $"Because of development reasons before creating the modpack '{metadata.Name}'?\n\n" +
+        //                                        $"You need in the app {mainVm.InstallPlatform} to create a modpack with:\n" +
+        //                                        $"The name: {metadata.Name}\n" +
+        //                                        $"The Minecraft version: {metadata.GameVersion}\n" +
+        //                                        $"The loader: {metadata.Loader}\n" +
+        //                                        $"The loader version: {metadata.LoaderVersion}",
+        //                    ButtonDefinitions = ButtonEnum.YesNo,
+        //                    Icon = Icon.Info,
+        //                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+        //                };
 
-                        var messageBox = MessageBoxManager.GetMessageBoxStandard(messageBoxCustomParams);
-                        var result = await messageBox.ShowWindowAsync();
+        //                var messageBox = MessageBoxManager.GetMessageBoxStandard(messageBoxCustomParams);
+        //                var result = await messageBox.ShowWindowAsync();
 
-                        // 2. Dacă utilizatorul a ales "No", oprim execuția
-                        if (result == ButtonResult.No ||
-                            result == ButtonResult.Abort) {
-                            return null;
-                        }
-                        Debug.WriteLine(result);
+        //                // 2. Dacă utilizatorul a ales "No", oprim execuția
+        //                if (result == ButtonResult.No ||
+        //                    result == ButtonResult.Abort) {
+        //                    return null;
+        //                }
+        //                Debug.WriteLine(result);
 
 
-                        // instanță ModpackMedatataService cu path-ul principal
-                        var registry = new ModpackMedatataService(AppVariables.InstallerRoot);
+        //                // instanță ModpackMedatataService cu path-ul principal
+        //                var registry = new ModpackMedatataService(AppVariables.InstallerRoot);
 
-                        // creez / salvez metadata
-                        registry.Create(metadata);
+        //                // creez / salvez metadata
+        //                registry.Create(metadata);
 
-                        // 🔹 eventual: deschide modpack-ul în UI
-                        mainVm.OpenModpack(metadata);
+        //                // 🔹 eventual: deschide modpack-ul în UI
+        //                mainVm.OpenModpack(metadata);
 
-                        // 🔹 eventual: refresh listă modpack-uri în UI
-                        mainVm.RefreshModpackList();
-                    }
+        //                // 🔹 eventual: refresh listă modpack-uri în UI
+        //                mainVm.RefreshModpackList();
+        //            }
 
-                    return metadata;
-                };
-            }
-        };
+        //            return metadata;
+        //        };
+        //    }
+        //};
     }
 }

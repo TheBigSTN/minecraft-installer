@@ -18,16 +18,14 @@ namespace ModpackInstaller.ViewModels.Body;
 
 public class ModpackDiscoveryViewModel : ViewModelBase {
     private readonly MainViewModel _main;
-    private readonly IDialogService _dialogService;
 
     public ObservableCollection<PublicModpackRequestResponse> DiscoveryModpacks { get; } = new();
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
     public ReactiveCommand<PublicModpackRequestResponse, Unit> InstallModpackCommand { get; }
 
-    public ModpackDiscoveryViewModel(MainViewModel main, IDialogService dialogService) {
+    public ModpackDiscoveryViewModel(MainViewModel main) {
 
         _main = main;
-        _dialogService = dialogService;
 
         RefreshCommand = ReactiveCommand.CreateFromTask(LoadModpacksAsync);
 
@@ -37,7 +35,7 @@ public class ModpackDiscoveryViewModel : ViewModelBase {
 
             _main.RefreshModpackList();
 
-            await _dialogService.EmitSimpleOkDialog("Install Complete", $"The modpack {manifest.Name} was installed successfully");
+            await _main.DialogService.EmitSimpleOkDialog("Install Complete", $"The modpack {manifest.Name} was installed successfully");
         });
 
         // Încărcăm datele la inițializare
@@ -55,7 +53,7 @@ public class ModpackDiscoveryViewModel : ViewModelBase {
         }
         catch (Exception ex) {
             Console.WriteLine($"Error loading discovery: {ex.Message}");
-            await _dialogService.EmitSimpleOkDialog("Error", $"The modpack failed to instal.\nReason: {ex.Message}.");
+            await _main.DialogService.EmitSimpleOkDialog("Error", $"The modpack failed to instal.\nReason: {ex.Message}.");
         }
     }
 }
