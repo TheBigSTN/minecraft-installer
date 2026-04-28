@@ -24,7 +24,7 @@ public record ModpackRequest(
     string Loader,
     string LoaderVersion,
     string SharingCode,
-    bool IsPublic
+    bool Public
 );
 
 public class ModpackResponse : ModpackMetadata;
