@@ -40,7 +40,8 @@ public class ModpackMedatataService {
 
         var path = GetMetadataPath(metadata.Id);
         var json = JsonSerializer.Serialize(metadata, AppVariables.DefaultJsonOptions);
-        File.WriteAllText(path, json);
+        if (!File.Exists(path))
+            File.WriteAllText(path, json);
     }
 
     // 📌 Încearcă să încarce metadata (fără erori)

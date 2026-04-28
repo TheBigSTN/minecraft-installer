@@ -50,7 +50,7 @@ public static class AppVariables {
     public static string AppApiBaseUrl {
         get {
 #if DEBUG
-        return "http://192.168.0.189:8080";
+            return "http://192.168.0.189:8080";
 #else
         return "https://minte.go.ro:5005/modpack-service";
 #endif

@@ -193,7 +193,7 @@ public class ModpackManifestService {
             IconUrl = project.IconURL,
             ClientSide = project.ClientSide,
             ServerSide = project.ServerSide,
-            Source = ModSource.Local,
+            Source = ModSource.Remote,
             Enabled = true
         };
 
