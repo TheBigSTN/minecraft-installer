@@ -41,7 +41,7 @@ jobs:
       - name: Copy icon to publish folder
         shell: pwsh
         run: |
-          Copy-Item Assets/image-1.ico ./publish/image-1.ico
+          Copy-Item ModpackInstaller/Assets/image-1.ico ./publish/image-1.ico
 
       - name: Publish application
         run: |
