@@ -41,7 +41,7 @@ jobs:
       - name: Copy icon to publish folder
         shell: pwsh
         run: |
-          Copy-Item ModpackInstaller/Assets/image-1.ico ./publish/image-1.ico
+          Copy-Item ModpackInstaller/Assets/image-1.ico ./image-1.ico
 
       - name: Publish application
         run: |
@@ -72,7 +72,7 @@ jobs:
                    -v ${{ steps.get_version.outputs.PROJECT_VERSION }} `
                    -p ./publish `
                    -e ModpackInstaller.Desktop.exe `
-                   --icon 
+                   --icon ./image-1.ico
 
           # 4. Upload pe GitHub Releases
           # --publish: Face release-ul public imediat
