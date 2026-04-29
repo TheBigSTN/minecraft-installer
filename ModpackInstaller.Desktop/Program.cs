@@ -15,44 +15,46 @@ using ModpackInstaller.Services;
 using System.Reflection;
 using ModpackInstaller.Infrastructure;
 using Velopack;
+using Velopack.Sources;
 namespace ModpackInstaller.Desktop;
 
 class Program {
-    [STAThread]
-    public static int Main(string[] args) {
-        // Global crash hooks FIRST
-        AppDomain.CurrentDomain.UnhandledException += (s, e) => {
-            CrashReporter.Log(e.ExceptionObject as Exception, "AppDomain");
-        };
+	[STAThread]
+	public static int Main(string[] args) {
+		// Global crash hooks FIRST
+		AppDomain.CurrentDomain.UnhandledException += (s, e) => {
+			CrashReporter.Log(e.ExceptionObject as Exception, "AppDomain");
+		};
 
-        TaskScheduler.UnobservedTaskException += (s, e) => {
-            CrashReporter.Log(e.Exception, "TaskScheduler");
-            e.SetObserved();
-        };
+		TaskScheduler.UnobservedTaskException += (s, e) => {
+			CrashReporter.Log(e.Exception, "TaskScheduler");
+			e.SetObserved();
+		};
 
-        try {
-            VelopackApp.Build().Run();
+		try {
+			VelopackApp.Build().Run();
         } catch (Exception ex) {
-            CrashReporter.Log(ex, "Velopack");
-            return -1;
-        }
+			CrashReporter.Log(ex, "Velopack");
+			return -1;
+		}
 
-        try {
-            BuildAvaloniaApp()
-                .StartWithClassicDesktopLifetime(args);
+		try {
+			BuildAvaloniaApp()
+				.StartWithClassicDesktopLifetime(args);
 
-            return 0;
-        } catch (Exception ex) {
-            CrashReporter.Log(ex, "Main");
+			return 0;
+		} catch (Exception ex) {
+			CrashReporter.Log(ex, "Main");
 
-            return -1;
-        }
-    }
+			return -1;
+		}
+	}
 
-    public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .WithInterFont()
-            .LogToTrace()
-            .UseReactiveUI();
+
+	public static AppBuilder BuildAvaloniaApp()
+		=> AppBuilder.Configure<App>()
+			.UsePlatformDetect()
+			.WithInterFont()
+			.LogToTrace()
+			.UseReactiveUI();
 }

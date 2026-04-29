@@ -90,7 +90,7 @@ public class ModpackInfoViewModel : ViewModelBase {
 				// 3. Urcăm noul ZIP pentru noua versiune
 				await publicizeService.UploadNewVersionAsync(excludedFilePaths);
 
-				_medatataService.Save(Modpack);
+                _medatataService.Save(Modpack);
 				// 4. Salvăm modificările (noua versiune) local pe disc
 				//ModpackMetadataService.Save(Modpack);
 

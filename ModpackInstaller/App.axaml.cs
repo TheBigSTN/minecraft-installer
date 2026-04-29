@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -9,6 +10,10 @@ using ModpackInstaller.Infrastructure;
 using ModpackInstaller.Services;
 using ModpackInstaller.ViewModels;
 using ModpackInstaller.Views;
+using Velopack.Sources;
+using Velopack;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 
 namespace ModpackInstaller;
 
@@ -38,6 +43,8 @@ public partial class App : Application {
 
         //Services = services.BuildServiceProvider();
 
+
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var dialogService = new DialogService();
@@ -60,5 +67,36 @@ public partial class App : Application {
         }
 
         base.OnFrameworkInitializationCompleted();
+
+        _ = Task.Run(CheckForUpdatesAsync);
+    }
+
+    public static async Task CheckForUpdatesAsync() {
+        var source = new GithubSource("https://github.com/TheBigSTN/minecraft-installer", null, false);
+        var mgr = new UpdateManager(source);
+
+        var update = await mgr.CheckForUpdatesAsync();
+        if(update == null)
+            return;
+
+        Console.WriteLine($"Update găsit: {update.TargetFullRelease.Version}");
+
+        await mgr.DownloadUpdatesAsync(update);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            var result = MessageBoxManager
+                .GetMessageBoxStandard("Update",
+                    $"New Version: {update.TargetFullRelease.Version}\nRestart acum?\nRecomended",
+                    ButtonEnum.YesNo)
+                .ShowAsync().Result;
+
+            if(result == ButtonResult.Yes) {
+                mgr.ApplyUpdatesAndRestart(update);
+            }
+        });
+
+        // 🔥 aplică update + restart
+        mgr.ApplyUpdatesAndRestart(update);
     }
 }
