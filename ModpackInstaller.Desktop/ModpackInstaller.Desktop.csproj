@@ -8,7 +8,7 @@
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<Version>3.2.2</Version>
-		<InformationalVersion>3.2.2</InformationalVersion>  
+		<InformationalVersion>3.2.3</InformationalVersion>  
 	</PropertyGroup>
 	<ItemGroup> 
 		<PackageReference Include="Velopack" Version="0.0.1298" />

@@ -13,10 +13,12 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        var version = Assembly
-            .GetExecutingAssembly()
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion + " - " + VelopackRuntimeInfo.VelopackNugetVersion?.ToString();
+        var raw = Assembly
+            .GetEntryAssembly()
+            ?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion;
+
+        var version = raw?.Split('+')[0];
 
         Title = $"Modpack Installer v{version}";
 
