@@ -26,9 +26,22 @@ public partial class MainViewModel : ViewModelBase {
     [Reactive]
     private string _searchQuery = "";
 
+    [Reactive]
+    private bool _isGlobalBusy;
+
+    [Reactive]
+    private double _installProgress;
+
+    [Reactive]
+    private bool _isProgressIndeterminate;
+
+    [Reactive]
+    private string _progressText;
+
 
     public ModpackManifestService modpackManifestService;
 
+    public ModpackMedatataService modpackMedatataService;
 
     public ModpackMetadata? SelectedModpack { get; private set; }
 
@@ -37,6 +50,7 @@ public partial class MainViewModel : ViewModelBase {
     public MainViewModel(IDialogService dialogService) {
 		InstallTarget = Settings.Config.InstallTarget;
         modpackManifestService = new ModpackManifestService();
+        modpackMedatataService = new ModpackMedatataService();
 
         DialogService = dialogService;
         

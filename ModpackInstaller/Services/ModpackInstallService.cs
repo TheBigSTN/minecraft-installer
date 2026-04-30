@@ -11,6 +11,7 @@ using ModpackInstaller.Models.DTOs;
 using ModpackInstaller.Services.Modpack;
 using System.Text.Json;
 using System.Diagnostics;
+using System.Threading;
 
 namespace ModpackInstaller.Services;
 
@@ -21,18 +22,47 @@ public class PatchManifest {
 }
 
 public class ModpackInstallService {
+    public static async Task InstallModsOfModpack( ModpackMetadata modpackMetadata, IProgress<double>? progress = null ) {
+        ModpackManifestService manifestService = new(modpackMetadata.InstallPath);
+        ModpackManifest manifest = manifestService.Load();
 
-	public static async Task InstallModsOfModpack(ModpackMetadata modpackMetadata) {
-		ModpackManifestService manifestService = new ModpackManifestService(modpackMetadata.InstallPath);
-		ModpackManifest manifest = manifestService.Load();
+        if(manifest.InstalledMods.Count == 0) {
+            progress?.Report(100);
+            return;
+        }
 
-		await Task.WhenAll(
-			 manifest.InstalledMods
-				 .Select(mod => ModpackManifestService.DownloadModAsync(mod, modpackMetadata.InstallPath))
-		 );
+        int totalMods = manifest.InstalledMods.Count;
+        int downloadedMods = 0;
 
-	}
-	public static async Task<ModpackMetadata> DownloadAndInstallModpack(PublicModpackRequestResponse modpack, string baseInstallPath) {
+        // Mapăm fiecare download la un task care, la finalizare, incrementează contorul
+        var downloadTasks = manifest.InstalledMods.Select(async mod => {
+            await ModpackManifestService.DownloadModAsync(mod, modpackMetadata.InstallPath);
+
+            // Incrementăm în mod thread-safe
+            Interlocked.Increment(ref downloadedMods);
+
+            // Raportăm progresul: (moduri gata / total moduri) * 100
+            double currentProgress = (double)downloadedMods / totalMods * 100;
+            progress?.Report(currentProgress);
+        });
+
+        await Task.WhenAll(downloadTasks);
+    }
+    //public static async Task InstallModsOfModpack(ModpackMetadata modpackMetadata) {
+    //	ModpackManifestService manifestService = new(modpackMetadata.InstallPath);
+    //	ModpackManifest manifest = manifestService.Load();
+
+    //	await Task.WhenAll(
+    //		 manifest.InstalledMods
+    //			 .Select(mod => ModpackManifestService.DownloadModAsync(mod, modpackMetadata.InstallPath))
+    //	 );
+
+    //}
+    public static async Task<ModpackMetadata> DownloadAndInstallModpack(
+		PublicModpackRequestResponse modpack, 
+		string baseInstallPath,
+        IProgress<double>? progress = null,
+        Action<string>? statusUpdate = null ) {
 		var installPath = Path.Combine(baseInstallPath, modpack.ModpackName.Trim());
 
 		// Creează folderul dacă nu există
@@ -57,35 +87,36 @@ public class ModpackInstallService {
 			Source = ModpackSource.Remote
 		};
 
-
-		var zipPath = Path.Combine(installPath, "modpack.zip");
+        statusUpdate?.Invoke("Se descarcă modpack-ul...");
+        var zipPath = Path.Combine(installPath, "modpack.zip");
 		try {
 
 			await ModpackApiService.DownloadVersionAsync(
 				modpack.Id,
 				modpack.LatestVersion,
-				zipPath
+				zipPath,
+				progress
 			);
-
-			ZipFile.ExtractToDirectory(zipPath, installPath, true);
+            ZipFile.ExtractToDirectory(zipPath, installPath, true);
 		}
 		finally {
 			if (File.Exists(zipPath))
 				File.Delete(zipPath);
 		}
 
-
-		// instanță ModpackMedatataService cu path-ul principal
-		var registry = new ModpackMedatataService();
+        statusUpdate?.Invoke("Se descarcă modurile...");
+        progress?.Report(0);
+        // instanță ModpackMedatataService cu path-ul principal
+        var registry = new ModpackMedatataService();
 
 		ModpackManifestService modpackManifestService = new(metadata.InstallPath);
 
-		modpackManifestService.ParseAllMods(modInfo => modInfo.Source = ModSource.Remote);
+		//modpackManifestService.ParseAllMods(modInfo => modInfo.Source = ModSource.Remote);
 
 		// creez / salvez metadata
 		registry.Create(metadata);
 
-		await InstallModsOfModpack(metadata);
+		await InstallModsOfModpack(metadata, progress);
 		return metadata;
 	}
 

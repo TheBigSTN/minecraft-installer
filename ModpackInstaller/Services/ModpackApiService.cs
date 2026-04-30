@@ -81,6 +81,15 @@ public record ServerError(string Message, int Status, DateTime Timestamp);
 
 public static class ModpackApiService {
     private static readonly string _baseUrl = AppVariables.AppApiBaseUrl;
+    private static readonly HttpClient _httpClient = new();
+
+    static ModpackApiService() {
+        // Setăm header-ul global pentru toate request-urile viitoare
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "MyCSharpApp");
+
+        // Opțional: poți seta și timeout-ul sau alte setări de bază
+        _httpClient.Timeout = TimeSpan.FromMinutes(5);
+    }
 
     // =========================================
     // 0. REGISTER (POST /api/v1/modpacks/register)
@@ -219,12 +228,13 @@ public static class ModpackApiService {
     public static async Task DownloadVersionAsync(
         string modpackId,
         int version,
-        string savePath
+        string savePath,
+        IProgress<double>? progress = null
     ) {
         var url =
             $"{_baseUrl}/api/v1/modpacks/{modpackId}/versions/{version}";
 
-        await DownloadRawFile(url, savePath);
+        await DownloadRawFile(url, savePath, progress);
     }
 
     // =========================
@@ -242,20 +252,57 @@ public static class ModpackApiService {
     // INTERNAL RAW FILE DOWNLOAD
     // (folosit pt zip-uri reale, nu base64)
     // =========================
-    private static async Task DownloadRawFile(string url, string filepath) {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("User-Agent", "MyCSharpApp");
+        private static async Task DownloadRawFile( string url, string filepath, IProgress<double>? progress = null ) {
 
-        using var response = await client.GetAsync(
-            url,
-            HttpCompletionOption.ResponseHeadersRead
-        );
+            // HttpCompletionOption.ResponseHeadersRead este crucial: 
+            // Spune HttpClient să se oprească după ce a citit headerele (ca să aflăm dimensiunea fișierului)
+            using var response = await _httpClient.GetAsync(
+                url,
+                HttpCompletionOption.ResponseHeadersRead
+            );
 
-        response.EnsureSuccessStatusCode();
+            response.EnsureSuccessStatusCode();
 
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        await using var file = File.Create(filepath);
+            // Încercăm să aflăm mărimea totală din header-ul Content-Length
+            var totalBytes = response.Content.Headers.ContentLength;
 
-        await stream.CopyToAsync(file);
-    }
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            await using var file = File.Create(filepath);
+
+            // Buffer de 8KB (standard pentru operațiuni I/O)
+            var buffer = new byte[8192];
+            long totalReadBytes = 0;
+            int readBytes;
+
+            // Citim manual din stream până când nu mai sunt date
+            while((readBytes = await stream.ReadAsync(buffer)) > 0) {
+                await file.WriteAsync(buffer.AsMemory(0, readBytes));
+                totalReadBytes += readBytes;
+
+                // Dacă serverul ne-a dat Content-Length, calculăm procentul
+                if(totalBytes.HasValue) {
+                    var progressPercentage = (double)totalReadBytes / totalBytes.Value * 100;
+                    progress?.Report(progressPercentage);
+                }
+            }
+
+            // Asigurăm raportarea de 100% la final
+            progress?.Report(100);
+        }
+    //private static async Task DownloadRawFile(string url, string filepath) {
+    //    using var client = new HttpClient();
+    //    client.DefaultRequestHeaders.Add("User-Agent", "MyCSharpApp");
+
+    //    using var response = await client.GetAsync(
+    //        url,
+    //        HttpCompletionOption.ResponseHeadersRead
+    //    );
+
+    //    response.EnsureSuccessStatusCode();
+
+    //    await using var stream = await response.Content.ReadAsStreamAsync();
+    //    await using var file = File.Create(filepath);
+
+    //    await stream.CopyToAsync(file);
+    //}
 }

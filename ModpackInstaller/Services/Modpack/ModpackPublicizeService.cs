@@ -66,7 +66,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
     // =========================================
     // 4. UPLOAD VERSIUNE NOUĂ (ZIP)
     // =========================================
-    public async Task UploadNewVersionAsync(List<string> excludedFilePaths) {
+    public async Task<bool> UploadNewVersionAsync(List<string> excludedFilePaths) {
         string ownerToken = await GetValidToken();
         if (string.IsNullOrEmpty(_metadata.Id)) throw new Exception("ID Modpack lipsă.");
         if (string.IsNullOrEmpty(_metadata.ModpackPassword)) throw new Exception("Modpack not Published");
@@ -74,21 +74,20 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
         string zipPath = AppVariables.GetTempFilePath($"{_metadata.Id}_v{_metadata.Version}.zip");
 
         try {
-            // Exportă fișierul fizic
             ModpackPackageService.ExportFullAsync(_metadata.InstallPath, zipPath, excludedFilePaths);
 
-            // Trimite la server
             await ModpackApiService.UploadVersionAsync(
                 _metadata.Id,
-                _metadata.Version,
+                _metadata.Version + 1,
                 zipPath,
                 ownerToken,
                 _metadata.ModpackPassword!
             );
+
+            return true;
         } catch (Exception e) {
-            _ = e;
-            _metadata.Version--;
-            throw;
+            CrashReporter.Log(e, "UploadNewVersionAsync method");
+            return false;
         }
         finally {
             if (File.Exists(zipPath)) File.Delete(zipPath);

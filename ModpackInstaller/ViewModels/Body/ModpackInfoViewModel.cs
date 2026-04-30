@@ -84,21 +84,20 @@ public class ModpackInfoViewModel : ViewModelBase {
 				//await publicizeService.UpdateMetadataAsync();
 				List<string> excludedFilePaths = await _main.DialogService.ShowFileExcludePicker(Modpack.InstallPath);
 
-                // 2. Incrementăm versiunea locală pentru noul fișier
-                Modpack.Version++;
-
 				// 3. Urcăm noul ZIP pentru noua versiune
-				await publicizeService.UploadNewVersionAsync(excludedFilePaths);
+				bool succes = await publicizeService.UploadNewVersionAsync(excludedFilePaths);
+
+				if (succes) 
+                    Modpack.Version++;
 
                 _medatataService.Save(Modpack);
-				// 4. Salvăm modificările (noua versiune) local pe disc
-				//ModpackMetadataService.Save(Modpack);
+				_main.ShowGlobal();
+                _main.OpenModpack(Modpack);
 
-				Console.WriteLine("Update realizat cu succes!");
+				await _main.DialogService.EmitSimpleOkDialog("Update", "Update realizat cu succes!");
 			}
 			catch (Exception ex) {
-				// Aici ar trebui să trimiți eroarea către un dialog în UI
-				Console.WriteLine($"Eroare la update: {ex.Message}");
+				CrashReporter.Log(ex, "PublishUpdateModpack button");
 			}
 		}, canUpdate);
 		

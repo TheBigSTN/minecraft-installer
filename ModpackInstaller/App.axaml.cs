@@ -83,20 +83,6 @@ public partial class App : Application {
 
         await mgr.DownloadUpdatesAsync(update);
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            var result = MessageBoxManager
-                .GetMessageBoxStandard("Update",
-                    $"New Version: {update.TargetFullRelease.Version}\nRestart acum?\nRecomended",
-                    ButtonEnum.YesNo)
-                .ShowAsync().Result;
-
-            if(result == ButtonResult.Yes) {
-                mgr.ApplyUpdatesAndRestart(update);
-            }
-        });
-
-        // 🔥 aplică update + restart
         mgr.ApplyUpdatesAndRestart(update);
     }
 }

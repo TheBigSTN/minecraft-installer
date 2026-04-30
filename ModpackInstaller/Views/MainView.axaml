@@ -1,33 +1,56 @@
-	<UserControl xmlns="https://github.com/avaloniaui"
-				 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-				 xmlns:vm="clr-namespace:ModpackInstaller.ViewModels"
-				 x:Class="ModpackInstaller.Views.MainView"
-				 x:DataType="vm:MainViewModel"
-				 Focusable="True">
-
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:vm="clr-namespace:ModpackInstaller.ViewModels"
+			 x:Class="ModpackInstaller.Views.MainView"
+			 x:DataType="vm:MainViewModel"
+			 Focusable="True">
+	<Grid>
 		<Grid ColumnDefinitions="220,*"
-				  RowDefinitions="56,*"
-				  Background="#121212">
+				RowDefinitions="56,*"
+				Background="#121212">
 
-				<ContentControl
-					Grid.Row="0"
-					Grid.Column="0"
-					Grid.ColumnSpan="2"
-					ZIndex="1"
-					Content="{Binding TopBarViewModel}"/>
+			<ContentControl
+				Grid.Row="0"
+				Grid.Column="0"
+				Grid.ColumnSpan="2"
+				ZIndex="1"
+				Content="{Binding TopBarViewModel}"/>
 
-				<ContentControl
-					Grid.Row="1"
-					Grid.Column="0"
-					VerticalAlignment="Stretch"
-					HorizontalAlignment="Stretch"
-					Content="{Binding SidebarViewModel}"/>
+			<ContentControl
+				Grid.Row="1"
+				Grid.Column="0"
+				VerticalAlignment="Stretch"
+				HorizontalAlignment="Stretch"
+				Content="{Binding SidebarViewModel}"/>
 
-				<ContentControl
-					Grid.Row="1"
-					Grid.Column="1"
-					VerticalAlignment="Stretch"
-					HorizontalAlignment="Stretch"
-					Content="{Binding BodyViewModel}"/>
-			</Grid>
-	</UserControl>
+			<ContentControl
+				Grid.Row="1"
+				Grid.Column="1"
+				VerticalAlignment="Stretch"
+				HorizontalAlignment="Stretch"
+				Content="{Binding BodyViewModel}"/>
+		</Grid>
+
+		<Grid IsVisible="{Binding IsGlobalBusy}"
+				Background="#80000000"
+				ZIndex="100">
+			<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
+				<TextBlock Text="{Binding ProgressText}"
+							Foreground="White"
+							HorizontalAlignment="Center"/>
+
+				<ProgressBar Value="{Binding InstallProgress}"
+								Minimum="0"
+								Maximum="100"
+								Width="300"
+								IsIndeterminate="{Binding IsProgressIndeterminate}" />
+
+				<!-- Afișăm procentul doar dacă nu e Indeterminate -->
+				<TextBlock Text="{Binding InstallProgress, StringFormat='{}{0:0}%'}"
+							IsVisible="{Binding !IsProgressIndeterminate}"
+							Foreground="White"
+							HorizontalAlignment="Center"/>
+			</StackPanel>
+		</Grid>
+	</Grid>
+</UserControl>

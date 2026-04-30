@@ -45,7 +45,8 @@
 							VerticalAlignment="Center"
 							x:CompileBindings="False"
 							Command="{Binding $parent[ListBox].((vm:ModpackDiscoveryViewModel)DataContext).InstallModpackCommand}"
-							CommandParameter="{Binding}" />
+							CommandParameter="{Binding}"
+							IsEnabled="{Binding IsInstalled}" />
 					</Grid>
 				</DataTemplate>
 			</ListBox.ItemTemplate>

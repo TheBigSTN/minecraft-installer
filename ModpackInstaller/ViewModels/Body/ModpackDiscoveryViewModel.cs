@@ -19,9 +19,9 @@ namespace ModpackInstaller.ViewModels.Body;
 public class ModpackDiscoveryViewModel : ViewModelBase {
     private readonly MainViewModel _main;
 
-    public ObservableCollection<PublicModpackRequestResponse> DiscoveryModpacks { get; } = new();
+    public ObservableCollection<DiscoveryModpackDisplay> DiscoveryModpacks { get; } = new();
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
-    public ReactiveCommand<PublicModpackRequestResponse, Unit> InstallModpackCommand { get; }
+    public ReactiveCommand<DiscoveryModpackDisplay, Unit> InstallModpackCommand { get; }
 
     public ModpackDiscoveryViewModel(MainViewModel main) {
 
@@ -29,13 +29,34 @@ public class ModpackDiscoveryViewModel : ViewModelBase {
 
         RefreshCommand = ReactiveCommand.CreateFromTask(LoadModpacksAsync);
 
-        InstallModpackCommand = ReactiveCommand.CreateFromTask<PublicModpackRequestResponse>(async (modpack) => {
+        InstallModpackCommand = ReactiveCommand.CreateFromTask<DiscoveryModpackDisplay>(async (modpack) => {
             if (modpack is null) return;
-            ModpackMetadata manifest = await ModpackInstallService.DownloadAndInstallModpack(modpack, _main.InstallPath);
 
-            _main.RefreshModpackList();
+            _main.ProgressText = "Se instalează modpack-ul...";
+            _main.InstallProgress = 0;
+            _main.IsProgressIndeterminate = true;
+            _main.IsGlobalBusy = true;
 
-            await _main.DialogService.EmitSimpleOkDialog("Install Complete", $"The modpack {manifest.Name} was installed successfully");
+            var progressHandler = new Progress<double>(value => {
+                _main.IsProgressIndeterminate = false;
+                _main.InstallProgress = value;
+            });
+
+            Action<string> updateStatusText = ( text ) => {
+                _main.ProgressText = text;
+            };
+
+            try {
+                ModpackMetadata manifest = await ModpackInstallService.DownloadAndInstallModpack(modpack, _main.InstallPath, progressHandler, updateStatusText);
+                _main.RefreshModpackList();
+                _main.ShowDiscovery();
+            } catch(Exception ex) {
+                await _main.DialogService.EmitSimpleOkDialog("Eroare", ex.Message);
+            } finally {
+                _main.IsGlobalBusy = false;
+                _main.ProgressText = "";
+            }
+
         });
 
         // Încărcăm datele la inițializare
@@ -48,7 +69,7 @@ public class ModpackDiscoveryViewModel : ViewModelBase {
             var results = await ModpackApiService.GetPublicModpacksAsync();
             DiscoveryModpacks.Clear();
             if (results != null) {
-                foreach (var mp in results) DiscoveryModpacks.Add(mp);
+                foreach(var mp in results) DiscoveryModpacks.Add(new DiscoveryModpackDisplay(mp, CanInstall(mp)));
             }
         }
         catch (Exception ex) {
@@ -56,4 +77,11 @@ public class ModpackDiscoveryViewModel : ViewModelBase {
             await _main.DialogService.EmitSimpleOkDialog("Error", $"The modpack failed to instal.\nReason: {ex.Message}.");
         }
     }
+
+    public bool CanInstall( PublicModpackRequestResponse modpack ) {
+        if(modpack == null)
+            return false;
+        return !_main.modpackMedatataService.Exists(modpack.Id);
+    }
+
 }
