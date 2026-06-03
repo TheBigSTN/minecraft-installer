@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 using ModpackInstaller.Models.Modrinth;
 
 namespace ModpackInstaller.Models;
@@ -15,10 +10,10 @@ public enum ModSource {
     CustomUrl   // Mod instalat via un link direct
 }
 
-public class InstalledModInfo {
+public class ModInfo {
     public string ProjectId { get; set; } = "";
     public string VersionId { get; set; } = "";
-
+    public string VersionNumber { get; set; } = "";
     public ModSource Source { get; set; } = ModSource.Local;
     public string Title { get; set; } = "";
     public string Filename { get; set; } = "";
@@ -28,4 +23,6 @@ public class InstalledModInfo {
 
     public SideSupport ClientSide { get; set; } = SideSupport.unknown;
     public SideSupport ServerSide { get; set; } = SideSupport.unknown;
+
+    // You need to add them in the backend otherwize update pathches won't work
 }

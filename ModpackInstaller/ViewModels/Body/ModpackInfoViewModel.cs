@@ -27,6 +27,7 @@ public class ModpackInfoViewModel : ViewModelBase {
 
 	private readonly MainViewModel _main;
 	private readonly ModpackMedatataService _medatataService = new(AppVariables.InstallerRoot);
+	private readonly ModpackManifestService _manifestService;
 
 	//public Interaction<Unit, ModpackExportMode?> ShowExportDialog { get; }
 	//= new();
@@ -34,9 +35,10 @@ public class ModpackInfoViewModel : ViewModelBase {
 	public ReactiveCommand<Unit, Unit> PBUpdateModpackCommand { get; }
 	public ReactiveCommand<Unit, Unit> EditModpackCommand { get; }
 	public ReactiveCommand<Unit, Unit> ExportModpackCommand { get; }
-	public ReactiveCommand<Unit, Unit> DeleteModpackCommand { get; }
+    public ReactiveCommand<Unit, Unit> DeleteModpackCommand { get; }
+    public ReactiveCommand<Unit, Unit> OpenModUpdatesWindowCommand { get; }
 
-	private bool _hasUpdate;
+    private bool _hasUpdate;
 	public bool HasUpdate {
 		get => _hasUpdate;
 		set => this.RaiseAndSetIfChanged(ref _hasUpdate, value);
@@ -45,7 +47,7 @@ public class ModpackInfoViewModel : ViewModelBase {
 	public ReactiveCommand<Unit, Unit> UpdateModpackCommand { get; }
 
 	public ModpackInfoViewModel(ModpackMetadata? modpack, MainViewModel main) {
-		Modpack = modpack!;
+		Modpack = modpack;
 		_main = main;
 
 		var canUpdate = this.WhenAnyValue(
@@ -54,6 +56,9 @@ public class ModpackInfoViewModel : ViewModelBase {
 		);
 
 		_ = CheckForUpdateAsync();
+		_manifestService = new ModpackManifestService(Modpack?.InstallPath ?? "");
+		_ = _manifestService.SyncWithFilesystemAsync();
+		_ = _manifestService.SyncToFileSistemAsync();
 
 		UpdateModpackCommand = ReactiveCommand.CreateFromTask(async () =>
 		{
@@ -79,12 +84,8 @@ public class ModpackInfoViewModel : ViewModelBase {
 			try {
 				ModpackPublicizeService publicizeService = new(Modpack);
 
-				//// 1. Actualizăm Metadata (Nume, Descriere, versiune joc, etc.)
-				//// Nu are sens deoarece server ul modifica singur versiunea
-				//await publicizeService.UpdateMetadataAsync();
 				List<string> excludedFilePaths = await _main.DialogService.ShowFileExcludePicker(Modpack.InstallPath);
 
-				// 3. Urcăm noul ZIP pentru noua versiune
 				bool succes = await publicizeService.UploadNewVersionAsync(excludedFilePaths);
 
 				if (succes) 
@@ -170,14 +171,23 @@ public class ModpackInfoViewModel : ViewModelBase {
 			_main.RefreshModpackList();
 			_main.ShowGlobal();
 		});
-	}
+
+        OpenModUpdatesWindowCommand = ReactiveCommand.CreateFromTask(async () => {
+			if(Modpack == null)
+                return;
+			await _main.DialogService.ShowModsUpdateDialog(Modpack.Id);
+			_main.RefreshModpackList();
+        });
+
+
+    }
 
 	public async Task CheckForUpdateAsync() {
 		if (Modpack == null)
 			return;
 
 		try {
-			var serverInfo = await ModpackApiService.GetMetadataAsync(Modpack.Id, Modpack.SharingCode);
+			var serverInfo = await BackendApiService.GetMetadataAsync(Modpack.Id, Modpack.SharingCode);
 
 			if (serverInfo == null)
 				return;

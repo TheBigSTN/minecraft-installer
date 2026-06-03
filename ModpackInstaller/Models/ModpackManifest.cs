@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 namespace ModpackInstaller.Models;
 
 public class ModpackManifest {
-    public List<InstalledModInfo> InstalledMods { get; set; } = [];
+    public List<ModInfo> InstalledMods { get; set; } = [];
 }

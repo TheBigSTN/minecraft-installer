@@ -66,7 +66,7 @@ public class ModpackDiscoveryViewModel : ViewModelBase {
     private async Task LoadModpacksAsync() {
         try {
             // Presupunem că ai un endpoint public /api/v1/modpacks/discovery sau similar
-            var results = await ModpackApiService.GetPublicModpacksAsync();
+            var results = await BackendApiService.GetPublicModpacksAsync();
             DiscoveryModpacks.Clear();
             if (results != null) {
                 foreach(var mp in results) DiscoveryModpacks.Add(new DiscoveryModpackDisplay(mp, CanInstall(mp)));

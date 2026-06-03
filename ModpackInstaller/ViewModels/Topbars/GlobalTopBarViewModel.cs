@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using ModpackInstaller.Infrastructure;
 using ModpackInstaller.Models;
+using ModpackInstaller.Services;
 using ModpackInstaller.Services.Modpack;
 using ModpackInstaller.Views;
 using ReactiveUI;
@@ -60,7 +61,14 @@ public class GlobalTopBarViewModel : ViewModelBase {
             _main.ShowDiscovery();
         });
 
+        //OpenSettings = ReactiveCommand.CreateFromTask(async () => {
+
+        //    var r = await ModrinthApiService.GetProjectVersionAsync("AANobbMI", "1.21.1", "fabric");
+        //});
+
         OpenSettings = ReactiveCommand.Create(() => {
+            // Debug stuff
+            //_main.DialogService.ShowModsUpdateDialog("274653ea5fab41f498fd79b42758ca1a");
             // logica deschidere settings
             Console.WriteLine("Settings clicked");
         });

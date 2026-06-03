@@ -18,6 +18,7 @@ public class ModpackTopBarViewModel : ViewModelBase {
     }
 
     public ReactiveCommand<Unit, Unit> GoBackCommand { get; }
+    public ReactiveCommand<Unit, Unit> CheckModUpdatesCommand { get;}
 
     public ModpackTopBarViewModel(MainViewModel main) {
         _main = main;
@@ -26,5 +27,10 @@ public class ModpackTopBarViewModel : ViewModelBase {
             // Aici setezi body-ul la lista de modpack-uri
             _main.ShowGlobal(_main.SelectedModpack);
         });
+
+        CheckModUpdatesCommand = ReactiveCommand.Create(() => {
+            
+        });
+
     }
 }

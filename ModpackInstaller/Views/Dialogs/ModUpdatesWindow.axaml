@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="ModpackInstaller.ModUpdatesWindow"
+		x:DataType="vm:ModsUpdateViewModel"
+        Width="900"
+        Height="600"
+        Title="Mod Updates">
+	<ScrollViewer>
+		<ItemsControl ItemsSource="{Binding ModUpdates}">
+			<ItemsControl.ItemTemplate>
+				<DataTemplate>
+					<Expander>
+						<Expander.Header>
+							<Grid ColumnDefinitions="*,Auto,Auto">
+
+								<TextBlock Text="{Binding ModName}" />
+
+								<TextBlock Grid.Column="1"
+										   Text="{Binding CurrentVersion}"
+										   Opacity="0.6"
+										   Margin="12,0,0,0"/>
+								<Button Grid.Column="2"
+									Content="Update latest"
+									Command="{Binding UpdateToLatestCommand}"
+									Margin="12,0,0,0"/>
+							</Grid>
+						</Expander.Header>
+						<ItemsControl ItemsSource="{Binding UpdatePaths}">
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Expander>
+										<Expander.Header>
+											<Grid ColumnDefinitions="*,Auto">
+
+												<TextBlock Text="{Binding DisplayText}" />
+
+												<Button 
+													Grid.Column="1"
+													Content="Update to here"
+													Command="{Binding UpdateToHereCommand}" />
+
+											</Grid>
+										</Expander.Header>
+										<TextBlock Text="{Binding Changelog}"
+												   TextWrapping="Wrap" />
+
+									</Expander>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+
+					</Expander>
+				</DataTemplate>
+			</ItemsControl.ItemTemplate>
+		</ItemsControl>
+	</ScrollViewer>
+</Window>

@@ -16,8 +16,8 @@ using System.Threading;
 namespace ModpackInstaller.Services;
 
 public class PatchManifest {
-	public List<InstalledModInfo> Added { get; set; } = new();
-	public List<InstalledModInfo> Removed { get; set; } = new();
+	public List<ModInfo> Added { get; set; } = new();
+	public List<ModInfo> Removed { get; set; } = new();
 	public bool Empty { get; set; }
 }
 
@@ -91,7 +91,7 @@ public class ModpackInstallService {
         var zipPath = Path.Combine(installPath, "modpack.zip");
 		try {
 
-			await ModpackApiService.DownloadVersionAsync(
+			await BackendApiService.DownloadVersionAsync(
 				modpack.Id,
 				modpack.LatestVersion,
 				zipPath,
@@ -130,8 +130,8 @@ public class ModpackInstallService {
 			Directory.CreateDirectory(modpackMetadata.InstallPath);
 
 		try {
-			var modpackInfo = await ModpackApiService.GetMetadataAsync(modpackMetadata.Id, null) ?? throw new Exception("Modpack not found on server.");
-			await ModpackApiService.DownloadPatchAsync(
+			var modpackInfo = await BackendApiService.GetMetadataAsync(modpackMetadata.Id, null) ?? throw new Exception("Modpack not found on server.");
+			await BackendApiService.DownloadPatchAsync(
 				modpackMetadata.Id,
 				modpackMetadata.Version,
 				modpackInfo.LatestVersion,

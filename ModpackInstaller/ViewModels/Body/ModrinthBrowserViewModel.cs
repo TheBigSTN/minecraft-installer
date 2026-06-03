@@ -104,7 +104,7 @@ namespace ModpackInstaller.ViewModels.Body {
 
             // 1. Obținem Versiunea (cu prioritate pe versionId dacă există)
             if (!string.IsNullOrEmpty(versionId)) {
-                targetVersion = await apiService.GetVersionAsync(versionId);
+                targetVersion = await ModrinthApiService.GetVersionAsync(versionId);
             }
             else if (!string.IsNullOrEmpty(projectId)) {
                 targetVersion = await apiService.GetCompatibleVersionAsync(projectId, _modpack.GameVersion, _modpack.Loader);

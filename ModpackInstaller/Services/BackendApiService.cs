@@ -79,11 +79,11 @@ public class ModpackVersionResponse {
 
 public record ServerError(string Message, int Status, DateTime Timestamp);
 
-public static class ModpackApiService {
+public static class BackendApiService {
     private static readonly string _baseUrl = AppVariables.AppApiBaseUrl;
     private static readonly HttpClient _httpClient = new();
 
-    static ModpackApiService() {
+    static BackendApiService() {
         // Setăm header-ul global pentru toate request-urile viitoare
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "MyCSharpApp");
 
@@ -95,9 +95,8 @@ public static class ModpackApiService {
     // 0. REGISTER (POST /api/v1/modpacks/register)
     // =========================================
     public static async Task<OwnerResponse?> RegisterAsync(string nickname) {
-        using var client = new HttpClient();
         // Parametrul vine în URL ca Query Param conform semnăturii tale Java
-        var response = await client.PostAsync($"{_baseUrl}/api/v1/modpacks/register?nickname={Uri.EscapeDataString(nickname)}", null);
+        var response = await _httpClient.PostAsync($"{_baseUrl}/api/v1/modpacks/register?nickname={Uri.EscapeDataString(nickname)}", null);
 
         if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
 

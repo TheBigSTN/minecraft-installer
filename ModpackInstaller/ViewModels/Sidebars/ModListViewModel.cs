@@ -14,9 +14,9 @@ namespace ModpackInstaller.ViewModels.Sidebars;
 
 public class ModListViewModel : ViewModelBase {
     private readonly MainViewModel _main;
-    public ObservableCollection<InstalledModInfo> Mods { get; } = new();
+    public ObservableCollection<ModInfo> Mods { get; } = new();
 
-    public ReactiveCommand<InstalledModInfo, Unit> DeleteModCommand { get; }
+    public ReactiveCommand<ModInfo, Unit> DeleteModCommand { get; }
 
     public ModListViewModel(MainViewModel main, ModpackMetadata modpack) {
         _main = main;
@@ -25,7 +25,7 @@ public class ModListViewModel : ViewModelBase {
 
         _ = LoadMods();
 
-        DeleteModCommand = ReactiveCommand.CreateFromTask<InstalledModInfo>(async mod => {
+        DeleteModCommand = ReactiveCommand.CreateFromTask<ModInfo>(async mod => {
             // 1. Ștergem din fișierul manifest (trebuie să ai metoda RemoveMod în serviciu)
             _main.modpackManifestService.RemoveMod(mod.ProjectId);
 
@@ -61,6 +61,6 @@ public class ModListViewModel : ViewModelBase {
 }
 
 public class ManifestChangedMessage {
-    public required InstalledModInfo Mod { get; set; }
+    public required ModInfo Mod { get; set; }
     public bool IsRemoved { get; set; }
 }

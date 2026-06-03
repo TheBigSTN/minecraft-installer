@@ -90,6 +90,7 @@ public class ModpackManifestService {
             ModpackManifest modpackManifest = JsonSerializer.Deserialize<ModpackManifest>(json) ?? new ModpackManifest();
             Manifest = modpackManifest;
             await SyncWithFilesystemAsync();
+            await SyncToFileSistemAsync();
             return modpackManifest;
         } catch {
             Manifest = new ModpackManifest();
@@ -118,11 +119,11 @@ public class ModpackManifestService {
         File.WriteAllText(ManifestPath, json);
     }
 
-    public void ParseAllMods(Action<InstalledModInfo> action) {
+    public void ParseAllMods(Action<ModInfo> action) {
         if(Manifest == null)
             return;
 
-        foreach (InstalledModInfo modInfo in Manifest.InstalledMods) {
+        foreach (ModInfo modInfo in Manifest.InstalledMods) {
             action.Invoke(modInfo);
         }
         Save();
@@ -130,7 +131,7 @@ public class ModpackManifestService {
 
 
 
-    public bool AddOrUpdateMod(InstalledModInfo modInfo, bool modpackInstall) {
+    public bool AddOrUpdateMod(ModInfo modInfo, bool modpackInstall) {
         if(Manifest == null)
             return false;
 
@@ -162,7 +163,7 @@ public class ModpackManifestService {
         return true; // updated
     }
 
-    public void AddMod(InstalledModInfo installedModInfo, bool modpackInstall) {
+    public void AddMod(ModInfo installedModInfo, bool modpackInstall) {
         if(Manifest == null)
             return;
 
@@ -171,11 +172,11 @@ public class ModpackManifestService {
         Save();
     }
 
-    public InstalledModInfo? AddMod(ModrinthProject project, ModrinthVersion version) {
+    public ModInfo? AddMod(ModrinthProject project, ModrinthVersion version) {
         if (Manifest == null)
             return null;
 
-        // Verificăm dacă există deja în lista de tip InstalledModInfo
+        // Verificăm dacă există deja în lista de tip ModInfo
         if (Manifest.InstalledMods.Any(m => m.ProjectId == project.Id))
             return null;
 
@@ -184,9 +185,10 @@ public class ModpackManifestService {
         else file ??= version.Files.FirstOrDefault();
 
         // AICI: Creăm obiectul nou pentru listă
-        var newItem = new InstalledModInfo {
+        var newItem = new ModInfo {
             ProjectId = project.Id,
             VersionId = version.Id,
+            VersionNumber = version.VersionNumber,
             Title = project.Title,
             Filename = file?.Filename ?? "",
             DownloadUrl = file?.Url ?? "",
@@ -201,7 +203,80 @@ public class ModpackManifestService {
         Save();
         return newItem;
     }
+    public async Task<ModInfo?> InstallModAsync( ModrinthProject project, ModrinthVersion version ) {
+        if(Manifest == null || _installPath == null)
+            return null;
 
+        var existing = Manifest.InstalledMods
+            .FirstOrDefault(m => m.ProjectId == project.Id);
+
+        var file = version.PrimaryFile ?? version.Files.FirstOrDefault();
+        if(file == null)
+            return null;
+
+        var modsFolder = Path.Combine(_installPath, "mods");
+        Directory.CreateDirectory(modsFolder);
+
+        var filePath = Path.Combine(modsFolder, file.Filename);
+
+        // 🔥 CASE 1: mod exists → update
+        if(existing != null) {
+            // dacă e aceeași versiune → nu facem nimic
+            if(existing.VersionId == version.Id) {
+                var currentPath = Path.Combine(modsFolder, existing.Filename);
+                if(!File.Exists(currentPath))
+                    await DownloadModAsync(existing, _installPath);
+                return existing;
+            }
+
+            // șterge jar vechi
+            if(!string.IsNullOrEmpty(existing.Filename)) {
+                var oldPath = Path.Combine(modsFolder, existing.Filename);
+                if(File.Exists(oldPath))
+                    File.Delete(oldPath);
+            }
+
+            var newVersion = existing;
+            newVersion.VersionId = version.Id;
+            newVersion.VersionNumber = version.VersionNumber;
+            newVersion.Filename = file.Filename;
+            newVersion.DownloadUrl = file.Url;
+
+            // descarcă noul jar
+            await DownloadModAsync(newVersion, _installPath);
+
+            // update model
+            existing.VersionId = version.Id;
+            existing.VersionNumber = version.VersionNumber;
+            existing.Filename = file.Filename;
+            existing.DownloadUrl = file.Url;
+
+            Save();
+            return existing;
+        }
+
+        // 🔥 CASE 2: mod nou → install
+        var newItem = new ModInfo {
+            ProjectId = project.Id,
+            VersionId = version.Id,
+            VersionNumber = version.VersionNumber,
+            Title = project.Title,
+            Filename = file.Filename,
+            DownloadUrl = file.Url,
+            IconUrl = project.IconURL,
+            ClientSide = project.ClientSide,
+            ServerSide = project.ServerSide,
+            Source = ModSource.Remote,
+            Enabled = true
+        };
+
+        await DownloadModAsync(newItem, _installPath);
+
+        Manifest.InstalledMods.Add(newItem);
+        Save();
+
+        return newItem;
+    }
     public void RemoveMod(string projectId) {
         if(Manifest == null || _installPath == null)
             return;
@@ -230,21 +305,44 @@ public class ModpackManifestService {
         }
     }
 
-    public bool IsModInstalled(InstalledModInfo modInfo) {
+    public async Task UpdateModAsync( string modId, string versionId ) {
+        if(Manifest == null || _installPath == null)
+            return;
+
+        var mod = Manifest.InstalledMods.FirstOrDefault(m => m.ProjectId == modId);
+        if(mod == null)
+            return;
+
+        // dacă e deja aceeași versiune → no-op
+        if(mod.VersionId == versionId)
+            return;
+
+        var version = await ModrinthApiService.GetVersionAsync(versionId);
+        if(version == null)
+            return;
+
+        var project = await ModrinthApiService.GetProjectAsync(modId);
+        if(project == null)
+            return;
+
+        await InstallModAsync(project, version);
+    }
+
+    public bool IsModInstalled(ModInfo modInfo) {
         var state = GetModInstallState(modInfo);
         return state == ModInstallState.InstalledSameVersion
             || state == ModInstallState.InstalledDifferentVersion;
     }
 
-    public bool IsModInstalledDiferentVersion(InstalledModInfo modInfo) {
+    public bool IsModInstalledDiferentVersion(ModInfo modInfo) {
         return GetModInstallState(modInfo) == ModInstallState.InstalledDifferentVersion;
     }
 
-    public bool IsModInstalledSameVersion(InstalledModInfo modInfo) {
+    public bool IsModInstalledSameVersion(ModInfo modInfo) {
         return GetModInstallState(modInfo) == ModInstallState.InstalledSameVersion;
     }
 
-    public ModInstallState GetModInstallState(InstalledModInfo modInfo) {
+    public ModInstallState GetModInstallState(ModInfo modInfo) {
         if(Manifest == null)
             return ModInstallState.InstalledDifferentVersion;
 
@@ -260,9 +358,9 @@ public class ModpackManifestService {
         return ModInstallState.InstalledDifferentVersion;
     }
 
-    public static async Task<bool> DownloadModAsync(InstalledModInfo modInfo, string installPath) {
+    public static async Task<bool> DownloadModAsync(ModInfo modInfo, string modpackinstallPath) {
         try {
-            var modsFolder = Path.Combine(installPath, "mods");
+            var modsFolder = Path.Combine(modpackinstallPath, "mods");
             if (!Directory.Exists(modsFolder))
                 Directory.CreateDirectory(modsFolder);
 
@@ -312,9 +410,10 @@ public class ModpackManifestService {
                     var primaryFile = version.Files.FirstOrDefault(f => f.Hashes.Sha1 == sha1)
                                       ?? version.Files.FirstOrDefault();
 
-                    var mod = new InstalledModInfo {
+                    var mod = new ModInfo {
                         ProjectId = version.ProjectId,
                         VersionId = version.Id,
+                        VersionNumber = version.VersionNumber,
                         Title = project?.Title ?? fileName,
                         Filename = fileName,
                         DownloadUrl = primaryFile?.Url ?? "",
@@ -330,9 +429,10 @@ public class ModpackManifestService {
                     // 4️⃣ fallback → LOCAL MOD
                     var (title, versionStr) = ParseFileName(fileName);
 
-                    var mod = new InstalledModInfo {
+                    var mod = new ModInfo {
                         ProjectId = Guid.NewGuid().ToString(), // local id
                         VersionId = versionStr,
+                        VersionNumber = versionStr,
                         Title = title,
                         Filename = fileName,
                         Source = ModSource.Local,
@@ -347,6 +447,68 @@ public class ModpackManifestService {
         }
 
         Save();
+    }
+
+    public async Task SyncToFileSistemAsync() {
+        if(_installPath == null || Manifest == null)
+            return;
+
+        var modsFolder = Path.Combine(_installPath, "mods");
+
+        foreach(var mod in Manifest.InstalledMods.ToList()) {
+            var filePath = Path.Combine(modsFolder, mod.Filename);
+
+            // 1️⃣ file missing → repair
+            if(!File.Exists(filePath)) {
+                await RepairModAsync(mod);
+                continue;
+            }
+
+            // 2️⃣ optional: verify hash
+            if(!await IsValidModAsync(mod, filePath)) {
+                await RepairModAsync(mod);
+            }
+        }
+
+        Save();
+    }
+
+    private async Task<bool> IsValidModAsync( ModInfo mod, string filePath ) {
+        if(mod.Source != ModSource.Remote)
+            return true; // local mods are not verified
+
+        var version = await ModrinthApiService.GetVersionAsync(mod.VersionId);
+        if(version == null)
+            return true;
+
+        var file = version.Files.FirstOrDefault(f => f.Filename == mod.Filename)
+                   ?? version.PrimaryFile;
+
+        if(file?.Hashes?.Sha1 == null)
+            return true;
+
+        using var sha1 = System.Security.Cryptography.SHA1.Create();
+        using var stream = File.OpenRead(filePath);
+
+        var hash = await sha1.ComputeHashAsync(stream);
+        var local = Convert.ToHexString(hash).ToLowerInvariant();
+
+        return local == file.Hashes.Sha1.ToLowerInvariant();
+    }
+
+    private async Task RepairModAsync( ModInfo mod ) {
+        if(_installPath == null)
+            return;
+
+        var version = await ModrinthApiService.GetVersionAsync(mod.VersionId);
+        if(version == null)
+            return;
+
+        var project = await ModrinthApiService.GetProjectAsync(version.ProjectId);
+        if(project == null)
+            return;
+
+        await InstallModAsync(project, version);
     }
 
     private static (string title, string version) ParseFileName( string fileName ) {
@@ -368,9 +530,6 @@ public class ModpackManifestService {
 
         return (title, version);
     }
-
-
-
 }
 
 

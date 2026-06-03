@@ -53,7 +53,8 @@ public partial class MainViewModel : ViewModelBase {
         modpackMedatataService = new ModpackMedatataService();
 
         DialogService = dialogService;
-        
+
+
         ShowGlobal();
     }
 

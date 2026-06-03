@@ -35,7 +35,7 @@ public class ModrinthApiService {
 
         var versions = manifest.GameVersions
             // ❌ scoate placeholder-ul
-            .Where(v => !v.Id.StartsWith("$"));
+            .Where(v => !v.Id.StartsWith('$'));
 
         if (stableOnly)
             versions = versions.Where(v => v.Stable);
@@ -100,7 +100,7 @@ public class ModrinthApiService {
         var versions = await WebService.GetJson<List<ModrinthVersion>>(url, DefaultHeaders);
         return versions?.OrderByDescending(v => v.VersionType == "release").FirstOrDefault();
     }
-    public async Task<ModrinthVersion?> GetVersionAsync(string versionId) {
+    public static async Task<ModrinthVersion?> GetVersionAsync(string versionId) {
         var url = $"{BaseUrl}/version/{versionId}";
         return await WebService.GetJson<ModrinthVersion>(url, DefaultHeaders);
     }
@@ -108,6 +108,11 @@ public class ModrinthApiService {
     public static async Task<ModrinthProject?> GetProjectAsync(string projectIdOrSlug) {
         var url = $"{BaseUrl}/project/{projectIdOrSlug}";
         return await WebService.GetJson<ModrinthProject>(url, DefaultHeaders);
+    }
+
+    internal static async Task<List<ModrinthVersionExtended>?> GetProjectVersionAsync( string projectIdOrSlug, string gameVersion, string loader ) {
+        var url = $"{BaseUrl}/project/{projectIdOrSlug}/version?loaders=[\"{loader}\"]&game_versions=[\"{gameVersion}\"]&include_changelog=true";
+        return await WebService.GetJson<List<ModrinthVersionExtended>>(url, DefaultHeaders);
     }
 
     public static async Task<ModrinthVersion?> GetVersionByHashAsync( string sha1 ) {

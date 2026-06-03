@@ -18,6 +18,7 @@ using ModpackInstaller.Windows;
 using ModpackInstaller.ViewModels.Dialogs;
 using ModpackInstaller.ViewModels.Body;
 using ModpackInstaller.Views;
+using System.Reactive;
 
 namespace ModpackInstaller.Services;
 
@@ -29,6 +30,7 @@ public interface IDialogService {
 	Task<ModpackMetadata?> ShowCreateModpackDialog(string installPath, string installTarget);
 	Task<ModpackExportMode?> ShowExportModpackDialog(ModpackMetadata modpack );
 	Task<List<string>> ShowFileExcludePicker( string path);
+	Task<Unit> ShowModsUpdateDialog( string modpackId );
 
 
 }
@@ -125,5 +127,19 @@ public class DialogService : IDialogService {
         return await dialog.ShowDialog<List<string>>(_window);
     }
 
+	public async Task<Unit> ShowModsUpdateDialog(string modpackId) {
+		if(_window == null)
+			return Unit.Default;
+
+		ModsUpdateViewModel vm = new(modpackId);
+
+		ModUpdatesWindow dialog = new() {
+			DataContext = vm
+		};
+
+		vm.CloseRequested += _ => dialog.Close();
+
+        return await dialog.ShowDialog<Unit>(_window);
+    } 
 
 }

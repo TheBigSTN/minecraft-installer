@@ -20,7 +20,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
     // 1. ÎNREGISTRARE UTILIZATOR
     // =========================================
     public async Task<OwnerResponse?> RegisterUserAsync(string nickname) {
-        var response = await ModpackApiService.RegisterAsync(nickname);
+        var response = await BackendApiService.RegisterAsync(nickname);
         if (response != null) {
             _appSettings.Update(cfg => {
                 cfg.UserPasswordToken = response.OwnerToken;
@@ -37,7 +37,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
         string ownerToken = await GetValidToken();
 
         var request = CreateRequest(isPublic, sharingCode);
-        var response = await ModpackApiService.CreateModpackAsync(request, ownerToken);
+        var response = await BackendApiService.CreateModpackAsync(request, ownerToken);
 
         if (response != null) {
             _metadata.Id = response.Id;
@@ -60,7 +60,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
             throw new Exception("Modpack-ul nu a fost creat pe server încă.");
 
         var request = CreateRequest(_metadata.IsPublic, _metadata.SharingCode);
-        await ModpackApiService.UpdateMetadataAsync(_metadata.Id, request, ownerToken, _metadata.ModpackPassword);
+        await BackendApiService.UpdateMetadataAsync(_metadata.Id, request, ownerToken, _metadata.ModpackPassword);
     }
 
     // =========================================
@@ -76,7 +76,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
         try {
             ModpackPackageService.ExportFullAsync(_metadata.InstallPath, zipPath, excludedFilePaths);
 
-            await ModpackApiService.UploadVersionAsync(
+            await BackendApiService.UploadVersionAsync(
                 _metadata.Id,
                 _metadata.Version + 1,
                 zipPath,
