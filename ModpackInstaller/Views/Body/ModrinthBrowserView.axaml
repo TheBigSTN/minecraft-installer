@@ -23,20 +23,32 @@
 					</Grid.ColumnDefinitions>
 
 					<!-- ICON + TEXT -->
-					<StackPanel Orientation="Horizontal" Spacing="10">
-						<Image Width="48"
-							   Height="48"
-							   Stretch="UniformToFill"
-							   asyncImageLoader:ImageLoader.Source="{Binding IconURL}" />
+					<Button Grid.Column="0"
+						Command="{Binding $parent[ListBox].DataContext.ModDetailCommand}"
+						CommandParameter="{Binding}"
+						HorizontalContentAlignment="Stretch"
+						Padding="0">
 
-						<StackPanel Spacing="4">
-							<TextBlock Text="{Binding Title}" FontWeight="Bold"/>
-							<TextBlock Text="{Binding Description}"
-									   FontSize="12"
-									   Foreground="#AAA"
-									   TextWrapping="Wrap"/>
+						<Button.Template>
+							<ControlTemplate>
+								<ContentPresenter Content="{TemplateBinding Content}" />
+							</ControlTemplate>
+						</Button.Template>
+
+						<StackPanel Orientation="Horizontal" Spacing="10">
+							<Image Width="48" Height="48"
+								   Stretch="UniformToFill"
+								   asyncImageLoader:ImageLoader.Source="{Binding IconURL}" />
+
+							<StackPanel Spacing="4">
+								<TextBlock Text="{Binding Title}" FontWeight="Bold"/>
+								<TextBlock Text="{Binding Description}"
+										   FontSize="12"
+										   Foreground="#AAA"
+										   TextWrapping="Wrap"/>
+							</StackPanel>
 						</StackPanel>
-					</StackPanel>
+					</Button>
 
 					<!-- BUTON ADD -->
 					<Button Grid.Column="1"

@@ -1,0 +1,212 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:asyncImage="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+		xmlns:md="https://github.com/whistyun/Markdown.Avalonia"
+		xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+		x:DataType="vm:ModDetailsViewModel"
+        x:Class="ModpackInstaller.ModInfoWindow"
+        Title="ModInfoWindow">
+	<Grid RowDefinitions="Auto,*">
+
+		<!-- HEADER -->
+
+		<Border Grid.Row="0"
+                Padding="16">
+
+			<Grid ColumnDefinitions="96,*,Auto">
+
+				<!-- ICON -->
+
+				<Border Width="80"
+                        Height="80"
+                        CornerRadius="8">
+
+					<asyncImage:AdvancedImage Source="{Binding Project.IconURL}"
+                          Stretch="Uniform"
+                          Width="64" Height="64"/>
+				</Border>
+
+				<!-- INFO -->
+
+				<StackPanel Grid.Column="1"
+                            Margin="16,0,0,0"
+                            Spacing="6">
+
+					<TextBlock Text="{Binding Project.Title}"
+                               FontSize="24"
+                               FontWeight="Bold"/>
+
+					<TextBlock Text="{Binding Project.Description}"
+                               TextWrapping="Wrap"
+                               Opacity="0.75"/>
+
+					<WrapPanel Margin="0,8,0,0">
+
+						<TextBlock Text="Author: "
+                                   FontWeight="SemiBold"/>
+<!--
+						<TextBlock Text="{Binding AuthorName}"
+                                   Margin="0,0,20,0"/>
+-->
+
+						<TextBlock Text="Published: "
+                                   FontWeight="SemiBold"/>
+
+						<TextBlock Text="{Binding Project.PublishedDate}"
+                                   Margin="0,0,20,0"/>
+
+						<TextBlock Text="Downloads: "
+                                   FontWeight="SemiBold"/>
+
+						<TextBlock Text="{Binding Project.Downloads}"/>
+
+					</WrapPanel>
+
+					<WrapPanel>
+
+						<TextBlock Text="Client: "
+                                   FontWeight="SemiBold"/>
+
+						<TextBlock Text="{Binding Project.ClientSide}"
+                                   Margin="0,0,20,0"/>
+
+						<TextBlock Text="Server: "
+                                   FontWeight="SemiBold"/>
+
+						<TextBlock Text="{Binding Project.ServerSide}"/>
+
+					</WrapPanel>
+
+				</StackPanel>
+
+				<!-- CURRENT VERSION -->
+
+				<StackPanel Grid.Column="2" HorizontalAlignment="Right">
+					<TextBlock Text="Status" HorizontalAlignment="Right" Opacity="0.7"/>
+
+					<TextBlock Text="{Binding InstalledMod.VersionNumber}"
+							   IsVisible="{Binding InstalledMod, Converter={x:Static ObjectConverters.IsNotNull}}"
+							   FontSize="18"
+							   FontWeight="Bold"
+							   HorizontalAlignment="Right"
+							   Foreground="Green"/>
+
+					<TextBlock Text="Not Installed"
+							   IsVisible="{Binding InstalledMod, Converter={x:Static ObjectConverters.IsNull}}"
+							   FontSize="14"
+							   FontStyle="Italic"
+							   HorizontalAlignment="Right"
+							   Foreground="Gray"/>
+				</StackPanel>
+
+			</Grid>
+
+		</Border>
+
+		<!-- CONTENT -->
+
+		<TabControl Grid.Row="1">
+
+			<!-- DESCRIPTION -->
+
+			<TabItem Header="Description">
+
+				<ScrollViewer Margin="12">
+
+					<!--
+					<TextBlock Text="{Binding Project.Body}"
+                               TextWrapping="Wrap"/>
+					-->
+					<md:MarkdownScrollViewer Markdown="{Binding Project.Body}"
+                             xml:space="preserve" />
+
+				</ScrollViewer>
+
+			</TabItem>
+
+			<!-- VERSIONS -->
+
+			<TabItem Header="Versions">
+
+				<ListBox ItemsSource="{Binding Versions}">
+
+					<ListBox.ItemTemplate>
+
+						<DataTemplate>
+
+							<Border Padding="8">
+
+								<Grid ColumnDefinitions="*,Auto">
+
+									<StackPanel>
+
+										<TextBlock Text="{Binding ModrinthVersion.VersionNumber}"
+                                                   FontWeight="SemiBold"/>
+
+										<TextBlock Text="{Binding ModrinthVersion.VersionType}"
+                                                   Opacity="0.7"/>
+
+									</StackPanel>
+
+									<StackPanel Orientation="Horizontal" Grid.Column="1" Margin="0,0,10,0">
+										<TextBlock Text="{Binding ArrowSymbol}"
+												   Foreground="{Binding ArrowColor}"
+												   Margin="0,0,5,0"
+												   FontWeight="Bold"/>
+									</StackPanel>
+
+									<Button Grid.Column="2"
+										Content="Install"
+										Command="{Binding $parent[TabControl].DataContext.InstallVersionCommand}"
+										CommandParameter="{Binding}"
+										IsEnabled="{Binding !IsCurrent}" />
+
+								</Grid>
+
+							</Border>
+
+						</DataTemplate>
+
+					</ListBox.ItemTemplate>
+
+				</ListBox>
+
+			</TabItem>
+
+			<!-- CHANGELOG -->
+
+			<TabItem Header="Changelog">
+
+				<ListBox ItemsSource="{Binding Versions}">
+
+					<ListBox.ItemTemplate>
+
+						<DataTemplate>
+
+							<Expander Header="{Binding ModrinthVersion.VersionNumber}">
+
+								<ScrollViewer MaxHeight="300">
+
+									<TextBlock Text="{Binding ModrinthVersion.Changelog}"
+                                               TextWrapping="Wrap"
+                                               Margin="12"/>
+
+								</ScrollViewer>
+
+							</Expander>
+
+						</DataTemplate>
+
+					</ListBox.ItemTemplate>
+
+				</ListBox>
+
+			</TabItem>
+
+		</TabControl>
+
+	</Grid>
+</Window>

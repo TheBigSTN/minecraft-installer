@@ -12,6 +12,5 @@
 		<TextBox Width="300"
 				 Watermark="Search mods on Modrinth..."
 				 Text="{Binding SearchQuery}"/>
-		<Button Content="Check for Mod Updates" Command="{Binding CheckModUpdatesCommand}" />
 	</StackPanel>
 </UserControl>

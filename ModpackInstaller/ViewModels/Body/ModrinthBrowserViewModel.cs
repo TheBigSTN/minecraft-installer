@@ -20,9 +20,10 @@ namespace ModpackInstaller.ViewModels.Body {
 	public class ModrinthBrowserViewModel : ViewModelBase {
 		private readonly ModpackMetadata _modpack;
 		private readonly MainViewModel _main;
-        //private readonly ModpackManifestService _manifestService;
 
-        public ObservableCollection<ModrinthProject> Mods { get; } = new();
+        public ObservableCollection<ModrinthProject> Mods { get; } = [];
+
+        public ReactiveCommand<ModrinthProject, Unit> ModDetailCommand { get; }
 
         public ReactiveCommand<ModrinthProject, Unit> AddModCommand { get; }
         public string SearchQuery {
@@ -51,6 +52,10 @@ namespace ModpackInstaller.ViewModels.Body {
                 await InstallModRecursive(project.Id, null);
 
                 return Unit.Default;
+            });
+
+            ModDetailCommand = ReactiveCommand.CreateFromTask<ModrinthProject>(async modProject => {
+                await _main.DialogService.ShowModDetailsDialog(_main.modpackManifestService, modProject, modpack.GameVersion, modpack.Loader.ToString().ToLower());
             });
 
             _main.SearchQuery = "";

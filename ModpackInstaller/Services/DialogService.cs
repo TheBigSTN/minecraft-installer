@@ -19,6 +19,7 @@ using ModpackInstaller.ViewModels.Dialogs;
 using ModpackInstaller.ViewModels.Body;
 using ModpackInstaller.Views;
 using System.Reactive;
+using ModpackInstaller.Models.Modrinth;
 
 namespace ModpackInstaller.Services;
 
@@ -31,7 +32,8 @@ public interface IDialogService {
 	Task<ModpackExportMode?> ShowExportModpackDialog(ModpackMetadata modpack );
 	Task<List<string>> ShowFileExcludePicker( string path);
 	Task<Unit> ShowModsUpdateDialog( string modpackId );
-
+	Task<Unit> ShowModDetailsDialog( ModpackManifestService modpkServ, ModInfo modInfo, string GameVersion, string Loader );
+    Task<Unit> ShowModDetailsDialog( ModpackManifestService modpkServ, ModrinthProject modrinthProject, string GameVersion, string Loader );
 
 }
 
@@ -140,6 +142,54 @@ public class DialogService : IDialogService {
 		vm.CloseRequested += _ => dialog.Close();
 
         return await dialog.ShowDialog<Unit>(_window);
-    } 
+    }
 
+    public async Task<Unit> ShowModDetailsDialog( ModpackManifestService modpkServ, ModInfo modInfo, string GameVersion, string Loader ) {
+        if(_window == null)
+            return Unit.Default;
+
+        ModDetailsViewModel vm = new(modpkServ, modInfo, GameVersion, Loader);
+
+        ModInfoWindow dialog = new() {
+            DataContext = vm
+        };
+
+        //vm.CloseRequested += _ => dialog.Close();
+
+        return await dialog.ShowDialog<Unit>(_window);
+    }
+
+    public async Task<Unit> ShowModDetailsDialog( ModpackManifestService modpkServ, ModrinthProject modrinthProject, string GameVersion, string Loader ) {
+        if(_window == null)
+            return Unit.Default;
+
+        var modInfo = new ModInfo {
+            ProjectId = modrinthProject.Id,
+            Title = modrinthProject.Title,
+            IconUrl = modrinthProject.IconURL,
+            ClientSide = modrinthProject.ClientSide,
+            ServerSide = modrinthProject.ServerSide,
+
+            VersionId = "",
+            VersionNumber = "",
+            Filename = "",
+            DownloadUrl = "",
+            FileSha = "",
+
+            Source = ModSource.Remote,
+            Enabled = true
+        };
+
+        ModInfo modinfo2 = modpkServ.Manifest.InstalledMods.Find( m => m.ProjectId == modInfo.ProjectId) ?? modInfo;
+
+        ModDetailsViewModel vm = new(modpkServ, modinfo2, GameVersion, Loader);
+
+        ModInfoWindow dialog = new() {
+            DataContext = vm
+        };
+
+        //vm.CloseRequested += _ => dialog.Close();
+
+        return await dialog.ShowDialog<Unit>(_window);
+    }
 }

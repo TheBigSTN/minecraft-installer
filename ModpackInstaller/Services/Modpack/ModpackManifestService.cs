@@ -475,8 +475,14 @@ public class ModpackManifestService {
 
     private async Task<bool> IsValidModAsync( ModInfo mod, string filePath ) {
         if(mod.Source != ModSource.Remote)
-            return true; // local mods are not verified
+            return true;
 
+        // 1. FAST PATH: already cached hash
+        if(!string.IsNullOrWhiteSpace(mod.FileSha)) {
+            return await CompareLocalFileAsync(filePath, mod.FileSha);
+        }
+
+        // 2. FETCH METADATA ONCE
         var version = await ModrinthApiService.GetVersionAsync(mod.VersionId);
         if(version == null)
             return true;
@@ -487,13 +493,32 @@ public class ModpackManifestService {
         if(file?.Hashes?.Sha1 == null)
             return true;
 
+        // save for future runs (IMPORTANT)
+        mod.FileSha = file.Hashes.Sha1.ToLowerInvariant();
+        var index = Manifest.InstalledMods.FindIndex(info => info.VersionId == mod.VersionId);
+
+        Manifest.InstalledMods[index].FileSha = mod.FileSha;
+
+        // 3. compare
+        return await CompareLocalFileAsync(filePath, mod.FileSha);
+    }
+
+    private static async Task<bool> CompareLocalFileAsync( string filePath, string expectedSha1 ) {
+        await using var stream = new FileStream(
+            filePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            bufferSize: 1024 * 1024, // 1MB buffer (important)
+            options: FileOptions.Asynchronous | FileOptions.SequentialScan
+        );
+
         using var sha1 = System.Security.Cryptography.SHA1.Create();
-        using var stream = File.OpenRead(filePath);
 
         var hash = await sha1.ComputeHashAsync(stream);
         var local = Convert.ToHexString(hash).ToLowerInvariant();
 
-        return local == file.Hashes.Sha1.ToLowerInvariant();
+        return local == expectedSha1.ToLowerInvariant();
     }
 
     private async Task RepairModAsync( ModInfo mod ) {

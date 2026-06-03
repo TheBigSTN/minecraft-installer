@@ -24,5 +24,7 @@ public class ModInfo {
     public SideSupport ClientSide { get; set; } = SideSupport.unknown;
     public SideSupport ServerSide { get; set; } = SideSupport.unknown;
 
+    public string FileSha { get; set; } = "";
+
     // You need to add them in the backend otherwize update pathches won't work
 }

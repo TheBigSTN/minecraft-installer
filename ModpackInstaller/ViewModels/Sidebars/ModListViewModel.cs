@@ -17,6 +17,7 @@ public class ModListViewModel : ViewModelBase {
     public ObservableCollection<ModInfo> Mods { get; } = new();
 
     public ReactiveCommand<ModInfo, Unit> DeleteModCommand { get; }
+    public ReactiveCommand<ModInfo, Unit> ModDetailCommand { get; }
 
     public ModListViewModel(MainViewModel main, ModpackMetadata modpack) {
         _main = main;
@@ -25,12 +26,14 @@ public class ModListViewModel : ViewModelBase {
 
         _ = LoadMods();
 
-        DeleteModCommand = ReactiveCommand.CreateFromTask<ModInfo>(async mod => {
-            // 1. Ștergem din fișierul manifest (trebuie să ai metoda RemoveMod în serviciu)
+        DeleteModCommand = ReactiveCommand.Create<ModInfo>(mod => {
             _main.modpackManifestService.RemoveMod(mod.ProjectId);
 
-            // 2. Reîncărcăm lista pentru a actualiza UI-ul
-            await LoadMods();
+            Mods.Remove(mod);
+        });
+
+        ModDetailCommand = ReactiveCommand.CreateFromTask<ModInfo>(async mod => {
+            await _main.DialogService.ShowModDetailsDialog(_main.modpackManifestService, mod, modpack.GameVersion, modpack.Loader.ToString().ToLower());
         });
 
         MessageBus.Current.Listen<ManifestChangedMessage>()

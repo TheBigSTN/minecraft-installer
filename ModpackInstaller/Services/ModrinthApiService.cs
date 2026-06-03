@@ -115,6 +115,11 @@ public class ModrinthApiService {
         return await WebService.GetJson<List<ModrinthVersionExtended>>(url, DefaultHeaders);
     }
 
+    internal static async Task<List<ModrinthVersionExtended>?> GetProjectVersionAsync( string projectIdOrSlug) {
+        var url = $"{BaseUrl}/project/{projectIdOrSlug}/version?include_changelog=true";
+        return await WebService.GetJson<List<ModrinthVersionExtended>>(url, DefaultHeaders);
+    }
+
     public static async Task<ModrinthVersion?> GetVersionByHashAsync( string sha1 ) {
         var url = $"{BaseUrl}/version_file/{sha1}";
 

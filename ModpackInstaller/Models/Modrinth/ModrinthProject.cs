@@ -39,4 +39,8 @@ public class ModrinthProject {
 
     [JsonPropertyName("icon_url")]  
     public string IconURL { get; set; } = "";
+    [JsonPropertyName("downloads")] public int Downloads { get; set; }
+    [JsonPropertyName("published")] public DateTime PublishedDate { get; set; }
+    [JsonPropertyName("body")] public string Body { get; set; } = "";
+    [JsonPropertyName("team")] public string TeamId { get; set; } = "";
 }
