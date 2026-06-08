@@ -72,17 +72,13 @@ jobs:
                    -e ${{ matrix.exe }} \
                    --outputDir ./releases
 
-          if [ -d "./releases" ]; then
-            cp -r ./releases ./Releases
-          elif [ -d "./Releases" ]; then
-            cp -r ./Releases ./releases
-          else
-            echo "No releases folder found"
-            ls -la
-            exit 1
-          fi
-                   
-          # 3. Upload direct
+      - name: Rename Output if linux
+        if: runner.os == 'Linux'
+        run: |
+          cp -r ./releases ./Releases
+
+      - name: Upload Release
+        run: |         
           vpk upload github \
             --repoUrl "https://github.com/${{ github.repository }}" \
             --publish \
