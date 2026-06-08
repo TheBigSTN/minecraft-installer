@@ -40,7 +40,10 @@ class Program {
 
         // Dacă avem argumente SAU am reușit să ne atașăm, rulăm CLI
         if(args.Length > 0) {
-            AttachConsole(-1);
+
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                AttachConsole(-1);
+            }
             Console.WriteLine();
             await CliRunner.RunAsync(args);
             Console.WriteLine();
