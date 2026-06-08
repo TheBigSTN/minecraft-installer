@@ -12,6 +12,8 @@ using ModpackInstaller.Services.Modpack;
 using System.Text.Json;
 using System.Diagnostics;
 using System.Threading;
+using ModpackInstaller.Models.Modrinth;
+using ReactiveUI;
 
 namespace ModpackInstaller.Services;
 
@@ -22,7 +24,7 @@ public class PatchManifest {
 }
 
 public class ModpackInstallService {
-    public static async Task InstallModsOfModpack( ModpackMetadata modpackMetadata, IProgress<double>? progress = null ) {
+    public static async Task InstallModsOfModpack( ModpackMetadata modpackMetadata, IProgress<double>? progress = null, bool serverInstall = false ) {
         ModpackManifestService manifestService = new(modpackMetadata.InstallPath);
         ModpackManifest manifest = manifestService.Load();
 
@@ -36,7 +38,19 @@ public class ModpackInstallService {
 
         // Mapăm fiecare download la un task care, la finalizare, incrementează contorul
         var downloadTasks = manifest.InstalledMods.Select(async mod => {
-            await ModpackManifestService.DownloadModAsync(mod, modpackMetadata.InstallPath);
+            bool shouldDownload = false;
+
+            if(serverInstall) {
+                // Pe server instalăm dacă este necesar sau opțional pe partea de server
+                shouldDownload = (mod.ServerSide == SideSupport.required || mod.ServerSide == SideSupport.optional);
+            } else {
+                // Pe client instalăm dacă este necesar sau opțional pe partea de client
+                shouldDownload = (mod.ClientSide == SideSupport.required || mod.ClientSide == SideSupport.optional);
+            }
+
+            if(shouldDownload) {
+                await ModpackManifestService.DownloadModAsync(mod, modpackMetadata.InstallPath);
+            }
 
             // Incrementăm în mod thread-safe
             Interlocked.Increment(ref downloadedMods);
@@ -48,18 +62,9 @@ public class ModpackInstallService {
 
         await Task.WhenAll(downloadTasks);
     }
-    //public static async Task InstallModsOfModpack(ModpackMetadata modpackMetadata) {
-    //	ModpackManifestService manifestService = new(modpackMetadata.InstallPath);
-    //	ModpackManifest manifest = manifestService.Load();
 
-    //	await Task.WhenAll(
-    //		 manifest.InstalledMods
-    //			 .Select(mod => ModpackManifestService.DownloadModAsync(mod, modpackMetadata.InstallPath))
-    //	 );
-
-    //}
     public static async Task<ModpackMetadata> DownloadAndInstallModpack(
-		PublicModpackRequestResponse modpack, 
+		PublicModpackRequestResponse modpack,
 		string baseInstallPath,
         IProgress<double>? progress = null,
         Action<string>? statusUpdate = null ) {
@@ -120,7 +125,65 @@ public class ModpackInstallService {
 		return metadata;
 	}
 
-	public static async Task UpdateModpack(ModpackMetadata modpackMetadata) {
+    public static async Task<ModpackMetadata> DownloadAndInstallModpackServer(
+        PublicModpackRequestResponse modpack,
+        string installPath,
+        IProgress<double>? progress = null,
+        Action<string>? statusUpdate = null ) {
+
+        ModpackMetadata metadata = new() {
+            Id = modpack.Id,
+            InstallPath = installPath,
+            Name = modpack.ModpackName,
+            GameVersion = modpack.GameVersion,
+            Loader = modpack.Loader,
+            Author = modpack.AuthorName,
+            CreatedAt = modpack.CreatedAt,
+            UpdatedAt = modpack.ModifiedAt,
+            Description = "",
+            IsPublic = true,
+            LoaderVersion = modpack.LoaderVersion,
+            ModpackPassword = null,
+            OwnerNickname = modpack.AuthorName,
+            SharingCode = null,
+            Version = modpack.LatestVersion,
+            Source = ModpackSource.Remote,
+            IsServerInstall = true
+        };
+
+        statusUpdate?.Invoke("Se descarcă modpack-ul...");
+        var zipPath = Path.Combine(installPath, "modpack.zip");
+        try {
+
+            await BackendApiService.DownloadVersionAsync(
+                modpack.Id,
+                modpack.LatestVersion,
+                zipPath,
+                progress
+            );
+            ZipFile.ExtractToDirectory(zipPath, installPath, true);
+        } finally {
+            if(File.Exists(zipPath))
+                File.Delete(zipPath);
+        }
+
+        statusUpdate?.Invoke("Se descarcă modurile...");
+        progress?.Report(0);
+        // instanță ModpackMedatataService cu path-ul principal
+        var registry = new ModpackMedatataService();
+
+        ModpackManifestService modpackManifestService = new(metadata.InstallPath);
+
+        //modpackManifestService.ParseAllMods(modInfo => modInfo.Source = ModSource.Remote);
+
+        // creez / salvez metadata
+        registry.Create(metadata);
+
+        await InstallModsOfModpack(metadata, progress, true);
+        return metadata;
+    }
+
+    public static async Task UpdateModpack(ModpackMetadata modpackMetadata) {
 		ModpackManifestService modpackManifestService = new(modpackMetadata.InstallPath);
 
 		var patchZipPath = Path.Combine(modpackMetadata.InstallPath, "patch-zip.zip");
@@ -139,7 +202,7 @@ public class ModpackInstallService {
 
 			ZipFile.ExtractToDirectory(patchZipPath, patchUnzipPath, true);
 
-			await ApplyPatch(patchUnzipPath, modpackMetadata.InstallPath, modpackManifestService, modpackMetadata.InstallPath);
+			await ApplyPatch(patchUnzipPath, modpackMetadata.InstallPath, modpackManifestService, modpackMetadata.InstallPath, modpackMetadata.IsServerInstall);
 
 			modpackMetadata.Version = modpackInfo.LatestVersion;
 
@@ -158,7 +221,8 @@ public class ModpackInstallService {
 		string patchFolder,
 		string installPath,
 		ModpackManifestService manifestService,
-		string modpackInstallPath) {
+		string modpackInstallPath,
+		bool serverInstall = false) {
 		// 1️⃣ DELETE
 		var deleteFile = Path.Combine(patchFolder, "delete.txt");
 		if (File.Exists(deleteFile)) {
@@ -202,23 +266,33 @@ public class ModpackInstallService {
 				foreach (var mod in patchManifest.Removed)
 					manifestService.RemoveMod(mod.ProjectId);
 
-				// 2️⃣ Adaugă / actualizează mod-urile noi
-				foreach (var mod in patchManifest.Added) {
-					// Verificăm dacă trebuie să adăugăm / actualizăm
-					if (manifestService.AddOrUpdateMod(mod, true)) {
-						// Descarcă și verifică succesul
-						bool success = await ModpackManifestService.DownloadModAsync(mod, modpackInstallPath);
+                // 2️⃣ Adaugă / actualizează mod-urile noi
+                foreach(var mod in patchManifest.Added) {
+                    // 1. Definim dacă mod-ul este valid pentru server (Required sau Optional pe server)
+                    bool isServerValid = (mod.ServerSide == SideSupport.required || mod.ServerSide == SideSupport.optional);
 
-						if (!success) {
-							// Dacă download-ul eșuează → eliminăm din manifest
-							manifestService.RemoveMod(mod.ProjectId);
-							Debug.WriteLine($"Mod-ul {mod.Title} nu a fost instalat din cauza unei erori.");
-						}
-					}
-				}
+                    // 2. Definim dacă mod-ul este valid pentru client (Required sau Optional pe client)
+                    bool isClientValid = (mod.ClientSide == SideSupport.required || mod.ClientSide == SideSupport.optional);
 
-				// 3️⃣ Salvăm manifestul final
-				manifestService.Save();
+                    // 3. Decidem dacă descărcăm:
+                    // Dacă e serverInstall, trebuie să fie valid pentru server.
+                    // Dacă NU e serverInstall (deci e client), trebuie să fie valid pentru client.
+                    bool shouldDownload = serverInstall ? isServerValid : isClientValid;
+
+                    if(shouldDownload) {
+                        if(manifestService.AddOrUpdateMod(mod, true)) {
+                            if(!await ModpackManifestService.DownloadModAsync(mod, modpackInstallPath)) {
+                                manifestService.RemoveMod(mod.ProjectId);
+                            }
+                        }
+                    } else {
+                        // Opțional: dacă mod-ul era deja instalat dar nu mai e valid, îl eliminăm
+                        manifestService.RemoveMod(mod.ProjectId);
+                    }
+                }
+
+                // 3️⃣ Salvăm manifestul final
+                manifestService.Save();
 			}
 		}
 	}

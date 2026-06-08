@@ -21,18 +21,42 @@ public static class AppVariables {
         Directory.CreateDirectory(Path.Combine(path, ".."));
         return path;
     }
-    public static string InstallerRoot { get; } =
+    private static string? _installerRoot;
+    public static string InstallerRoot {
+        get {
 #if DEBUG
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "ModpackInstallerDev"
-        );
+        return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "ModpackInstallerDev");
 #else
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "ModpackInstaller"
-        );
+            if(_installerRoot == null) {
+                string baseLocal = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string baseRoaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+                string roamingDataPath = Path.Combine(baseRoaming, "ModpackInstaller");
+                string localDataPath = Path.Combine(baseLocal, "ModpackInstaller"); // Subfolderul "Data"
+
+                // 1. Daca avem ambele, ștergem Roaming (prioritate pentru Local)
+                if(Directory.Exists(roamingDataPath) && Directory.Exists(localDataPath)) {
+                    Directory.Delete(roamingDataPath, true);
+                }
+                // 2. Dacă avem doar Roaming, mutăm totul în Local
+                else if(Directory.Exists(roamingDataPath) && !Directory.Exists(localDataPath)) {
+                    Directory.CreateDirectory(Path.GetDirectoryName(localDataPath)!);
+                    Directory.Move(roamingDataPath, localDataPath);
+                }
+                // 3. Dacă nu avem niciunul, creăm structura în Local
+                else if(!Directory.Exists(localDataPath)) {
+                    Directory.CreateDirectory(localDataPath);
+                }
+
+                _installerRoot = localDataPath;
+            }
+            return _installerRoot;
+
 #endif
+        }
+    }
 
     public static JsonSerializerOptions DefaultJsonOptions => new() {
         WriteIndented = true

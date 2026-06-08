@@ -36,4 +36,6 @@ public class ModpackMetadata {
     public string InstallPath { get; set; } = default!;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+
+    public bool IsServerInstall { get; set; } = false;
 }
