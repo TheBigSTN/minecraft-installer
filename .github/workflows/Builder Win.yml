@@ -72,8 +72,15 @@ jobs:
                    -e ${{ matrix.exe }} \
                    --outputDir ./releases
 
-          rm -rf ./Releases
-          mv ./releases ./Releases
+          if [ -d "./releases" ]; then
+            cp -r ./releases ./Releases
+          elif [ -d "./Releases" ]; then
+            cp -r ./Releases ./releases
+          else
+            echo "No releases folder found"
+            ls -la
+            exit 1
+          fi
                    
           # 3. Upload direct
           vpk upload github \
