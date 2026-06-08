@@ -18,13 +18,15 @@ jobs:
             rid: win-x64
             exe: ModpackInstaller.Desktop.exe
             artifact: windows
-
           - os: ubuntu-latest
             rid: linux-x64
             exe: ModpackInstaller.Desktop
             artifact: linux
 
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
 
     env:
       Project_Path: ModpackInstaller.Desktop/ModpackInstaller.Desktop.csproj
@@ -43,7 +45,6 @@ jobs:
 
       - name: Get version from tag
         id: version
-        shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           echo "PROJECT_VERSION=$VERSION" >> $GITHUB_OUTPUT
@@ -76,10 +77,9 @@ jobs:
 
   release:
     needs: build
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -96,11 +96,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-
+          # Folosim gh release create pentru a fi mai siguri, 
+          # dar dacă vrei vpk upload, lista de fișiere trebuie să fie corectă
           vpk upload github \
             --repoUrl https://github.com/${{ github.repository }} \
             --publish \
             --releaseName "Release $VERSION" \
             --tag "$GITHUB_REF_NAME" \
-            --token $GITHUB_TOKEN \
-            artifacts/*
+            --token "$GITHUB_TOKEN" \
+            --assets "artifacts/*"
