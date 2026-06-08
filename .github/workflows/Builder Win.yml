@@ -17,9 +17,12 @@ jobs:
           - os: windows-latest
             rid: win-x64
             exe: ModpackInstaller.Desktop.exe
+            channel: ""
+      
           - os: ubuntu-latest
             rid: linux-x64
             exe: ModpackInstaller.Desktop
+            channel: "linux"
     
     runs-on: ${{ matrix.os }}
     defaults:
@@ -56,24 +59,36 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          CHANNEL_ARG=""
           
-          # 1. Descarcă release-ul anterior (pentru a genera Delta Updates)
-          # Dacă e prima versiune, vpk va ignora automat lipsa release-urilor vechi
+          if [ -n "${{ matrix.channel }}" ]; then
+            CHANNEL_ARG="--channel ${{ matrix.channel }}"
+          fi
+          
           vpk download github \
+            $CHANNEL_ARG \
             --repoUrl "https://github.com/${{ github.repository }}" \
             --token "$GITHUB_TOKEN" \
-            --outputDir ./releases || echo "Nu s-au găsit release-uri anterioare, se creează release-ul inițial."
+            --outputDir ./releases || true
+          
+          vpk pack \
+            $CHANNEL_ARG \
+            -u ${{ env.App_Id }} \
+            -v "$VERSION" \
+            -p ./publish \
+            -e ${{ matrix.exe }} \
+            --outputDir ./releases
 
-          # 2. Impachetare (acum că are acces la versiunile vechi, va genera și patch-uri)
-          vpk pack -u ${{ env.App_Id }} \
-                   -v "$VERSION" \
-                   -p ./publish \
-                   -e ${{ matrix.exe }} \
-                   --outputDir ./releases
-
-          # 3. Upload direct
+          echo "--- Structura folderului releases ---"
+          ls -R ./releases
+          echo "-------------------------------------"
+  
+          echo "--- Structura folderului releases ---"
+          ls -R ./
+          echo "-------------------------------------"
+        
           vpk upload github \
+            $CHANNEL_ARG \
             --repoUrl "https://github.com/${{ github.repository }}" \
             --publish \
             --releaseName "Release $VERSION" \
