@@ -78,6 +78,8 @@ jobs:
           cp -r ./releases ./Releases
 
       - name: Upload Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |         
           vpk upload github \
             --repoUrl "https://github.com/${{ github.repository }}" \
