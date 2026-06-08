@@ -1,83 +1,106 @@
-name: App Builder Win (Velopack)
+name: App Builder (Velopack)
 
 on:
   push:
-    branches: [main, workflows]
-  pull_request:
-    branches: [main, workflows]
+    tags:
+      - "v*"
 
-# Permisiuni necesare pentru ca Velopack să poată crea Release-uri
 permissions:
   contents: write
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            exe: ModpackInstaller.Desktop.exe
+            artifact: windows
+
+          - os: ubuntu-latest
+            rid: linux-x64
+            exe: ModpackInstaller.Desktop
+            artifact: linux
+
+    runs-on: ${{ matrix.os }}
 
     env:
       Project_Path: ModpackInstaller.Desktop/ModpackInstaller.Desktop.csproj
-      # ID-ul unic al aplicației tale (folosit pentru calea de instalare)
       App_Id: ModpackInstaller
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Important pentru Velopack să vadă tag-urile
+          fetch-depth: 0
 
-      - name: Setup .NET SDK
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
 
-      - name: Get Project Version
-        id: get_version
-        shell: pwsh
+      - name: Get version from tag
+        id: version
+        shell: bash
         run: |
-          [xml]$proj = Get-Content ${{ env.Project_Path }}
-          $v = $proj.Project.PropertyGroup.Version
-          echo "PROJECT_VERSION=$v" >> $env:GITHUB_OUTPUT
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "PROJECT_VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Copy icon to publish folder
-        shell: pwsh
+      - name: Publish app
         run: |
-          Copy-Item ModpackInstaller/Assets/image-1.ico ./image-1.ico
-
-      - name: Publish application
-        run: |
-          dotnet publish ${{ env.Project_Path }} `
-            -c Release `
-            -r win-x64 `
-            --self-contained true `
+          dotnet publish ${{ env.Project_Path }} \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
             -o ./publish
 
-      - name: Create & Upload Velopack Release
-        shell: pwsh
+      - name: Install Velopack
+        run: dotnet tool install -g vpk
+
+      - name: Pack with Velopack
+        run: |
+          vpk pack \
+            -u ${{ env.App_Id }} \
+            -v ${{ steps.version.outputs.PROJECT_VERSION }} \
+            -p ./publish \
+            -e ${{ matrix.exe }} \
+            --outputDir ./releases
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: releases-${{ matrix.artifact }}
+          path: releases/*
+
+  release:
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: releases-*
+          merge-multiple: true
+
+      - name: Install Velopack
+        run: dotnet tool install -g vpk
+
+      - name: Publish to GitHub Releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. Instalare tool Velopack
-          dotnet tool install -g vpk
+          VERSION="${GITHUB_REF_NAME#v}"
 
-          # 2. Descarcă release-ul anterior pentru a genera "Delta Updates" (update-uri mici)
-          # Dacă e primul release, comanda va ignora eroarea sau va descărca ce găsește
-          vpk download github --repoUrl https://github.com/${{ github.repository }}
-
-          # 3. Impachetează aplicația
-          # -u: ID-ul aplicației
-          # -v: Versiunea extrasă din csproj
-          # -p: Folderul unde am făcut publish mai sus
-          # -e: Numele executabilului principal
-          vpk pack -u ${{ env.App_Id }} `
-                   -v ${{ steps.get_version.outputs.PROJECT_VERSION }} `
-                   -p ./publish `
-                   -e ModpackInstaller.Desktop.exe `
-                   --icon ./image-1.ico
-
-          # 4. Upload pe GitHub Releases
-          # --publish: Face release-ul public imediat
-          vpk upload github --repoUrl https://github.com/${{ github.repository }} `
-                            --publish `
-                            --releaseName "Release v${{ steps.get_version.outputs.PROJECT_VERSION }}" `
-                            --tag v${{ steps.get_version.outputs.PROJECT_VERSION }} `
-                            --token ${{ secrets.GITHUB_TOKEN }}
+          vpk upload github \
+            --repoUrl https://github.com/${{ github.repository }} \
+            --publish \
+            --releaseName "Release $VERSION" \
+            --tag "$GITHUB_REF_NAME" \
+            --token $GITHUB_TOKEN \
+            artifacts/*
