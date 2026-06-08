@@ -71,15 +71,10 @@ jobs:
                    -p ./publish \
                    -e ${{ matrix.exe }} \
                    --outputDir ./releases
-                   
-          echo "--- Structura folderului releases ---"
-          ls -R ./releases
-          echo "-------------------------------------"
-  
-          echo "--- Structura folderului releases ---"
-          ls -R ./
-          echo "-------------------------------------"
 
+          rm -rf ./Releases
+          mv ./releases ./Releases
+                   
           # 3. Upload direct
           vpk upload github \
             --repoUrl "https://github.com/${{ github.repository }}" \
