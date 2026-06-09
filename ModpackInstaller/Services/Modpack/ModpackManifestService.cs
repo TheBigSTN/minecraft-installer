@@ -407,6 +407,31 @@ public class ModpackManifestService {
                     // 3️⃣ avem match → luăm și project
                     var project = await ModrinthApiService.GetProjectAsync(version.ProjectId);
 
+                    var existingMod = Manifest.InstalledMods
+                        .FirstOrDefault(m => m.ProjectId == version.ProjectId);
+
+                    if(existingMod != null) {
+                        // aceeași versiune
+                        if(existingMod.VersionId == version.Id)
+                            continue;
+
+                        // altă versiune -> păstrăm ce este în manifest
+                        try {
+                            File.Delete(filePath);
+
+                            Debug.WriteLine(
+                                $"Removed duplicate version: {fileName} " +
+                                $"(manifest={existingMod.VersionId}, found={version.Id})");
+                        } catch(Exception ex) {
+                            Debug.WriteLine($"Failed to delete {fileName}: {ex.Message}");
+                        }
+
+                        continue;
+                    }
+
+
+
+
                     var primaryFile = version.Files.FirstOrDefault(f => f.Hashes.Sha1 == sha1)
                                       ?? version.Files.FirstOrDefault();
 

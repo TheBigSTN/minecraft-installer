@@ -26,7 +26,7 @@ public class PatchManifest {
 public class ModpackInstallService {
     public static async Task InstallModsOfModpack( ModpackMetadata modpackMetadata, IProgress<double>? progress = null, bool serverInstall = false ) {
         ModpackManifestService manifestService = new(modpackMetadata.InstallPath);
-        ModpackManifest manifest = manifestService.Load();
+        ModpackManifest manifest = manifestService.Manifest;
 
         if(manifest.InstalledMods.Count == 0) {
             progress?.Report(100);
@@ -112,14 +112,9 @@ public class ModpackInstallService {
         statusUpdate?.Invoke("Se descarcă modurile...");
         progress?.Report(0);
         // instanță ModpackMedatataService cu path-ul principal
-        var registry = new ModpackMedatataService();
-
-		ModpackManifestService modpackManifestService = new(metadata.InstallPath);
-
-		//modpackManifestService.ParseAllMods(modInfo => modInfo.Source = ModSource.Remote);
-
-		// creez / salvez metadata
-		registry.Create(metadata);
+        ModpackMedatataService registry = new();
+        // creez / salvez metadata
+        registry.Create(metadata);
 
 		await InstallModsOfModpack(metadata, progress);
 		return metadata;

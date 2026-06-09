@@ -36,11 +36,7 @@ public static class AppVariables {
                 string roamingDataPath = Path.Combine(baseRoaming, "ModpackInstaller");
                 string localDataPath = Path.Combine(baseLocal, "ModpackInstaller"); // Subfolderul "Data"
 
-                // 1. Daca avem ambele, ștergem Roaming (prioritate pentru Local)
-                if(Directory.Exists(roamingDataPath) && Directory.Exists(localDataPath)) {
-                    Directory.Delete(roamingDataPath, true);
-                }
-                // 2. Dacă avem doar Roaming, mutăm totul în Local
+                // 2. Dacă avem Roaming, mutăm totul în Local
                 else if(Directory.Exists(roamingDataPath) && !Directory.Exists(localDataPath)) {
                     Directory.CreateDirectory(Path.GetDirectoryName(localDataPath)!);
                     Directory.Move(roamingDataPath, localDataPath);
