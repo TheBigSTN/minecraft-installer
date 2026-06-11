@@ -113,7 +113,7 @@ jobs:
 
           # 2. Impachetare (acum că are acces la versiunile vechi, va genera și patch-uri)
           vpk pack -u ${{ env.App_Id }} \
-                   -v "v$VERSION" \
+                   -v "$VERSION" \
                    -p ./publish \
                    -e ${{ matrix.exe }} \
                    --outputDir ./releases
