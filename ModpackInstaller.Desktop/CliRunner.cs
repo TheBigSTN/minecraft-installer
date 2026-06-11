@@ -67,6 +67,10 @@ public static class CliRunner {
                     await UpdateAsync();
                     return 0;
 
+                case "sync":
+                    await SyncFileSistemToModpack();
+                    return 0;
+
                 default:
                     Console.WriteLine($"Unknown command: {command}");
                     ShowHelp();
@@ -146,6 +150,14 @@ public static class CliRunner {
 		Console.WriteLine("Install complete.");
 	}
 
+    private static async Task SyncFileSistemToModpack() {
+        Console.WriteLine("Syncing modpack manifest with filesystem...");
+        Console.WriteLine("This fixes issues with mods and stuff");
+        ModpackManifestService modpackManifest = new(Environment.CurrentDirectory);
+
+        await modpackManifest.LoadSync();
+    }
+
     private static async Task UpdateAsync() {
 		var installPath = Environment.CurrentDirectory;
 
@@ -185,6 +197,10 @@ public static class CliRunner {
 
         Console.WriteLine("  update");
         Console.WriteLine("      Update the modpack installed in the current directory.");
+        Console.WriteLine();
+
+        Console.WriteLine("  sync");
+        Console.WriteLine("      Syncs the modpack to the manifest, this fixes some issues with mods.");
         Console.WriteLine();
 
         Console.WriteLine("  help");

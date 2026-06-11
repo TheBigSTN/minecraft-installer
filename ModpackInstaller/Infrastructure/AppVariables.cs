@@ -37,9 +37,26 @@ public static class AppVariables {
                 string localDataPath = Path.Combine(baseLocal, "ModpackInstaller");
 
                 // 2. Dacă avem Roaming, mutăm totul în Local
-                if(Directory.Exists(roamingDataPath) && !Directory.Exists(localDataPath)) {
-                    Directory.CreateDirectory(Path.GetDirectoryName(localDataPath)!);
-                    Directory.Move(roamingDataPath, localDataPath);
+                if (Directory.Exists(roamingDataPath)) {
+                    Directory.CreateDirectory(localDataPath);
+
+                    foreach (var dir in Directory.GetDirectories(roamingDataPath, "*", SearchOption.AllDirectories))
+                    {
+                        var relative = Path.GetRelativePath(roamingDataPath, dir);
+                        Directory.CreateDirectory(Path.Combine(localDataPath, relative));
+                    }
+
+                    foreach (var file in Directory.GetFiles(roamingDataPath, "*", SearchOption.AllDirectories))
+                    {
+                        var relative = Path.GetRelativePath(roamingDataPath, file);
+                        var destination = Path.Combine(localDataPath, relative);
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                        File.Move(file, destination, overwrite: true);
+                    }
+
+                    // Opțional: șterge folderul vechi dacă a rămas gol
+                    Directory.Delete(roamingDataPath, recursive: true);
                 }
                 // 3. Dacă nu avem niciunul, creăm structura în Local
                 else if(!Directory.Exists(localDataPath)) {
