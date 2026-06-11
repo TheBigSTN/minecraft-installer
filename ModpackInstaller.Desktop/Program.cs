@@ -36,8 +36,6 @@ class Program {
 				.OnFirstRun((v) => {
                     if(OperatingSystem.IsWindows()) {
                         SetupWindowsPath();
-                    } else if(OperatingSystem.IsLinux()) {
-                        SetupLinuxSymlink();
                     }
                 })
 				.Run();
@@ -71,14 +69,23 @@ class Program {
 	}
 
     private static void SetupWindowsPath() {
-        var installDir = AppContext.BaseDirectory;
-       
-        var path = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+        var cliDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ModpackInstaller",
+                "cli"
+            );
 
-        if(path.Contains(installDir))
+        var cliCmdPath = Path.Combine(cliDir, "mpk.cmd");
+
+        if (!File.Exists(cliCmdPath)) 
+            CreateWindowsCliWrapper();
+
+        var currentPath = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+
+        if(currentPath.Contains(cliDir))
             return;
 
-        var newPath = path + ";" + installDir;
+        var newPath = currentPath + ";" + cliDir;
 
         Environment.SetEnvironmentVariable(
             "PATH",
@@ -86,32 +93,33 @@ class Program {
             EnvironmentVariableTarget.User
         );
 
-        Console.WriteLine("Added to PATH (user level). Restart terminal required.");
+        Console.WriteLine("CLI folder added to PATH (restart terminal required).");
     }
 
-    private static void SetupLinuxSymlink() {
+    private static void CreateWindowsCliWrapper() {
         var installDir = AppContext.BaseDirectory;
-        var exePath = Path.Combine(installDir, "modpack-installer");
 
-        var target = "/usr/local/bin/modpack";
+        // pick a stable location for CLI shim
+        var cliDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ModpackInstaller",
+            "cli"
+        );
 
-        try {
-            if(File.Exists(target))
-                return;
+        Directory.CreateDirectory(cliDir);
 
-            var psi = new ProcessStartInfo {
-                FileName = "ln",
-                Arguments = $"-s {exePath} {target}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
+        var cmdPath = Path.Combine(cliDir, "mpk.cmd");
 
-            Process.Start(psi)?.WaitForExit();
+        var exePath = Path.Combine(installDir, "ModpackInstaller.Desktop.exe");
 
-            Console.WriteLine("Created symlink in /usr/local/bin");
-        } catch(Exception ex) {
-            Console.WriteLine($"Failed to create symlink: {ex.Message}");
-        }
+        var content =
+    $@"@echo off
+""{exePath}"" %*
+";
+
+        File.WriteAllText(cmdPath, content);
+
+        Console.WriteLine($"CLI wrapper created at: {cmdPath}");
     }
 
     [DllImport("kernel32.dll")] private static extern bool AttachConsole( int dwProcessId );
