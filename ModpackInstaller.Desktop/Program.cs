@@ -32,7 +32,15 @@ class Program {
 		};
 
 		try {
-			VelopackApp.Build().Run();
+			VelopackApp.Build()
+				.OnFirstRun((v) => {
+                    if(OperatingSystem.IsWindows()) {
+                        SetupWindowsPath();
+                    } else if(OperatingSystem.IsLinux()) {
+                        SetupLinuxSymlink();
+                    }
+                })
+				.Run();
         } catch (Exception ex) {
 			CrashReporter.Log(ex, "Velopack");
 			return -1;
@@ -61,6 +69,50 @@ class Program {
 			return -1;
 		}
 	}
+
+    private static void SetupWindowsPath() {
+        var installDir = AppContext.BaseDirectory;
+       
+        var path = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+
+        if(path.Contains(installDir))
+            return;
+
+        var newPath = path + ";" + installDir;
+
+        Environment.SetEnvironmentVariable(
+            "PATH",
+            newPath,
+            EnvironmentVariableTarget.User
+        );
+
+        Console.WriteLine("Added to PATH (user level). Restart terminal required.");
+    }
+
+    private static void SetupLinuxSymlink() {
+        var installDir = AppContext.BaseDirectory;
+        var exePath = Path.Combine(installDir, "modpack-installer");
+
+        var target = "/usr/local/bin/modpack";
+
+        try {
+            if(File.Exists(target))
+                return;
+
+            var psi = new ProcessStartInfo {
+                FileName = "ln",
+                Arguments = $"-s {exePath} {target}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            Process.Start(psi)?.WaitForExit();
+
+            Console.WriteLine("Created symlink in /usr/local/bin");
+        } catch(Exception ex) {
+            Console.WriteLine($"Failed to create symlink: {ex.Message}");
+        }
+    }
 
     [DllImport("kernel32.dll")] private static extern bool AttachConsole( int dwProcessId );
 
