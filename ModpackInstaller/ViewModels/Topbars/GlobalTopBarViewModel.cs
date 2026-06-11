@@ -49,7 +49,7 @@ public class GlobalTopBarViewModel : ViewModelBase {
             if (metadata == null)
                 return;
 
-            var registry = new ModpackMedatataService(AppVariables.InstallerRoot);
+            var registry = new ModpackMedatataService();
             registry.Create(metadata);
 
             _main.OpenModpack(metadata);

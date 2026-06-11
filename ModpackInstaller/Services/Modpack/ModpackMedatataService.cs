@@ -12,8 +12,14 @@ namespace ModpackInstaller.Services.Modpack;
 
 public class ModpackMedatataService {
 	private readonly string _registryPath;
-	public ModpackMedatataService(string installerRoot) {
-		_registryPath = Path.Combine(installerRoot, "modpacks");
+	private readonly bool _isNonStandardPath;
+
+    /// <summary>
+    /// Uses non discoverable custom metadata path
+    /// </summary>
+    public ModpackMedatataService(string registryPath) {
+		_registryPath = registryPath;
+		_isNonStandardPath = true;
 		Directory.CreateDirectory(_registryPath);
 	}
 
@@ -22,7 +28,8 @@ public class ModpackMedatataService {
 	/// </summary>
 	public ModpackMedatataService() {
 		_registryPath = Path.Combine(AppVariables.InstallerRoot, "modpacks");
-		Directory.CreateDirectory(_registryPath);
+        _isNonStandardPath = false;
+        Directory.CreateDirectory(_registryPath);
 	}
 
 	// 📌 Creează / înregistrează metadata
@@ -30,21 +37,22 @@ public class ModpackMedatataService {
 		metadata.CreatedAt = DateTime.UtcNow;
 		metadata.UpdatedAt = metadata.CreatedAt;
 
-		Save(metadata);
-		return metadata;
+		return Save(metadata);
 	}
 
 	// 📌 Salvează metadata extern
-	public void Save(ModpackMetadata metadata) {
-		metadata.UpdatedAt = DateTime.UtcNow;
+	public ModpackMetadata Save(ModpackMetadata metadata) {
+
+        metadata.UpdatedAt = DateTime.UtcNow;
 
 		var path = GetMetadataPath(metadata.Id);
 		var json = JsonSerializer.Serialize(metadata, AppVariables.DefaultJsonOptions);
 		File.WriteAllText(path, json);
+		return metadata;
 	}
 
-	// 📌 Încearcă să încarce metadata (fără erori)
-	public bool TryLoad(string id, out ModpackMetadata? metadata) {
+    // 📌 Încearcă să încarce metadata (fără erori)
+    public bool TryLoad(string id, out ModpackMetadata? metadata) {
 		metadata = null;
 		var path = GetMetadataPath(id);
 
@@ -68,16 +76,40 @@ public class ModpackMedatataService {
 		return metadata;
 	}
 
-	// 📌 Există în registry
-	public bool Exists(string id)
-		=> File.Exists(GetMetadataPath(id));
+    public ModpackMetadata Load() {
+        if(!_isNonStandardPath)
+            throw new Exception("This is unavaliable when using a standard registry path.");
 
-	// 📌 Update parțial, safe
-	public bool Update(string id, Action<ModpackMetadata> update) {
+        TryLoad("in this context this value does not matter", out var metadata);
+
+		if(metadata == null)
+			throw new Exception("Metadata does not exist");
+
+        return metadata;
+    }
+
+    // 📌 Există în registry
+    public bool Exists(string id) {
+        if(_isNonStandardPath)
+            throw new Exception("This is unavaliable when using a non-standard registry path.");
+
+        return File.Exists(GetMetadataPath(id));
+	}
+
+    public bool Exists() {
+        if(!_isNonStandardPath)
+            throw new Exception("This is unavaliable when using a standard registry path.");
+        return File.Exists(GetMetadataPath("This value does not matter in this context"));
+	}
+
+    // 📌 Update parțial, safe
+    public bool Update(string id, Action<ModpackMetadata> update) {
 		if (!TryLoad(id, out var metadata) || metadata == null)
 			return false;
 
-		update(metadata);
+        metadata.UpdatedAt = DateTime.UtcNow;
+
+        update(metadata);
 		Save(metadata);
 		return true;
 	}
@@ -94,7 +126,10 @@ public class ModpackMedatataService {
 
 	// 📌 Enumeră TOATE modpack-urile din registry
 	public IEnumerable<ModpackMetadata> LoadAll() {
-		foreach (var file in Directory.GetFiles(_registryPath, "*.json")) {
+		if (_isNonStandardPath)
+			throw new Exception("This is unavaliable when using a non-standard registry path.");
+
+        foreach (var file in Directory.GetFiles(_registryPath, "*.json")) {
 			ModpackMetadata? metadata = null;
 			try {
 				metadata = JsonSerializer.Deserialize<ModpackMetadata>(
@@ -108,6 +143,10 @@ public class ModpackMedatataService {
 		}
 	}
 
-	private string GetMetadataPath(string id)
-		=> Path.Combine(_registryPath, $"{id}.json");
+	private string GetMetadataPath(string id) {
+		if (_isNonStandardPath)
+			return Path.Combine(_registryPath, "metadata.json");
+		else
+            return Path.Combine(_registryPath, $"{id}.json");
+    }
 }

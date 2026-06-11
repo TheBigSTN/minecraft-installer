@@ -14,7 +14,7 @@ namespace ModpackInstaller.Services.Modpack;
 public class ModpackPublicizeService(ModpackMetadata metadata) {
 	private readonly AppSettings _appSettings = new(AppVariables.InstallerRoot);
 	private readonly ModpackMetadata _metadata = metadata;
-    private readonly ModpackMedatataService _modpackMedatataService = new(AppVariables.InstallerRoot);
+    private readonly ModpackMedatataService _modpackMedatataService = new();
 
     // =========================================
     // 1. ÎNREGISTRARE UTILIZATOR

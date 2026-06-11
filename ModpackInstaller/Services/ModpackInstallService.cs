@@ -24,7 +24,11 @@ public class PatchManifest {
 }
 
 public class ModpackInstallService {
-    public static async Task InstallModsOfModpack( ModpackMetadata modpackMetadata, IProgress<double>? progress = null, bool serverInstall = false ) {
+    public static async Task InstallModsOfModpack( 
+            ModpackMetadata modpackMetadata, 
+            IProgress<double>? progress = null,
+            bool serverInstall = false
+        ) {
         ModpackManifestService manifestService = new(modpackMetadata.InstallPath);
         ModpackManifest manifest = manifestService.Manifest;
 
@@ -64,13 +68,18 @@ public class ModpackInstallService {
     }
 
     public static async Task<ModpackMetadata> DownloadAndInstallModpack(
-		PublicModpackRequestResponse modpack,
-		string baseInstallPath,
-        IProgress<double>? progress = null,
-        Action<string>? statusUpdate = null ) {
-		var installPath = Path.Combine(baseInstallPath, modpack.ModpackName.Trim());
+		    PublicModpackRequestResponse modpack,
+		    string baseInstallPath,
+            IProgress<double>? progress = null,
+            Action<string>? statusUpdate = null,
+            bool serverInstall = false,
+			bool nonDiscoverableMedatadata = false,
+			bool useSubfolder = true
+        ) {
+		var installPath = !useSubfolder
+            ? baseInstallPath
+            : Path.Combine(baseInstallPath, modpack.ModpackName.Trim());
 
-		// Creează folderul dacă nu există
 		Directory.CreateDirectory(installPath);
 
 		ModpackMetadata metadata = new() {
@@ -82,20 +91,21 @@ public class ModpackInstallService {
 			Author = modpack.AuthorName,
 			CreatedAt = modpack.CreatedAt,
 			UpdatedAt = modpack.ModifiedAt,
-			Description = "",
+			Description = modpack.Description,
 			IsPublic = true,
 			LoaderVersion = modpack.LoaderVersion,
 			ModpackPassword = null,
 			OwnerNickname = modpack.AuthorName,
 			SharingCode = null,
 			Version = modpack.LatestVersion,
-			Source = ModpackSource.Remote
-		};
+			Source = ModpackSource.Remote,
+            IsServerInstall = serverInstall
+        };
 
-        statusUpdate?.Invoke("Se descarcă modpack-ul...");
+        statusUpdate?.Invoke("Downloading modpack archive...");
         var zipPath = Path.Combine(installPath, "modpack.zip");
-		try {
 
+		try {
 			await BackendApiService.DownloadVersionAsync(
 				modpack.Id,
 				modpack.LatestVersion,
@@ -109,74 +119,22 @@ public class ModpackInstallService {
 				File.Delete(zipPath);
 		}
 
-        statusUpdate?.Invoke("Se descarcă modurile...");
+        statusUpdate?.Invoke("Downloading mods...");
         progress?.Report(0);
-        // instanță ModpackMedatataService cu path-ul principal
-        ModpackMedatataService registry = new();
-        // creez / salvez metadata
-        registry.Create(metadata);
 
-		await InstallModsOfModpack(metadata, progress);
-		return metadata;
-	}
+		if(nonDiscoverableMedatadata) {
+			ModpackMedatataService registry = new(installPath);
 
-    public static async Task<ModpackMetadata> DownloadAndInstallModpackServer(
-        PublicModpackRequestResponse modpack,
-        string installPath,
-        IProgress<double>? progress = null,
-        Action<string>? statusUpdate = null ) {
+			registry.Create(metadata);
+		} else {
+			ModpackMedatataService registry = new();
 
-        ModpackMetadata metadata = new() {
-            Id = modpack.Id,
-            InstallPath = installPath,
-            Name = modpack.ModpackName,
-            GameVersion = modpack.GameVersion,
-            Loader = modpack.Loader,
-            Author = modpack.AuthorName,
-            CreatedAt = modpack.CreatedAt,
-            UpdatedAt = modpack.ModifiedAt,
-            Description = "",
-            IsPublic = true,
-            LoaderVersion = modpack.LoaderVersion,
-            ModpackPassword = null,
-            OwnerNickname = modpack.AuthorName,
-            SharingCode = null,
-            Version = modpack.LatestVersion,
-            Source = ModpackSource.Remote,
-            IsServerInstall = true
-        };
-
-        statusUpdate?.Invoke("Se descarcă modpack-ul...");
-        var zipPath = Path.Combine(installPath, "modpack.zip");
-        try {
-
-            await BackendApiService.DownloadVersionAsync(
-                modpack.Id,
-                modpack.LatestVersion,
-                zipPath,
-                progress
-            );
-            ZipFile.ExtractToDirectory(zipPath, installPath, true);
-        } finally {
-            if(File.Exists(zipPath))
-                File.Delete(zipPath);
+			registry.Create(metadata);
         }
 
-        statusUpdate?.Invoke("Se descarcă modurile...");
-        progress?.Report(0);
-        // instanță ModpackMedatataService cu path-ul principal
-        var registry = new ModpackMedatataService();
-
-        ModpackManifestService modpackManifestService = new(metadata.InstallPath);
-
-        //modpackManifestService.ParseAllMods(modInfo => modInfo.Source = ModSource.Remote);
-
-        // creez / salvez metadata
-        registry.Create(metadata);
-
-        await InstallModsOfModpack(metadata, progress, true);
-        return metadata;
-    }
+		await InstallModsOfModpack(metadata, progress, serverInstall);
+		return metadata;
+	}
 
     public static async Task UpdateModpack(ModpackMetadata modpackMetadata) {
 		ModpackManifestService modpackManifestService = new(modpackMetadata.InstallPath);
@@ -197,7 +155,12 @@ public class ModpackInstallService {
 
 			ZipFile.ExtractToDirectory(patchZipPath, patchUnzipPath, true);
 
-			await ApplyPatch(patchUnzipPath, modpackMetadata.InstallPath, modpackManifestService, modpackMetadata.InstallPath, modpackMetadata.IsServerInstall);
+			await ApplyPatch(
+				patchUnzipPath, 
+				modpackMetadata.InstallPath, 
+				modpackManifestService, 
+				modpackMetadata.InstallPath, 
+				modpackMetadata.IsServerInstall);
 
 			modpackMetadata.Version = modpackInfo.LatestVersion;
 

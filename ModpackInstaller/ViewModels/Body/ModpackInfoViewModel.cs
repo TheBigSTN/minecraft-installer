@@ -26,7 +26,7 @@ public class ModpackInfoViewModel : ViewModelBase {
 	public ModpackMetadata? Modpack { get; set; }
 
 	private readonly MainViewModel _main;
-	private readonly ModpackMedatataService _medatataService = new(AppVariables.InstallerRoot);
+	private readonly ModpackMedatataService _medatataService = new();
 	private readonly ModpackManifestService _manifestService;
 
 	//public Interaction<Unit, ModpackExportMode?> ShowExportDialog { get; }
@@ -154,8 +154,7 @@ public class ModpackInfoViewModel : ViewModelBase {
 		{
 			if (Modpack == null) return;
 
-			var registry = new ModpackMedatataService(AppVariables.InstallerRoot);
-			registry.Delete(Modpack.Id);
+			_medatataService.Delete(Modpack.Id);
 
 			try {
 				if (!string.IsNullOrEmpty(Modpack.InstallPath) && Directory.Exists(Modpack.InstallPath)) {

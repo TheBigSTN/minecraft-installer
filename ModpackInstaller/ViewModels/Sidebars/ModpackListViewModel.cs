@@ -29,7 +29,7 @@ public class ModpackListViewModel : ViewModelBase {
 
     public ModpackListViewModel(MainViewModel main) {
         _main = main;
-        _registry = new ModpackMedatataService(AppVariables.InstallerRoot);
+        _registry = new ModpackMedatataService();
 
         LoadModpacks();
         // load installed modpacks
