@@ -52,8 +52,8 @@ public static class BackendApiService {
     /// </returns>
     public static async Task<FullUserDto?> RegisterAsync(string nickname) {
         var response = await HttpClient.PostAsync(
-            $"/api/v1/modpacks/register?username={Uri.EscapeDataString(nickname)}", 
-            null);
+                              $"api/v1/modpacks/register?username={Uri.EscapeDataString(nickname)}", 
+                              null);
 
         if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
 
@@ -155,7 +155,7 @@ public static class BackendApiService {
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $"/api/v1/modpacks/{requestDto.ModpackId}/version/initiate");
+            $"api/v1/modpacks/{requestDto.ModpackId}/version/initiate");
 
         request.Headers.Add("X-Owner-Token", ownerToken);
         request.Content = new StringContent(json, Encoding.UTF8, "application/json");
