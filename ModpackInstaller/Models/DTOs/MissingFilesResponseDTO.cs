@@ -2,6 +2,6 @@
 
 namespace ModpackInstaller.Models.DTOs;
 
-public record MissingFilesResponseDTO(
+public record MissingFilesResponseDto(
     List<ModpackFileDto> MissingFiles
 );

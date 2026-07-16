@@ -10,32 +10,22 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using ModpackInstaller.Infrastructure;
 using ModpackInstaller.Models;
-using ModpackInstaller.Models.DTOs; // Ensure this is present
-using System.Text.Json.Serialization;
+using ModpackInstaller.Models.DTOs;
 using ModpackInstaller.Models.Backend;
 using ModpackInstaller.Services.Modpack;
 
 namespace ModpackInstaller.Services;
 
-public class OwnerResponseAt {
-    public string OwnerToken { get; set; } = string.Empty;
-    public string Nickname { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-
-    public List<string> Modpacks { get; set; } = [];
-}
-
-
 public record ServerError(string Message, int Status, DateTime Timestamp);
 
 public static class BackendApiService {
     private static readonly string BaseUrl = AppVariables.AppApiBaseUrl;
-    public static readonly HttpClient HttpClient = new();
+    private static readonly HttpClient HttpClient = new();
 
     static BackendApiService() {
         // Setăm header-ul global pentru toate request-urile viitoare
         HttpClient.DefaultRequestHeaders.Add("User-Agent", "ModpackInstaller");
-
+        
         // Opțional: poți seta și timeout-ul sau alte setări de bază
         HttpClient.Timeout = TimeSpan.FromMinutes(5);
         
@@ -51,14 +41,13 @@ public static class BackendApiService {
     /// The full user dto if successful
     /// </returns>
     public static async Task<FullUserDto?> RegisterAsync(string nickname) {
-        var response = await HttpClient.PostAsync(
-                              $"api/v1/modpacks/register?username={Uri.EscapeDataString(nickname)}", 
-                              null);
+        var result = await WebService.Post<FullUserDto>(
+            $"{BaseUrl}api/v1/modpacks/register?username={Uri.EscapeDataString(nickname)}");
 
-        if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
+        if (!result.Success)
+            throw result.Exception ?? new Exception(result.RawBody);
 
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<FullUserDto>(json, AppVariables.WebJsonOptions);
+        return result.Data;
     }
 
     // // =========================================
@@ -87,38 +76,37 @@ public static class BackendApiService {
     /// <returns>The full ModpackDto with the password that would usually not get included</returns>
     /// <exception cref="Exception">If the request is non-successful</exception>
     public static async Task<ModpackDto?> CreateModpackAsync(CreateModpackRequest dto, string ownerToken) {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("X-Owner-Token", ownerToken);
+        var result = await WebService.Post<ModpackDto>(
+            $"{BaseUrl}api/v1/modpacks",
+            dto,
+            new Dictionary<string, string> {
+                ["X-Owner-Token"] = ownerToken
+            });
 
-        var json = JsonSerializer.Serialize(dto, AppVariables.WebJsonOptions);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        if (!result.Success)
+            throw result.Exception ?? new Exception(result.RawBody);
 
-        var response = await client.PostAsync($"{BaseUrl}api/v1/modpacks", content);
-
-        if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<ModpackDto>(responseJson, AppVariables.WebJsonOptions);
+        return result.Data;
     }
 
-    // =========================================
-    // 2. UPDATE METADATA (PUT /api/v1/modpacks/{id})
-    // =========================================
-    public static async Task<ModpackMetadata?> UpdateMetadataAsync(string modpackId, CreateModpackRequest dto, string ownerToken, string modpackPassword) {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("X-Owner-Token", ownerToken);
-        client.DefaultRequestHeaders.Add("X-Modpack-Password", modpackPassword);
-
-        var json = JsonSerializer.Serialize(dto, AppVariables.WebJsonOptions);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PutAsync($"{BaseUrl}api/v1/modpacks/{modpackId}", content);
-
-        if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<ModpackMetadata>(responseJson, AppVariables.WebJsonOptions);
-    }
+    // // =========================================
+    // // 2. UPDATE METADATA (PUT /api/v1/modpacks/{id})
+    // // =========================================
+    // public static async Task<ModpackMetadata?> UpdateMetadataAsync(string modpackId, CreateModpackRequest dto, string ownerToken, string modpackPassword) {
+    //     using var client = new HttpClient();
+    //     client.DefaultRequestHeaders.Add("X-Owner-Token", ownerToken);
+    //     client.DefaultRequestHeaders.Add("X-Modpack-Password", modpackPassword);
+    //      this has to be reworked
+    //     var json = JsonSerializer.Serialize(dto, AppVariables.WebJsonOptions);
+    //     var content = new StringContent(json, Encoding.UTF8, "application/json");
+    //
+    //     var response = await client.PutAsync($"{BaseUrl}api/v1/modpacks/{modpackId}", content);
+    //
+    //     if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
+    //
+    //     var responseJson = await response.Content.ReadAsStringAsync();
+    //     return JsonSerializer.Deserialize<ModpackMetadata>(responseJson, AppVariables.WebJsonOptions);
+    // }
 
     /// <summary>
     /// This gets the modpack information from the backend.
@@ -128,16 +116,16 @@ public static class BackendApiService {
     /// <param name="modpackShareCode">If the modpack is unlisted this is required</param>
     /// <returns>The modpackDto</returns>
     public static async Task<ModpackDto?> GetModpack(Guid modpackId, string? modpackShareCode = null) {
-        var response = await HttpClient.GetAsync(
+        var result = await WebService.Get<ModpackDto>(
             $"{BaseUrl}api/v1/modpacks/{modpackId}?code={modpackShareCode}");
 
-        if (response.StatusCode == HttpStatusCode.NotFound)
+        if (result.StatusCode == HttpStatusCode.NotFound)
             return null;
-        
-        if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
 
-        var responseJson = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<ModpackDto>(responseJson, AppVariables.WebJsonOptions);
+        if (!result.Success)
+            throw result.Exception ?? new Exception(result.RawBody);
+
+        return result.Data;
     }
 
     /// <summary>
@@ -151,80 +139,64 @@ public static class BackendApiService {
         InitiateVersionUploadRequest requestDto,
         string ownerToken)
     {
-        var json = JsonSerializer.Serialize(requestDto, AppVariables.WebJsonOptions);
+        var result = await WebService.Post<ModpackVersionDto>(
+            $"{BaseUrl}api/v1/modpacks/{requestDto.ModpackId}/version/initiate",
+            requestDto,
+            new Dictionary<string, string> {
+                ["X-Owner-Token"] = ownerToken
+            });
 
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"api/v1/modpacks/{requestDto.ModpackId}/version/initiate");
+        result.EnsureSuccess();
 
-        request.Headers.Add("X-Owner-Token", ownerToken);
-        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await HttpClient.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
-            throw new Exception(await GetErrorMessage(response));
-
-        return JsonSerializer.Deserialize<ModpackVersionDto>(
-            await response.Content.ReadAsStringAsync(),
-            AppVariables.WebJsonOptions);
+        return result.Data;
     }
     
     // =========================================
     // UPLOAD TREE JSON (POST /api/v1/modpacks/{modpackId}/version/{versionId}/tree)
     // =========================================
-    public static async Task<MissingFilesResponseDTO?> UploadTreeJsonAsync(
+    public static async Task<MissingFilesResponseDto?> UploadTreeJsonAsync(
         string modpackId,
         Guid versionId,
         ModpackTreeDto tree,
-        string ownerToken)
-    {
-        var json = JsonSerializer.Serialize(tree, AppVariables.WebJsonOptions);
+        string ownerToken) {
+        var result = await WebService.Post<MissingFilesResponseDto>(
+            $"{BaseUrl}api/v1/modpacks/{modpackId}/version/{versionId}/tree",
+            tree,
+            new Dictionary<string, string> {
+                ["X-Owner-Token"] = ownerToken
+            });
 
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{BaseUrl}api/v1/modpacks/{modpackId}/version/{versionId}/tree");
+        result.EnsureSuccess();
 
-        request.Headers.Add("X-Owner-Token", ownerToken);
-        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await HttpClient.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
-            throw new Exception(await GetErrorMessage(response));
-
-        return JsonSerializer.Deserialize<MissingFilesResponseDTO>(
-                   await response.Content.ReadAsStringAsync(),
-                   AppVariables.WebJsonOptions);
+        return result.Data;
     }
     
     // =========================================
     // UPLOAD FILE TO BLOB STORAGE (POST /api/v1/files/upload)
     // Returns SHA256 of the uploaded file
     // =========================================
-    public static async Task<string?> UploadFileToBlobStorageAsync(
+    public static async Task UploadFileToBlobStorageAsync(
         string fullPath,
-        string ownerToken)
-    {
+        string ownerToken
+        ) {
         using var form = new MultipartFormDataContent();
+
         await using var stream = File.OpenRead(fullPath);
+
         var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
         form.Add(fileContent, "file", Path.GetFileName(fullPath));
 
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{BaseUrl}api/v1/files/upload");
+        var result = await WebService.Post<string>(
+            $"{BaseUrl}api/v1/files/upload",
+            form,
+            new Dictionary<string, string>
+            {
+                ["X-Owner-Token"] = ownerToken
+            });
 
-        request.Headers.Add("X-Owner-Token", ownerToken);
-        request.Content = form;
-
-        var response = await HttpClient.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
-            throw new Exception(await GetErrorMessage(response));
-
-        return await response.Content.ReadAsStringAsync(); // Returns SHA256
+        result.EnsureSuccess();
     }
     
     // =========================================
@@ -256,21 +228,18 @@ public static class BackendApiService {
     {
         // Construct the URL based on the backend route
         var url = $"{BaseUrl}api/v1/modpacks/notRead/version/{versionId}/manifest";
- 
-        if (!string.IsNullOrEmpty(sharingCode)) {
+
+        if (!string.IsNullOrEmpty(sharingCode))
             url += $"?code={Uri.EscapeDataString(sharingCode)}";
-        }
- 
-        var response = await HttpClient.GetAsync(url);
- 
-        if (response.StatusCode == HttpStatusCode.NotFound)
+
+        var result = await WebService.Get<ModpackManifest>(url);
+
+        if (result.StatusCode == HttpStatusCode.NotFound)
             return null;
- 
-        if (!response.IsSuccessStatusCode)
-            throw new Exception(await GetErrorMessage(response));
- 
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<ModpackManifest>(json, AppVariables.WebJsonOptions);
+
+        result.EnsureSuccess();
+
+        return result.Data;
 
     }
 
@@ -280,14 +249,12 @@ public static class BackendApiService {
     public static async Task<ModpackTreeDto?> GetVersionTreeAsync(
         Guid versionId
         ) {
-        var response = await HttpClient.GetAsync($"{BaseUrl}api/v1/modpacks/thisisnotused/version/{versionId}/tree");
+        var result = await WebService.Get<ModpackTreeDto>(
+            $"{BaseUrl}api/v1/modpacks/thisisnotused/version/{versionId}/tree");
 
-        if (!response.IsSuccessStatusCode)
-            throw new Exception(await GetErrorMessage(response));
+        result.EnsureSuccess();
 
-        return JsonSerializer.Deserialize<ModpackTreeDto>(
-            await response.Content.ReadAsStringAsync(),
-            AppVariables.WebJsonOptions);
+        return result.Data;
     }
 
     // Helper pentru parsarea erorilor de la GlobalExceptionHandler
@@ -351,8 +318,8 @@ public static class BackendApiService {
     public static Task DownloadStoredFileAsync(
         string sha256,
         string savePath,
-        IProgress<double>? progress = null)
-    {
+        IProgress<double>? progress = null
+        ) {
         return DownloadRawFile(
             $"{BaseUrl}api/v1/files/{sha256}",
             savePath,
@@ -363,41 +330,35 @@ public static class BackendApiService {
     // INTERNAL RAW FILE DOWNLOAD
     // (folosit pt zip-uri reale, nu base64)
     // =========================
-        private static async Task DownloadRawFile( string url, string filepath, IProgress<double>? progress = null ) {
+    private static async Task DownloadRawFile( string url, string filepath, IProgress<double>? progress = null ) {
 
-            // HttpCompletionOption.ResponseHeadersRead este crucial: 
-            // Spune HttpClient să se oprească după ce a citit headerele (ca să aflăm dimensiunea fișierului)
-            using var response = await HttpClient.GetAsync(
-                url,
-                HttpCompletionOption.ResponseHeadersRead
-            );
+        using var response = await HttpClient.GetAsync(
+            url,
+            HttpCompletionOption.ResponseHeadersRead
+        );
 
-            response.EnsureSuccessStatusCode();
+        response.EnsureSuccessStatusCode();
 
-            // Încercăm să aflăm mărimea totală din header-ul Content-Length
-            var totalBytes = response.Content.Headers.ContentLength;
+        var totalBytes = response.Content.Headers.ContentLength;
 
-            await using var stream = await response.Content.ReadAsStreamAsync();
-            await using var file = File.Create(filepath);
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        await using var file = File.Create(filepath);
 
-            // Buffer de 8KB (standard pentru operațiuni I/O)
-            var buffer = new byte[8192];
-            long totalReadBytes = 0;
-            int readBytes;
+        var buffer = new byte[8192];
+        long totalReadBytes = 0;
+        int readBytes;
 
-            // Citim manual din stream până când nu mai sunt date
-            while((readBytes = await stream.ReadAsync(buffer)) > 0) {
-                await file.WriteAsync(buffer.AsMemory(0, readBytes));
-                totalReadBytes += readBytes;
+        while((readBytes = await stream.ReadAsync(buffer)) > 0) {
+            await file.WriteAsync(buffer.AsMemory(0, readBytes));
+            totalReadBytes += readBytes;
 
-                // Dacă serverul ne-a dat Content-Length, calculăm procentul
-                if(totalBytes.HasValue) {
-                    var progressPercentage = (double)totalReadBytes / totalBytes.Value * 100;
-                    progress?.Report(progressPercentage);
-                }
-            }
-
-            // Asigurăm raportarea de 100% la final
-            progress?.Report(100);
+            if (!totalBytes.HasValue) 
+                continue;
+            
+            var progressPercentage = (double)totalReadBytes / totalBytes.Value * 100;
+            progress?.Report(progressPercentage);
         }
+
+        progress?.Report(100);
+    }
 }

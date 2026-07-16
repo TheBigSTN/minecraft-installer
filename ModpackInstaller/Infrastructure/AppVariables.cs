@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using ModpackInstaller.Converters;
 using ModpackInstaller.Models;
 
@@ -69,9 +65,8 @@ public static class AppVariables {
     public static string AppApiBaseUrl {
         get {
 #if DEBUG
-            // return "http://192.168.0.189:8080";
-            return "https://minte.go.ro:5005/modpack-service/";
-            return "http://localhost:8080";
+            // return "http://192.168.0.189:8080/";
+            return "http://localhost:8080/";
 #else
         return "https://minte.go.ro:5005/modpack-service/";
 #endif

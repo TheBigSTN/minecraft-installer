@@ -8,7 +8,7 @@ using ModpackInstaller.Models.Modrinth;
 
 namespace ModpackInstaller.Services;
 
-public class ModrinthApiService {
+public static class ModrinthApiService {
     private const string BaseUrl = "https://api.modrinth.com/v2";
 
     private static readonly Dictionary<string, string> DefaultHeaders = new() {
@@ -23,80 +23,17 @@ public class ModrinthApiService {
         _ => throw new NotSupportedException(loader.ToString())
     };
 
-    // 🔹 Game Versions
-    public static async Task<IReadOnlyList<string>> GetGameVersionsAsync(
-        ModLoaderType loader,
-        bool stableOnly = true) {
-        var url = GetManifestUrl(loader);
-
-        var manifest = await WebService.GetJson<LauncherManifestDto>(url, DefaultHeaders);
-        if (manifest == null)
-            return [];
-
-        var versions = manifest.GameVersions
-            // ❌ scoate placeholder-ul
-            .Where(v => !v.Id.StartsWith('$'));
-
-        if (stableOnly)
-            versions = versions.Where(v => v.Stable);
-
-        return versions
-            .Select(v => v.Id)
-            .ToList();
-    }
-
     public static async Task<List<GameVersionEntryDto>> GetGameVersionsAsync(ModLoaderType loader) {
         var manifest = await WebService.GetJson<LauncherManifestDto>(GetManifestUrl(loader), DefaultHeaders);
 
         return manifest?.GameVersions ?? [];
     }
-    
-    
-    // 🔹 Loader versions (Forge / Fabric / NeoForge)
-    public async Task<IReadOnlyList<string>> GetLoaderVersionsAsync(
-        ModLoaderType loader,
-        string gameVersion,
-        bool stableOnly = true) {
-        var url = GetManifestUrl(loader);
-
-        var manifest = await WebService.GetJson<LauncherManifestDto>(url, DefaultHeaders);
-        if (manifest == null)
-            return [];
-
-        // 1️⃣ încearcă versiunea specifică
-        var gv = manifest.GameVersions
-            .FirstOrDefault(v => v.Id == gameVersion);
-
-        // 2️⃣ fallback Fabric / Quilt
-        gv ??= manifest.GameVersions
-            .FirstOrDefault(v => v.Id.StartsWith("$"));
-
-        if (gv == null)
-            return [];
-
-        var loaders = gv.Loaders.AsEnumerable();
-
-        // 3️⃣ stable inteligent
-        if (stableOnly) {
-            var stableLoaders = loaders.Where(l => l.Stable).ToList();
-
-            if (stableLoaders.Any())
-                loaders = stableLoaders;
-            // altfel: păstrează TOATE (Fabric / Quilt)
-        }
-
-        return loaders
-            .Select(l => l.Id)
-            .ToList();
-    }
 
     public static async Task<ModrinthVersion?> GetCompatibleVersionAsync(
         string projectSlugOrId,
         string gameVersion,
-        ModLoaderType loader) // Folosim Enum-ul aici
-    {
-        // Convertim Enum-ul (Forge, Fabric etc.) în string-ul așteptat de API (forge, fabric)
-        string loaderStr = loader.ToString().ToLower();
+        ModLoaderType loader) {
+        var loaderStr = loader.ToString().ToLower();
 
         var loadersJson = Uri.EscapeDataString($"[\"{loaderStr}\"]");
         var gameVersionsJson = Uri.EscapeDataString($"[\"{gameVersion}\"]");

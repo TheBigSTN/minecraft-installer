@@ -13,17 +13,16 @@ using ModpackInstaller.Services.FileSistem;
 namespace ModpackInstaller.Services.Modpack;
 
 public class ModpackPublicizeService(ModpackMetadata metadata) {
-	private readonly AppSettings _appSettings = new();
 	private readonly ModpackMetadata _metadata = metadata;
     private readonly ModpackMedatataService _modpackMedatataService = new();
 
     // =========================================
     // 1. ÎNREGISTRARE UTILIZATOR
     // =========================================
-    private async Task<FullUserDto?> RegisterUserAsync(string nickname) {
+    private static async Task<FullUserDto?> RegisterUserAsync(string nickname) {
         var response = await BackendApiService.RegisterAsync(nickname);
         if (response != null) {
-            _appSettings.Update(cfg => {
+            AppSettings.Settings.Update(cfg => {
                 cfg.UserPasswordToken = response.Token;
                 cfg.UserName = response.Username;
                 cfg.UserId = response.Id;
@@ -143,8 +142,8 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
     // HELPERS
     // =========================================
 
-    private async Task<string> GetValidToken(int recursion = 0) {
-        var token = _appSettings.Config.UserPasswordToken;
+    private static async Task<string> GetValidToken(int recursion = 0) {
+        var token = AppSettings.Settings.Config.UserPasswordToken;
         if (string.IsNullOrEmpty(token)) {
             _ = await RegisterUserAsync("TODO");
             token = await GetValidToken(recursion + 1);

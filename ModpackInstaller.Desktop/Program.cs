@@ -1,21 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Controls;
 using Avalonia.ReactiveUI;
-using Avalonia.Threading;
-using ModpackInstaller.Services;
-using System.Reflection;
 using ModpackInstaller.Infrastructure;
 using Velopack;
-using Velopack.Sources;
 namespace ModpackInstaller.Desktop;
 
 class Program {
@@ -44,6 +35,8 @@ class Program {
 			return -1;
 		}
 
+		InitializeLogging();
+
         // Dacă avem argumente SAU am reușit să ne atașăm, rulăm CLI
         if(args.Length > 0) {
 
@@ -57,6 +50,7 @@ class Program {
         }
 
         try {
+	        Console.WriteLine("========== STARTED THE UI ==========");
 			BuildAvaloniaApp()
 				.StartWithClassicDesktopLifetime(args);
 
@@ -66,6 +60,34 @@ class Program {
 
 			return -1;
 		}
+	}
+    
+	private static void InitializeLogging()
+	{
+		var logDirPath = Path.Combine(AppVariables.InstallerRoot, "logs");
+		Directory.CreateDirectory(logDirPath);
+
+		var date = DateTime.Now.ToString("yyyy-MM-dd");
+
+		var latestLogPath = Path.Combine(logDirPath, "latest.log");
+		var dailyLogPath = Path.Combine(logDirPath, $"{date}.log");
+		var latestDebugLogPath = Path.Combine(logDirPath, "debug.log");
+		var dailyDebugLogPath = Path.Combine(logDirPath, $"debug-{date}.log");
+
+		var consoleWriter = TextWriter.Synchronized(new MultiTextWriter(
+			new StreamWriter(latestLogPath, false) { AutoFlush = true },
+			new StreamWriter(dailyLogPath, true) { AutoFlush = true }));
+
+		var debugWriter = TextWriter.Synchronized(new MultiTextWriter(
+			new StreamWriter(latestDebugLogPath, false) { AutoFlush = true },
+			new StreamWriter(dailyDebugLogPath, true) { AutoFlush = true }));
+
+		Console.SetOut(consoleWriter);
+		Console.SetError(consoleWriter);
+
+		Trace.Listeners.Clear();
+		Trace.Listeners.Add(new TextWriterTraceListener(debugWriter));
+		Trace.AutoFlush = true;
 	}
 
     private static void SetupWindowsPath() {
@@ -113,9 +135,11 @@ class Program {
         var exePath = Path.Combine(installDir, "ModpackInstaller.Desktop.exe");
 
         var content =
-    $@"@echo off
-""{exePath}"" %*
-";
+	        $"""
+	         @echo off
+	         		"{exePath}" %*
+	         		
+	         """;
 
         File.WriteAllText(cmdPath, content);
 

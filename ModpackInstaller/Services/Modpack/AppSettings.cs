@@ -16,7 +16,7 @@ public class AppSettings {
 
     // Configul real
     public AppConfig Config { get; private set; }
-    public AppSettings() {
+    private AppSettings() {
         _configPath = Path.Combine(AppVariables.InstallerRoot, "appsettings.json");
 
         if (File.Exists(_configPath)) {
@@ -31,7 +31,6 @@ public class AppSettings {
             }
         }
         else {
-            Directory.CreateDirectory(_configPath);
             Config = new AppConfig();
             Save(); // scriem fișier default dacă nu exista
         }

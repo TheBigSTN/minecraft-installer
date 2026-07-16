@@ -251,7 +251,7 @@ public class ModpackManifestService {
             }
         }
         catch (Exception ex) {
-            Debug.WriteLine($"Failed to toggle mod file state: {ex.Message}");
+            Console.WriteLine($"Failed to toggle mod file state: {ex.Message}");
         }
         
         mod.Enabled = status;
@@ -282,7 +282,7 @@ public class ModpackManifestService {
 
         try {
             await using var input =
-                await BackendApiService.HttpClient.GetStreamAsync(modInfo.DownloadUrl);
+                await WebService.Client.GetStreamAsync(modInfo.DownloadUrl);
 
             await using var output = File.Create(tempPath);
 

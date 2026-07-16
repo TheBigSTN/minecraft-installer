@@ -82,8 +82,8 @@ public partial class SideNavigationBarViewModel : ViewModelBase {
         };
         
         SettingsCommand = ReactiveCommand.Create(() => {
-            Debug.WriteLine("Button pressed");
-            Debug.WriteLine(SelectedPage);
+            Console.WriteLine("Button pressed");
+            Console.WriteLine(SelectedPage);
             //return Unit.Default;
             // global.ShowDiscovery();
         });
