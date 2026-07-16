@@ -68,7 +68,7 @@ public static class BackendApiService {
     //     using var client = new HttpClient();
     //     client.DefaultRequestHeaders.Add("X-Owner-Token", ownerToken);
     //
-    //     var response = await client.GetAsync($"{BaseUrl}/api/v1/modpacks/my-library");
+    //     var response = await client.GetAsync($"{BaseUrl}api/v1/modpacks/my-library");
     //
     //     if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
     //
@@ -93,7 +93,7 @@ public static class BackendApiService {
         var json = JsonSerializer.Serialize(dto, AppVariables.WebJsonOptions);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync($"{BaseUrl}/api/v1/modpacks", content);
+        var response = await client.PostAsync($"{BaseUrl}api/v1/modpacks", content);
 
         if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
 
@@ -112,7 +112,7 @@ public static class BackendApiService {
         var json = JsonSerializer.Serialize(dto, AppVariables.WebJsonOptions);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await client.PutAsync($"{BaseUrl}/api/v1/modpacks/{modpackId}", content);
+        var response = await client.PutAsync($"{BaseUrl}api/v1/modpacks/{modpackId}", content);
 
         if (!response.IsSuccessStatusCode) throw new Exception(await GetErrorMessage(response));
 
@@ -129,7 +129,7 @@ public static class BackendApiService {
     /// <returns>The modpackDto</returns>
     public static async Task<ModpackDto?> GetModpack(Guid modpackId, string? modpackShareCode = null) {
         var response = await HttpClient.GetAsync(
-            $"{BaseUrl}/api/v1/modpacks/{modpackId}?code={modpackShareCode}");
+            $"{BaseUrl}api/v1/modpacks/{modpackId}?code={modpackShareCode}");
 
         if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
@@ -183,7 +183,7 @@ public static class BackendApiService {
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $"{BaseUrl}/api/v1/modpacks/{modpackId}/version/{versionId}/tree");
+            $"{BaseUrl}api/v1/modpacks/{modpackId}/version/{versionId}/tree");
 
         request.Headers.Add("X-Owner-Token", ownerToken);
         request.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -214,7 +214,7 @@ public static class BackendApiService {
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            $"{BaseUrl}/api/v1/files/upload");
+            $"{BaseUrl}api/v1/files/upload");
 
         request.Headers.Add("X-Owner-Token", ownerToken);
         request.Content = form;
@@ -238,7 +238,7 @@ public static class BackendApiService {
 
         using var request = new HttpRequestMessage(
             HttpMethod.Put,
-            $"{BaseUrl}/api/v1/modpacks/{requestDto.ModpackId}/version/{requestDto.VersionId}/status"); // Corrected to use VersionId
+            $"{BaseUrl}api/v1/modpacks/{requestDto.ModpackId}/version/{requestDto.VersionId}/status"); // Corrected to use VersionId
 
         request.Headers.Add("X-Owner-Token", ownerToken);
         request.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -255,7 +255,7 @@ public static class BackendApiService {
     public static async Task<ModpackManifest?> GetModpackManifestAsync(Guid versionId, string? sharingCode = null)
     {
         // Construct the URL based on the backend route
-        var url = $"{BaseUrl}/api/v1/modpacks/notRead/version/{versionId}/manifest";
+        var url = $"{BaseUrl}api/v1/modpacks/notRead/version/{versionId}/manifest";
  
         if (!string.IsNullOrEmpty(sharingCode)) {
             url += $"?code={Uri.EscapeDataString(sharingCode)}";
@@ -280,7 +280,7 @@ public static class BackendApiService {
     public static async Task<ModpackTreeDto?> GetVersionTreeAsync(
         Guid versionId
         ) {
-        var response = await HttpClient.GetAsync($"{BaseUrl}/api/v1/modpacks/thisisnotused/version/{versionId}/tree");
+        var response = await HttpClient.GetAsync($"{BaseUrl}api/v1/modpacks/thisisnotused/version/{versionId}/tree");
 
         if (!response.IsSuccessStatusCode)
             throw new Exception(await GetErrorMessage(response));
@@ -308,7 +308,7 @@ public static class BackendApiService {
     // =========================================
     public static async Task<List<PublicModpackRequestResponse>> GetPublicModpacksAsync() {
         return await WebService.GetJson<List<PublicModpackRequestResponse>>(
-            $"{BaseUrl}/api/v1/modpacks/public"
+            $"{BaseUrl}api/v1/modpacks/public"
         ) ?? [];
     }
     
@@ -319,7 +319,7 @@ public static class BackendApiService {
             headers["X-Owner-Token"] = AppSettings.Settings.Config.UserPasswordToken;
 
         return await WebService.GetJson<List<ModpackVersionDto>>(
-            $"{BaseUrl}/api/v1/modpacks/{modpackId}/version",
+            $"{BaseUrl}api/v1/modpacks/{modpackId}/version",
             headers: headers
         ) ?? [];
     }
@@ -335,7 +335,7 @@ public static class BackendApiService {
         IProgress<double>? progress = null
     ) {
         var url =
-            $"{BaseUrl}/api/v1/modpacks/{modpackId}/version/{versionId}";
+            $"{BaseUrl}api/v1/modpacks/{modpackId}/version/{versionId}";
 
         if (!string.IsNullOrEmpty(sharingCode))
         {
@@ -354,7 +354,7 @@ public static class BackendApiService {
         IProgress<double>? progress = null)
     {
         return DownloadRawFile(
-            $"{BaseUrl}/api/v1/files/{sha256}",
+            $"{BaseUrl}api/v1/files/{sha256}",
             savePath,
             progress);
     }
