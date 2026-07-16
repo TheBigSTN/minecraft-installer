@@ -338,6 +338,9 @@
 		<DataTemplate DataType="vmDialog:ModpackSelectVersionForInstallDialogViewModel">
 			<viewsDialog:ModpackSelectVersionForInstallDialogView />
 		</DataTemplate>
+		<DataTemplate DataType="vmDialog:ManualSetupDialogViewModel">
+			<viewsDialog:ManualSetupDialogView />
+		</DataTemplate>
 	</Application.DataTemplates>
 
 	<Application.Resources>

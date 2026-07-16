@@ -22,7 +22,8 @@ public partial class ModpackSettingsDialogViewModel : DialogViewModel<Unit> {
 
     public bool IsPublished => !string.IsNullOrEmpty(_metadata.ModpackPassword);
     
-    public bool IsOwnedByYou => AppSettings.Settings.Config.UserId == RemoteModpackInfo?.Owner.Id &&
+    public bool IsOwnedByYou => !IsPublished ||
+                                AppSettings.Settings.Config.UserId == RemoteModpackInfo?.Owner.Id &&
                                 !string.IsNullOrEmpty(_metadata.ModpackPassword);
 
     public ReactiveCommand<Unit, Unit> CloseCommand { get; }
