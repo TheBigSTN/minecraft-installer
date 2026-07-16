@@ -1,0 +1,118 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ModpackInstaller.Views.Dialogs.ManualSetupDialogView"
+             x:DataType="vm:ManualSetupDialogViewModel">
+    <Dialog>
+        <DialogHeader>
+            <DialogTitle>
+                Create modpack on modloader
+            </DialogTitle>
+            
+            <DialogCloseButton Command="{Binding CloseCommand}" />
+        </DialogHeader>
+        <DialogContent>
+
+            <Border
+                Width="500"
+                Padding="24"
+                Classes="Card">
+
+                <StackPanel Spacing="16">
+
+                    <TextBlock
+                        FontSize="24"
+                        FontWeight="Bold"
+                        Text="Manual Setup Required" />
+
+                    <TextBlock
+                        TextWrapping="Wrap"
+                        Opacity="0.8">
+                        This modpack requires a manual launcher profile. Create a new profile using the information below, then return and press
+                        <Bold>Done</Bold>.
+                    </TextBlock>
+
+                    <Grid
+                        Margin="0,8,0,0"
+                        ColumnDefinitions="Auto,*"
+                        RowDefinitions="Auto,Auto,Auto,Auto, Auto"
+                        ColumnSpacing="16"
+                        RowSpacing="12">
+                        
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="0"
+                                   Text="Application:"
+                                   FontWeight="SemiBold" />
+
+                        <SelectableTextBlock Grid.Row="0"
+                                             Grid.Column="1"
+                                             Text="{Binding ModpackLoader}" />
+
+                        <TextBlock Grid.Row="1" 
+                                   Grid.Column="0"
+                                   Text="Name:"
+                                   FontWeight="SemiBold" />
+
+                        <SelectableTextBlock Grid.Row="1"
+                                             Grid.Column="1"
+                                             Text="{Binding Name}" />
+
+                        <TextBlock Grid.Row="2" 
+                                   Grid.Column="0"
+                                   Text="Game Version:"
+                                   FontWeight="SemiBold" />
+
+                        <SelectableTextBlock Grid.Row="2"
+                                             Grid.Column="1"
+                                             Text="{Binding GameVersion}" />
+
+                        <TextBlock Grid.Row="3" 
+                                   Grid.Column="0"
+                                   Text="Loader:"
+                                   FontWeight="SemiBold" />
+
+                        <SelectableTextBlock Grid.Row="3"
+                                             Grid.Column="1"
+                                             Text="{Binding Loader}" />
+
+                        <TextBlock Grid.Row="4" 
+                                   Grid.Column="0"
+                                   Text="Loader Version:"
+                                   FontWeight="SemiBold" />
+
+                        <SelectableTextBlock Grid.Row="4"
+                                             Grid.Column="1"
+                                             Text="{Binding LoaderVersion}" />
+
+                    </Grid>
+
+                    <Border
+                        Padding="12"
+                        Margin="0,8,0,0"
+                        CornerRadius="8"
+                        Background="{DynamicResource ThemeControlMidBrush}">
+
+                        <TextBlock TextWrapping="Wrap">
+                            After creating the profile, only then press 
+                            <Bold>Done</Bold>.
+                        </TextBlock>
+
+                    </Border>
+
+                    <Button
+                        Margin="0,8,0,0"
+                        HorizontalAlignment="Right"
+                        MinWidth="120"
+                        Command="{Binding DoneCommand}"
+                        Content="Done" />
+
+                </StackPanel>
+
+            </Border>
+
+        </DialogContent>
+    </Dialog>
+</UserControl>

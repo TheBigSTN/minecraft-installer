@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using ModpackInstaller.Services.Modpack;
 
 namespace ModpackInstaller.Models.Modrinth;
 
@@ -45,10 +46,10 @@ public class ModrinthFile {
 	[JsonPropertyName("hashes")] public ModrinthFileHashes Hashes { get; set; } = new();
 }
 
-public class ModrinthDependency {
-	[JsonPropertyName("project_id")] public string? ProjectId { get; set; }
-	[JsonPropertyName("version_id")] public string? VersionId { get; set; }
-	[JsonPropertyName("dependency_type")] public string DependencyType { get; set; } = ""; // required, optional, etc.
+public class ModrinthDependency : IModVersion {
+	[JsonPropertyName("project_id")] public required string ProjectId { get; set; }
+	[JsonPropertyName("version_id")] public required string VersionId { get; set; }
+	[JsonPropertyName("dependency_type")] public DependencyType DependencyType { get; set; }
 }
 
 public class ModrinthFileHashes {
@@ -57,4 +58,13 @@ public class ModrinthFileHashes {
 
 	[JsonPropertyName("sha512")]
 	public string Sha512 { get; set; } = "";
+}
+
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum DependencyType {
+	Required,
+	Optional,
+	Incompatible,
+	Embedded
 }

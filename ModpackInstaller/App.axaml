@@ -1,18 +1,31 @@
 <Application xmlns="https://github.com/avaloniaui"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-			 xmlns:viewsTopbars="clr-namespace:ModpackInstaller.Views.Topbars"
+			 xmlns:views="clr-namespace:ModpackInstaller.Views"
 			 xmlns:viewsSidebars="clr-namespace:ModpackInstaller.Views.Sidebars"
 			 xmlns:viewsBody="clr-namespace:ModpackInstaller.Views.Body"
-			 xmlns:vmTopbars="clr-namespace:ModpackInstaller.ViewModels.Topbars"
+			 xmlns:viewsModpackBody="clr-namespace:ModpackInstaller.Views.ModpackBody"
+			 xmlns:viewsDialog="clr-namespace:ModpackInstaller.Views.Dialogs"
+			 
 			 xmlns:vmSidebars="clr-namespace:ModpackInstaller.ViewModels.Sidebars"
 			 xmlns:vmBody="clr-namespace:ModpackInstaller.ViewModels.Body"
+			 xmlns:vmModpackBody="clr-namespace:ModpackInstaller.ViewModels.ModpackBody"
+			 xmlns:vmDialog="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+			 
 			 xmlns:converters="clr-namespace:ModpackInstaller.Converters"
+			 xmlns:convertersAvalonia="clr-namespace:Avalonia.Controls.Converters;assembly=Avalonia.Controls"
+			 
 			 x:Class="ModpackInstaller.App"
 			 RequestedThemeVariant="Dark">
+			 <!-- xmlns:viewsTopbars="clr-namespace:ModpackInstaller.Views.Topbars" -->
+			 <!-- xmlns:vmTopbars="clr-namespace:ModpackInstaller.ViewModels.Topbars" -->
 
 	<Application.Styles>
 		<!-- Tema Fluent -->
 		<FluentTheme/>
+		
+		<Style Selector="Button">
+			<Setter Property="Cursor" Value="Hand"/>
+		</Style>
 
 		<!-- Stiluri generale pentru butoane -->
 		<Style Selector="Button.nav">
@@ -61,34 +74,277 @@
 		<Style Selector="Button.topbar:pointerover">
 			<Setter Property="Background" Value="#3A70D1"/>
 		</Style>
+
+		<Style Selector="Button.TitleButton">
+			<Setter Property="Width" Value="34"/>
+			<Setter Property="Height" Value="34"/>
+			<Setter Property="CornerRadius" Value="17"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="Padding" Value="0"/>
+		</Style>
+		
+		<Style Selector="Button.TitleButton:pressed">
+			<Setter Property="Opacity" Value="0.8"/>
+		</Style>
+
+		<Style Selector="Button.TitleButton:pointerover">
+			<Setter Property="Cursor" Value="Hand"/>
+		</Style>
+
+		<Style Selector="Button.MinimizeButton:pointerover">
+			<Setter Property="Background" Value="#404040"/>
+		</Style>
+
+		<Style Selector="Button.MaximizeButton:pointerover">
+			<Setter Property="Background" Value="#D6A300"/>
+		</Style>
+
+		<Style Selector="Button.CloseButton:pointerover">
+			<Setter Property="Background" Value="#E53935"/>
+		</Style>
+
+        <Style Selector="Border.TabBarContainer">
+            <Setter Property="Background" Value="#23262D"/>
+            <Setter Property="CornerRadius" Value="25"/>
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        
+        <Style Selector="StackPanel.TabBar">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        
+        <Style Selector="RadioButton.TabBarButton">
+            <Setter Property="MinWidth" Value="48"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="8,4"/>
+            <Setter Property="Padding" Value="10  0 "/>
+            <Setter Property="CornerRadius" Value="24"/>
+
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+			
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border
+                        x:Name="PART_RootBorder"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                
+                        <ContentPresenter
+                            Name="PART_ContentPresenter"
+                            Content="{TemplateBinding Content}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <Style Selector="RadioButton.TabBarButton:pointerover">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="#313338"/>
+        </Style>
+		
+
+        <Style Selector="RadioButton.TabBarButton:checked">
+            <Setter Property="Background" Value="#992D5BFF"/>
+            <Setter Property="Foreground" Value="#F02DCBFF"/>
+        </Style>
+		
+		<Style Selector="TextBox.centered">
+			<Setter Property="VerticalContentAlignment" Value="Center"/>
+			<Setter Property="TextWrapping" Value="NoWrap"/>
+		</Style>
+
+		<Style Selector="TextBox.centered /template/ ScrollViewer">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+		</Style>
+		
+		<Style Selector="RadioButton.SideButton">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Margin" Value="8,4"/>
+            <Setter Property="Padding" Value="10  0 "/>
+            <Setter Property="CornerRadius" Value="24"/>
+
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+			
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border
+                        x:Name="PART_RootBorder"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                
+                        <ContentPresenter
+                            Name="PART_ContentPresenter"
+                            Content="{TemplateBinding Content}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <Style Selector="RadioButton.SideButton:pointerover">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="#313338"/>
+        </Style>
+		
+
+        <Style Selector="RadioButton.SideButton:checked">
+            <Setter Property="Background" Value="#992D5BFF"/>
+            <Setter Property="Foreground" Value="#F02DCBFF"/>
+        </Style>
+		
+		<Style Selector="Button.SideButton">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Margin" Value="8,4"/>
+            <Setter Property="Padding" Value="10  0 "/>
+            <Setter Property="CornerRadius" Value="24"/>
+
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+			
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border
+                        x:Name="PART_RootBorder"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                
+                        <ContentPresenter
+                            Name="PART_ContentPresenter"
+                            Content="{TemplateBinding Content}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button.SideButton:pointerover">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="#313338"/>
+        </Style>
+		
+		<Style Selector="Button.SecondaryButton">
+			<Setter Property="Height" Value="46"/>
+			<Setter Property="Padding" Value="20,0"/>
+			<Setter Property="CornerRadius" Value="14"/>
+			<Setter Property="Background" Value="#2F3138"/>
+			<Setter Property="BorderBrush" Value="#404249"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="VerticalContentAlignment" Value="Center" />
+			<Setter Property="HorizontalContentAlignment" Value="Center" />
+		</Style>
+
+		<Style Selector="Button.SecondaryButton:pointerover">
+			<Setter Property="Background" Value="#363941"/>
+		</Style>
+        
+		<Style Selector="Button.AccentButton">
+			<Setter Property="Height" Value="46"/>
+			<Setter Property="Padding" Value="22,0"/>
+			<Setter Property="CornerRadius" Value="14"/>
+			<Setter Property="Background" Value="#28D764"/>
+			<Setter Property="Foreground" Value="Black"/>
+			<Setter Property="VerticalContentAlignment" Value="Center" />
+			<Setter Property="HorizontalContentAlignment" Value="Center" />
+		</Style>
+
+		<Style Selector="Button.AccentButton:pointerover">
+			<Setter Property="Background" Value="#33E46E"/>
+		</Style>
+		
+		<Style Selector="Border.Card">
+			<Setter Property="Background" Value="#2B2B2B"/>
+			<Setter Property="BorderBrush" Value="#404040"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="CornerRadius" Value="12"/>
+		</Style>
+		
+		<StyleInclude Source="avares://ModpackInstaller/Components/Dialog.axaml"/>
+		<StyleInclude Source="avares://ModpackInstaller/Components/Pages.axaml"/>
 	</Application.Styles>
 
 	<Application.DataTemplates>
-		<DataTemplate DataType="vmTopbars:GlobalTopBarViewModel">
-			<viewsTopbars:GlobalTopBarView />
+		<DataTemplate DataType="vmSidebars:SideNavigationBarViewModel">
+			<viewsSidebars:SideNavigationBarView />
 		</DataTemplate>
-		<DataTemplate DataType="vmTopbars:ModpackTopBarViewModel">
-			<viewsTopbars:ModpackTopBarView />
-		</DataTemplate>
-		<DataTemplate DataType="vmSidebars:ModpackListViewModel">
-			<viewsSidebars:ModpackListView />
-		</DataTemplate>
-		<DataTemplate DataType="vmSidebars:ModListViewModel">
-			<viewsSidebars:ModListView />
-		</DataTemplate>
+		
 		<DataTemplate DataType="vmBody:ModpackInfoViewModel">
 			<viewsBody:ModpackInfoView />
 		</DataTemplate>
-		<DataTemplate DataType="vmBody:ModpackDiscoveryViewModel">
-			<viewsBody:ModpackDiscoveryView />
+		
+		<DataTemplate DataType="vmBody:HomePageViewModel">
+			<viewsBody:HomePageView />
 		</DataTemplate>
-		<DataTemplate DataType="vmBody:ModrinthBrowserViewModel">
-			<viewsBody:ModrinthBrowserView />
+		<DataTemplate DataType="vmBody:DiscoveryPageViewModel">
+			<viewsBody:DiscoveryPageView />
+		</DataTemplate>
+		<DataTemplate DataType="vmBody:ModpackPageViewModel">
+			<viewsBody:ModpackPageView />
+		</DataTemplate>
+		
+		<DataTemplate DataType="vmModpackBody:ContentViewModel">
+			<viewsModpackBody:ContentView />
+		</DataTemplate>
+		
+		<DataTemplate DataType="vmDialog:ModpackConflictDialogViewModel">
+			<viewsDialog:ModpackConflictDialogView />
+		</DataTemplate>
+			
+		<DataTemplate DataType="vmDialog:CreateModpackDialogViewModel">
+			<viewsDialog:CreateModpackDialogView />
+		</DataTemplate>
+		
+		<DataTemplate DataType="vmDialog:ModpackSettingsDialogViewModel">
+			<viewsDialog:ModpackSettingsDialogView />
+		</DataTemplate>
+		
+		<DataTemplate DataType="vmDialog:CreateModpackUpdateDialogViewModel">
+			<viewsDialog:CreateModpackUpdateDialogView />
+		</DataTemplate>
+		<DataTemplate DataType="vmDialog:ModpackSelectVersionForInstallDialogViewModel">
+			<viewsDialog:ModpackSelectVersionForInstallDialogView />
 		</DataTemplate>
 	</Application.DataTemplates>
 
 	<Application.Resources>
 		<converters:StringNotEmptyConverter x:Key="StringNotEmpty"/>
 		<converters:NegateBoolConverter x:Key="NegateBool"/>
+		<converters:NullToBoolConverter x:Key="NullToBoolConverter" />
+		<converters:NotNullToBoolConverter x:Key="NotNullToBoolConverter" />
+        <convertersAvalonia:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
 	</Application.Resources>
 </Application>

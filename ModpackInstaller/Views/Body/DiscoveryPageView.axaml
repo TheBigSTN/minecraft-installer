@@ -1,0 +1,271 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Body"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
+             xmlns:md="clr-namespace:ModpackInstaller.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ModpackInstaller.Views.Body.DiscoveryPageView"
+             x:DataType="vm:DiscoveryPageViewModel">
+    <Grid RowDefinitions="Auto, *">
+        
+        <Grid Grid.Row="0" 
+              ColumnDefinitions="Auto,*"
+              ColumnSpacing="20"
+              VerticalAlignment="Center"
+              Background="#181A1F"
+              IsVisible="{Binding ModpackMetadata, 
+                                        Converter={StaticResource NotNullToBoolConverter}}">
+
+            <Button Classes="SideButton"
+                    Grid.Column="0"
+                    Margin="16 16 0 4"
+                    IsEnabled="False">
+                <Svg Width="30"
+                     Height="30"
+                     Css="* { color : #CCCCCC}"
+                     Path="/Assets/settings.svg"/>
+            </Button>
+
+            <StackPanel
+                Grid.Column="1"
+                Spacing="4"
+                VerticalAlignment="Center"
+                Margin="0 16 0 4">
+
+                <TextBlock
+                    FontSize="24"
+                    FontWeight="SemiBold"
+                    Text="{Binding ModpackMetadata?.Name }" />
+
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="8">
+
+                    <TextBlock
+                        Foreground="#D8D8D8"
+                        FontSize="14"
+                        Text="Installing content" />
+
+                    <TextBlock
+                        Foreground="#6D7178"
+                        FontSize="14"
+                        Text="• MC " />
+
+                    <TextBlock
+                        Foreground="#D8D8D8"
+                        FontSize="14"
+                        Text="{Binding ModpackMetadata?.GameVersion}" />
+
+                    <TextBlock
+                        Foreground="#6D7178"
+                        FontSize="14"
+                        Text="•" />
+
+                    <TextBlock
+                        Foreground="#D8D8D8"
+                        FontSize="14"
+                        Text="{Binding ModpackMetadata?.Loader}" />
+
+                </StackPanel>
+
+            </StackPanel>
+
+        </Grid>
+        
+        <ScrollViewer Grid.Row="1" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            
+            <Grid Background="#181A1F" RowDefinitions="Auto,Auto,Auto,*">
+
+                <!-- Tabs -->
+                <Grid Grid.Row="0"
+                      ColumnDefinitions="*, Auto">
+                    <Border Grid.Column="0" 
+                            Margin="16"
+                            Classes="TabBarContainer">
+
+                        <StackPanel Classes="TabBar">
+
+                            <RadioButton
+                                Classes="TabBarButton"
+                                Content="Modpacks"
+                                GroupName="Category"
+                                IsChecked="{Binding SelectedCategory, 
+                                        Converter={StaticResource EnumToBoolConverter},
+                                        ConverterParameter={x:Static vm:DiscoveryCategory.Modpacks}}"
+                                IsVisible="{Binding ModpackMetadata, 
+                                        Converter={StaticResource NullToBoolConverter}}" />
+
+                            <RadioButton
+                                Classes="TabBarButton"
+                                Content="Mods"
+                                GroupName="Category"
+                                IsChecked="{Binding SelectedCategory, 
+                                        Converter={StaticResource EnumToBoolConverter},
+                                        ConverterParameter={x:Static vm:DiscoveryCategory.Mods}}" />
+
+                            <!-- <RadioButton Classes="TabBarButton" -->
+                            <!--              Content="Resource Packs" /> -->
+                            <!-- -->
+                            <!-- <RadioButton Classes="TabBarButton" -->
+                            <!--              Content="Data Packs" /> -->
+                            <!-- -->
+                            <!-- <RadioButton Classes="TabBarButton" -->
+                            <!--              Content="Shaders" /> -->
+
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" 
+                            Margin="16"
+                            Classes="TabBarContainer">
+                        <StackPanel Classes="TabBar">
+                            <RadioButton Classes="TabBarButton"
+                                         GroupName="ModLoaderType"
+                                         Content="Curseforge"
+                                         IsChecked="{Binding SelectedModpackLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:InstallPlatform.CurseForge}}" />
+
+                            <RadioButton Classes="TabBarButton"
+                                         GroupName="ModLoaderType"
+                                         Content="Tlauncer"
+                                         IsChecked="{Binding SelectedModpackLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:InstallPlatform.TLauncher}}" />
+
+                            <RadioButton Classes="TabBarButton"
+                                         GroupName="ModLoaderType"
+                                         Content="Modrinth"
+                                         IsChecked="{Binding SelectedModpackLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:InstallPlatform.Modrinth}}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Search -->
+                <Border Grid.Row="1"
+                        Margin="16,0"
+                        Background="#2A2D34"
+                        CornerRadius="12"
+                        Height="46">
+
+                    <TextBox Background="Transparent"
+                             BorderThickness="0"
+                             Watermark="Search modpacks..."
+                             Margin="12,0"
+                             VerticalContentAlignment="Center"
+                             Classes="centered"
+                             Text="{Binding SearchQuerry}"/>
+                </Border>
+
+                <!-- Filters -->
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            Margin="16,12"
+                            Spacing="10">
+
+                    <Border Background="#2A2D34"
+                            CornerRadius="10"
+                            Padding="16,10">
+                        <TextBlock Text="Sort by: Relevance"
+                                   Foreground="White"/>
+                    </Border>
+
+                    <Border Background="#2A2D34"
+                            CornerRadius="10"
+                            Padding="16,10">
+                        <TextBlock Text="View: 20"
+                                   Foreground="White"/>
+                    </Border>
+
+                </StackPanel>
+
+                <!-- List -->
+                <ItemsControl ItemsSource="{Binding DiscoveryItems}" 
+                              Grid.Row="3"
+                              Margin="16 0 16 16">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate> 
+                            <Border Background="#23262D"
+                                    CornerRadius="18"
+                                    Padding="16"
+                                    Margin="0 0 0 8">
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    
+                                    <Grid Grid.Column="0"
+                                          ColumnDefinitions="Auto, *"
+                                          Background="Transparent">
+                                        <i:Interaction.Behaviors>
+                                            <ia:EventTriggerBehavior EventName="Tapped">
+                                                <ia:InvokeCommandAction
+                                                    Command="{Binding $parent[ItemsControl].((vm:DiscoveryPageViewModel)DataContext)?.OpenItemCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            </ia:EventTriggerBehavior>
+                                        </i:Interaction.Behaviors>
+                                        
+                                        <Border Grid.Column="0"
+                                                Width="60"
+                                                Height="60"
+                                                Background="#3A3F46"
+                                                CornerRadius="12"/>
+                            
+                                        <Svg Grid.Column="0"
+                                             Width="60"
+                                             Height="60"
+                                             Path="/Assets/square.svg"/>
+
+                                        <!-- Info -->
+                                        <StackPanel Grid.Column="1"
+                                                    Margin="16,0">
+
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontSize="24"
+                                                       FontWeight="Bold"
+                                                       Foreground="White"/>
+
+                                            <TextBlock Text="{ Binding Description}"
+                                                       Foreground="#B8BCC7"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,4"/>
+
+                                        </StackPanel>
+                                        
+                                    </Grid>
+
+                                    <!-- Icon -->
+
+                                    <!-- Install -->
+                                    <Button Grid.Column="1"
+                                            Background="#2563EB"
+                                            Foreground="White"
+                                            CornerRadius="10"
+                                            Content="{Binding InstallText}"
+                                            FontWeight="SemiBold"
+                                            VerticalContentAlignment="Center"
+                                            HorizontalContentAlignment="Center"
+                                            Command="{Binding InstallCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsEnabled="{Binding IsInstalled,
+                                                        Converter={StaticResource NegateBool}}"/>
+
+                                </Grid>
+
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </Grid>
+            
+        </ScrollViewer>
+        
+    </Grid>
+    
+</UserControl>

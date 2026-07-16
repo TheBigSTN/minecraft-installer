@@ -1,0 +1,304 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+             mc:Ignorable="d" d:DesignWidth="1500" d:DesignHeight="450"
+             x:Class="ModpackInstaller.Views.Dialogs.ModpackSettingsDialogView"
+             x:DataType="vm:ModpackSettingsDialogViewModel">
+    
+    <UserControl.Styles>
+        <Style Selector="StackPanel.SettingsSection">
+            <Setter Property="Spacing" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,24"/>
+        </Style>
+
+        <Style Selector="TextBlock.SettingsSectionHeader">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style Selector="TextBlock.SettingsSectionDescription">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="MaxWidth" Value="700"/>
+        </Style>
+
+        <Style Selector="Button.DangerSettingsButton">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="#FF4D6D"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="Button.DangerSettingsButton:pointerover">
+            <Setter Property="Background" Value="#FF5E7E"/>
+        </Style>
+
+        <Style Selector="Button.DangerSettingsButton:pressed">
+            <Setter Property="Background" Value="#E84163"/>
+        </Style>
+    </UserControl.Styles>
+    
+    <Dialog Width="1100"
+            MinHeight="500">
+        
+        <DialogHeader>
+            
+            <StackPanel Spacing="4">
+                <DialogTitle>
+                    Settings
+                </DialogTitle>
+
+                <!-- <DialogDescription -->
+                <!--     Classes="DialogDescription" -->
+                <!--     Text="Manage your instance settings."/> -->
+            </StackPanel>
+            
+            <DialogCloseButton Command="{Binding CloseCommand}"/>
+            
+        </DialogHeader>
+        
+        <DialogPage Header="General"
+                    Icon="/Assets/info.svg">
+            <DialogTitle>
+                General is wip
+            </DialogTitle>
+            
+            <DialogSeparator Margin="0 8"/>
+            
+            <StackPanel Classes="SettingsSection">
+
+                <TextBlock
+                    Classes="SettingsSectionHeader"
+                    Text="Delete instance" />
+
+                <Button
+                    Classes="DangerSettingsButton"
+                    Command="{Binding DeleteModpackCommand}"
+                    Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <!-- <PathIcon Data="{StaticResource TrashIcon}" /> -->
+                        <TextBlock Text="Delete instance"/>
+                    </StackPanel>
+                </Button>
+
+                <TextBlock
+                    Classes="SettingsSectionDescription"
+                    TextWrapping="Wrap"
+                    Text="Permanently deletes an instance from your device, including your worlds, configs, and all installed content. Be careful, as once you delete it there is no way to recover it."/>
+
+            </StackPanel>
+        </DialogPage>
+        
+        <DialogPage Header="Backups"
+                    Icon="/Assets/info.svg">
+            <DialogTitle>
+                Backups are WIP
+            </DialogTitle>
+        </DialogPage>
+        
+        <DialogPage Header="Sharing"
+            Icon="/Assets/info.svg">
+
+            <StackPanel Spacing="20">
+
+                <DialogTitle>
+                    Sharing
+                </DialogTitle>
+
+                
+                <Grid IsVisible="{Binding IsOwnedByYou}">
+                    
+                    <!-- Local only -->
+                    <Border IsVisible="{Binding IsPublished,
+                            Converter={StaticResource NegateBool}}">
+
+                    <StackPanel Margin="16"
+                                Spacing="10">
+
+                        <TextBlock FontWeight="SemiBold"
+                                   Text="This modpack is not published."/>
+
+                        <TextBlock TextWrapping="Wrap"
+                                   Text="You can't upload versions till you publish it."/>
+
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+
+                            <Button Content="Publish Modpack"
+                                    Command="{Binding PublishModpackCommand}"/>
+
+                        </StackPanel>
+                    </StackPanel>
+
+                    </Border>
+
+                    <!-- Published -->
+                    <Border IsVisible="{Binding IsPublished}">
+
+                        <StackPanel Margin="0 16 0 0"
+                                    Spacing="10">
+
+                            <!-- Modpack is public -->
+                            <StackPanel IsVisible="{Binding IsPublic}"
+                                        Orientation="Horizontal">
+                                <TextBlock FontWeight="SemiBold"
+                                         Text="This modpack is public."
+                                         VerticalAlignment="Center"/>
+                                
+                                <Button Classes="DangerSettingsButton"
+                                        VerticalAlignment="Center"
+                                        Margin="8 0 0 0">
+                                    Make Private
+                                </Button>
+                            </StackPanel>
+                            
+                            <!-- Modpack is private -->
+                            <StackPanel IsVisible="{Binding IsPublic,
+                                                    Converter={StaticResource NegateBool}}"
+                                        Orientation="Horizontal">
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="This modpack is private." 
+                                           VerticalAlignment="Center" />
+                                
+                                <Button Classes="DangerSettingsButton"
+                                        VerticalAlignment="Center"
+                                        Margin="8 0 0 0">
+                                    Make Public
+                                </Button>
+                            </StackPanel>
+                            
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="8">
+
+                                <Button
+                                    Content="Create Update"
+                                    Command="{Binding CreateNewVersionCommand}"/>
+
+                            </StackPanel>
+                            
+                            <ItemsControl ItemsSource="{Binding ModpackVersions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+
+                                        <Border
+                                            Margin="0,0,0,16"
+                                            Padding="16"
+                                            Background="#2B2B2B"
+                                            BorderBrush="#404040"
+                                            BorderThickness="1"
+                                            CornerRadius="12">
+
+                                            <Grid RowDefinitions="Auto,Auto"
+                                                  ColumnDefinitions="*,Auto">
+
+                                                <StackPanel Spacing="4">
+
+                                                    <TextBlock Text="{Binding VersionName}"
+                                                               FontSize="16"
+                                                               FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis"/>
+
+                                                    <TextBlock Text="{Binding Semver}"
+                                                               Opacity="0.65"
+                                                               FontSize="13"/>
+
+                                                </StackPanel>
+
+                                                <DropDownButton Grid.Row="0" 
+                                                                Grid.Column="1"
+                                                                Width="32"
+                                                                Height="32"
+                                                                Padding="0"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Top">
+
+                                                    <DropDownButton.Content>
+                                                        <Svg Width="12"
+                                                             Height="12"
+                                                             Css="* { color: #BDBDBD }"
+                                                             Path="/Assets/ellipsis-vertical.svg"/>
+                                                    </DropDownButton.Content>
+
+                                                    <DropDownButton.Flyout>
+                                                        <MenuFlyout>
+
+                                                            <!-- For reasons of why you can't make a version a draft. There is no reason, private is enough -->
+                                                            <!-- <MenuItem Header="Draft" -->
+                                                            <!--           Command="{Binding ChangeStatusCommand}" -->
+                                                            <!--           CommandParameter="Draft"/> -->
+
+                                                            <MenuItem Header="Private"
+                                                                      Command="{Binding ChangeStatusCommand}"
+                                                                      CommandParameter="Private"/>
+
+                                                            <MenuItem Header="Testing"
+                                                                      Command="{Binding ChangeStatusCommand}"
+                                                                      CommandParameter="Testing"/>
+
+                                                            <MenuItem Header="Release"
+                                                                      Command="{Binding ChangeStatusCommand}"
+                                                                      CommandParameter="Release"/>
+
+                                                        </MenuFlyout>
+                                                    </DropDownButton.Flyout>
+
+                                                </DropDownButton>
+
+                                                <Grid Grid.Row="1"
+                                                      Grid.ColumnSpan="2" 
+                                                      Grid.Column="0"
+                                                      Margin="0 14 0 0"
+                                                      ColumnDefinitions="Auto,8,Auto,*,Auto"
+                                                      VerticalAlignment="Center">
+
+                                                    <Border Classes="StatusBadge"
+                                                            VerticalAlignment="Center">
+
+                                                        <TextBlock Margin="10,4"
+                                                                   FontSize="12"
+                                                                   Text="{Binding Status}"/>
+
+                                                    </Border>
+
+                                                    <TextBlock Grid.Column="2"
+                                                               VerticalAlignment="Center"
+                                                               Opacity="0.45"
+                                                               Text="•"/>
+
+                                                    <TextBlock Grid.Column="4"
+                                                               VerticalAlignment="Center"
+                                                               Opacity="0.6"
+                                                               FontSize="12"
+                                                               Text="{Binding CreatedAt, StringFormat='{}{0:dd MMM yyyy • HH:mm}'}"/>
+
+                                                </Grid>
+
+                                            </Grid>
+
+                                        </Border>
+
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                    </Border>
+                </Grid>
+
+                <Grid IsVisible="{Binding IsOwnedByYou,
+                        Converter={StaticResource NegateBool}}">
+                    <TextBlock>
+                        This modpack is published but it's not owned by you
+                    </TextBlock>
+                </Grid>
+
+            </StackPanel>
+
+        </DialogPage>
+        
+    </Dialog>
+</UserControl>

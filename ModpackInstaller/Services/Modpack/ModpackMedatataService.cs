@@ -11,15 +11,27 @@ using ModpackInstaller.Models;
 namespace ModpackInstaller.Services.Modpack;
 
 public class ModpackMedatataService {
+	private static readonly string DefaultRegistryPath;
 	private readonly string _registryPath;
-	private readonly bool _isNonStandardPath;
+	private readonly bool _isStandardPath;
+
+	static ModpackMedatataService() {
+		DefaultRegistryPath = Path.Combine(AppVariables.InstallerRoot, "modpacks");
+	}
+	
+	public static event Action? MetadataChanged;
+
+	private static void RaiseMetadataChanged()
+	{
+		MetadataChanged?.Invoke();
+	}
 
     /// <summary>
     /// Uses non discoverable custom metadata path
     /// </summary>
     public ModpackMedatataService(string registryPath) {
 		_registryPath = registryPath;
-		_isNonStandardPath = true;
+		_isStandardPath = false;
 		Directory.CreateDirectory(_registryPath);
 	}
 
@@ -27,32 +39,29 @@ public class ModpackMedatataService {
 	/// Uses default AppVariables.InstallerRoot
 	/// </summary>
 	public ModpackMedatataService() {
-		_registryPath = Path.Combine(AppVariables.InstallerRoot, "modpacks");
-        _isNonStandardPath = false;
+		_registryPath = DefaultRegistryPath;
+        _isStandardPath = true;
         Directory.CreateDirectory(_registryPath);
 	}
 
-	// 📌 Creează / înregistrează metadata
-	public ModpackMetadata Create(ModpackMetadata metadata) {
+	public void Create(ModpackMetadata metadata) {
 		metadata.CreatedAt = DateTime.UtcNow;
 		metadata.UpdatedAt = metadata.CreatedAt;
 
-		return Save(metadata);
+		Save(metadata);
 	}
 
-	// 📌 Salvează metadata extern
-	public ModpackMetadata Save(ModpackMetadata metadata) {
+	public void Save(ModpackMetadata metadata) {
 
         metadata.UpdatedAt = DateTime.UtcNow;
 
 		var path = GetMetadataPath(metadata.Id);
 		var json = JsonSerializer.Serialize(metadata, AppVariables.DefaultJsonOptions);
 		File.WriteAllText(path, json);
-		return metadata;
+		RaiseMetadataChanged();
 	}
 
-    // 📌 Încearcă să încarce metadata (fără erori)
-    public bool TryLoad(string id, out ModpackMetadata? metadata) {
+    private bool TryLoad(Guid id, out ModpackMetadata? metadata) {
 		metadata = null;
 		var path = GetMetadataPath(id);
 
@@ -60,9 +69,9 @@ public class ModpackMedatataService {
 			return false;
 
 		try {
-			metadata = JsonSerializer.Deserialize<ModpackMetadata>(
-				File.ReadAllText(path)
-			);
+			var json = File.ReadAllText(path);
+			
+			metadata = JsonSerializer.Deserialize<ModpackMetadata>(json, AppVariables.DefaultJsonOptions);
 			return metadata != null;
 		}
 		catch {
@@ -70,40 +79,46 @@ public class ModpackMedatataService {
 		}
 	}
 
-	// 📌 Load direct (poate întoarce null)
-	public ModpackMetadata? Load(string id) {
-		TryLoad(id, out var metadata);
-		return metadata;
-	}
-
     public ModpackMetadata Load() {
-        if(!_isNonStandardPath)
+        if(_isStandardPath)
             throw new Exception("This is unavaliable when using a standard registry path.");
 
-        TryLoad("in this context this value does not matter", out var metadata);
+        TryLoad(Guid.Empty, out var metadata);
 
-		if(metadata == null)
-			throw new Exception("Metadata does not exist");
+		return metadata ?? throw new Exception("Metadata does not exist");
+    }
+    
+    public static ModpackMetadata? Load(string id) {
+	    var path = GetDefaultMetadataPath(id);
 
-        return metadata;
+	    try {
+		    if (!File.Exists(path))
+			    return null;
+		    
+		    var json = File.ReadAllText(path);
+			
+		    return JsonSerializer.Deserialize<ModpackMetadata>(json);
+	    }
+	    catch {
+		    return null;
+	    }
     }
 
-    // 📌 Există în registry
-    public bool Exists(string id) {
-        if(_isNonStandardPath)
-            throw new Exception("This is unavaliable when using a non-standard registry path.");
-
-        return File.Exists(GetMetadataPath(id));
+    public static bool Exists(string id) {
+        return File.Exists(GetDefaultMetadataPath(id));
 	}
 
-    public bool Exists() {
-        if(!_isNonStandardPath)
-            throw new Exception("This is unavaliable when using a standard registry path.");
-        return File.Exists(GetMetadataPath("This value does not matter in this context"));
-	}
+    public bool Exists() => _isStandardPath 
+	    ? throw new Exception("This is unavaliable when using a standard registry path.") 
+	    : File.Exists(GetMetadataPath(Guid.Empty));
+    
+    
+	public static bool ExistsModpack(Guid modpackId) => 
+		LoadAll().Any(x => x.ModpackId == modpackId);
+	
 
     // 📌 Update parțial, safe
-    public bool Update(string id, Action<ModpackMetadata> update) {
+    public bool Update(Guid id, Action<ModpackMetadata> update) {
 		if (!TryLoad(id, out var metadata) || metadata == null)
 			return false;
 
@@ -115,38 +130,62 @@ public class ModpackMedatataService {
 	}
 
 	// 📌 Șterge metadata
-	public bool Delete(string id) {
-		var path = GetMetadataPath(id);
-		if (!File.Exists(path))
-			return false;
+	public bool Delete(Guid id, out DeleteError failReason) {
+		failReason = DeleteError.None;
+		var metadata = LoadAll().FirstOrDefault(x => x.Id == id);
 
-		File.Delete(path);
+		if (metadata is null) {
+			failReason = DeleteError.MetadataNotFound;
+			return false;
+		}
+
+		try {
+			if (!string.IsNullOrWhiteSpace(metadata.InstallPath) &&
+			    Directory.Exists(metadata.InstallPath))
+				Directory.Delete(metadata.InstallPath, true);
+		}
+		catch {
+			failReason = DeleteError.DirectoryDeleteFailed;
+			return false;
+		}
+
+		try {
+			var metadataPath = GetMetadataPath(id);
+
+			if (File.Exists(metadataPath))
+				File.Delete(metadataPath);
+			
+			RaiseMetadataChanged();
+		}
+		catch {
+			failReason = DeleteError.MetadataDeleteFailed;
+			return false;
+		}
+
 		return true;
 	}
-
-	// 📌 Enumeră TOATE modpack-urile din registry
-	public IEnumerable<ModpackMetadata> LoadAll() {
-		if (_isNonStandardPath)
-			throw new Exception("This is unavaliable when using a non-standard registry path.");
-
-        foreach (var file in Directory.GetFiles(_registryPath, "*.json")) {
-			ModpackMetadata? metadata = null;
-			try {
-				metadata = JsonSerializer.Deserialize<ModpackMetadata>(
-					File.ReadAllText(file)
-				);
-			}
-			catch { }
-
-			if (metadata != null)
-				yield return metadata;
-		}
+	
+	public enum DeleteError
+	{
+		None,
+		MetadataNotFound,
+		DirectoryDeleteFailed,
+		MetadataDeleteFailed
 	}
 
-	private string GetMetadataPath(string id) {
-		if (_isNonStandardPath)
-			return Path.Combine(_registryPath, "metadata.json");
-		else
-            return Path.Combine(_registryPath, $"{id}.json");
-    }
+	public static IEnumerable<ModpackMetadata> LoadAll() {
+		return Directory.GetFiles(DefaultRegistryPath, "*.json")
+			.Select(file => JsonSerializer.Deserialize<ModpackMetadata>(
+				File.ReadAllText(file),
+				AppVariables.DefaultJsonOptions
+				))
+			.OfType<ModpackMetadata>();
+	}
+
+	private string GetMetadataPath(Guid id) => !_isStandardPath
+				? Path.Combine(_registryPath, "metadata.json")
+				: Path.Combine(_registryPath, $"{id:N}.json");
+	
+	private static string GetDefaultMetadataPath(string id) =>
+		Path.Combine(DefaultRegistryPath, $"{id}.json");
 }

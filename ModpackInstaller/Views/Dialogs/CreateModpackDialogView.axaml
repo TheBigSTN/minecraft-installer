@@ -1,0 +1,454 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+             xmlns:md="clr-namespace:ModpackInstaller.Models"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="ModpackInstaller.Views.Dialogs.CreateModpackDialogView"
+             x:DataType="vm:CreateModpackDialogViewModel">
+    
+    <UserControl.Styles>
+        <Style Selector="Button.DialogCard">
+            <Setter Property="Background" Value="#3A3D44"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="18"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style Selector="Button.DialogCard:pointerover">
+            <Setter Property="Background" Value="#454952"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Button.DialogCard:pressed">
+            <Setter Property="Background" Value="#50545D"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Button.DialogCard:disabled">
+            <Setter Property="Opacity" Value="0.5"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Button.DialogCard:focus">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Button.DialogCard:focus-visible">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        
+        <Style Selector="Border.DialogCard">
+            <Setter Property="Width" Value="520" />
+            <Setter Property="Background" Value="#2B2D31" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        
+        <Style Selector="TextBlock.DialogText">
+            <Setter Property="FontSize" Value="30" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        
+        
+        <Style Selector="TextBlock.DialogLabel">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        
+        <Style Selector="TextBox.DialogTextBox">
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Background" Value="#363941"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        
+        <Style Selector="ComboBox.DialogComboBox">
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Background" Value="#363941"/>
+        </Style>
+        
+        <Style Selector="Border.InstanceIcon">
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Height" Value="100"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Background" Value="#363941"/>
+            <Setter Property="BorderBrush" Value="#454852"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        
+        <Style Selector="ToggleButton.ChoiceButton">
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Background" Value="#363941"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <Style Selector="ToggleButton.ChoiceButton:checked">
+            <Setter Property="Background" Value="#124B2A"/>
+            <Setter Property="BorderBrush" Value="#28D764"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#28D764"/>
+        </Style>
+
+    </UserControl.Styles>
+    
+    <Dialog>
+        
+        <DialogHeader>
+                
+            <TextBlock Grid.Column="0"
+                       Classes="DialogText"
+                       Text="Create instance"/>
+            
+            <DialogCloseButton Command="{Binding CloseCommand}" />
+            
+        </DialogHeader>
+    
+        <DialogContent IsVisible="{Binding SelectedLoader,
+                                    Converter={StaticResource NullToBoolConverter}}">
+
+            <TextBlock
+                Text="Choose instance type"
+                FontSize="22"
+                FontWeight="SemiBold"/>
+
+            <!-- Custom -->
+            <Button
+                Classes="DialogCard"
+                Command="{Binding CustomSetupCommand}"
+                HorizontalContentAlignment="Stretch"
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0">
+
+                <Border
+                    Padding="18"
+                    CornerRadius="16"
+                    Background="#36393F">
+
+                    <Grid ColumnDefinitions="56,*">
+
+                        <Border
+                            Width="48"
+                            Height="48"
+                            CornerRadius="12"
+                            Background="#2B2D31"/>
+
+                        <StackPanel
+                            Grid.Column="1"
+                            Margin="16,0,0,0">
+
+                            <TextBlock
+                                Text="Custom setup"
+                                FontSize="20"
+                                FontWeight="SemiBold"/>
+
+                            <TextBlock
+                                Margin="0,6,0,0"
+                                Text="Start from scratch by picking a loader and game version."
+                                Foreground="#B6B8BE"
+                                TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                    </Grid>
+
+                </Border>
+
+            </Button>
+
+            <!-- Modpack -->
+            <Button
+                Classes="DialogCard"
+                Command="{Binding InstallModpackCommand}"
+                HorizontalContentAlignment="Stretch"
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0">
+
+                <Border
+                    Padding="18"
+                    CornerRadius="16"
+                    Background="#36393F">
+
+                    <Grid ColumnDefinitions="56,*">
+
+                        <Border
+                            Width="48"
+                            Height="48"
+                            CornerRadius="12"
+                            Background="#2B2D31"/>
+
+                        <StackPanel
+                            Grid.Column="1"
+                            Margin="16,0,0,0">
+
+                            <TextBlock
+                                Text="Install modpack"
+                                FontSize="20"
+                                FontWeight="SemiBold"/>
+
+                            <TextBlock
+                                Margin="0,6,0,0"
+                                Text="Browse Modrinth or import one from a file."
+                                Foreground="#B6B8BE"
+                                TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                    </Grid>
+
+                </Border>
+
+            </Button>
+
+            <!-- Import -->
+            <Button
+                Classes="DialogCard"
+                Command="{Binding ImportInstanceCommand}"
+                HorizontalContentAlignment="Stretch"
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0"
+                IsEnabled="False">
+
+                <Border
+                    Padding="18"
+                    CornerRadius="16"
+                    Background="#36393F">
+
+                    <Grid ColumnDefinitions="56,*">
+
+                        <Border
+                            Width="48"
+                            Height="48"
+                            CornerRadius="12"
+                            Background="#2B2D31"/>
+
+                        <StackPanel
+                            Grid.Column="1"
+                            Margin="16,0,0,0">
+
+                            <TextBlock
+                                Text="Import instance"
+                                FontSize="20"
+                                FontWeight="SemiBold"/>
+
+                            <TextBlock
+                                Margin="0,6,0,0"
+                                Text="Import an instance from Prism, CurseForge, or similar."
+                                Foreground="#B6B8BE"
+                                TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                    </Grid>
+
+                </Border>
+
+            </Button>
+
+            <TextBlock
+                Margin="0,8,0,0"
+                Foreground="#9EA2AA"
+                TextWrapping="Wrap"
+                Text="An instance is a Minecraft setup with a specific loader, version, and mods."/>
+
+        </DialogContent>
+        
+        <DialogContent IsVisible="{Binding SelectedLoader,
+                                    Converter={StaticResource NotNullToBoolConverter}}">
+
+            <!-- Icon -->
+
+            <Grid ColumnDefinitions="Auto,*"
+                  ColumnSpacing="20">
+
+                <Border Grid.Column="0" 
+                        Classes="InstanceIcon">
+
+                    <!-- Icon preview -->
+
+                </Border>
+
+                <StackPanel Grid.Column="1"
+                            Spacing="10">
+
+                    <Button Classes="SecondaryButton"
+                            IsEnabled="False">
+                        Select icon
+                    </Button>
+
+                    <Button Classes="SecondaryButton"
+                            IsEnabled="False">
+                        Remove icon
+                    </Button>
+
+                </StackPanel>
+
+            </Grid>
+
+            <!-- Name -->
+
+            <StackPanel>
+
+                <TextBlock
+                    Classes="DialogLabel"
+                    Text="Name"/>
+
+                <TextBox
+                    Watermark="Fabric 26.2"
+                    Text="{Binding ModpackName}"/>
+
+            </StackPanel>
+            
+            <!-- Modpack Loader -->
+            
+            <StackPanel>
+
+                <TextBlock
+                    Classes="DialogLabel"
+                    Text="Modpack Loader"/>
+
+                <WrapPanel
+                    Orientation="Horizontal">
+
+                    <!-- ToggleButtons -->
+                    <RadioButton Classes="TabBarButton"
+                                 GroupName="ModLoaderType"
+                                 Content="Curseforge" 
+                                 IsChecked="{Binding SelectedModpackLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:InstallPlatform.CurseForge}}"/>
+                    
+                    <RadioButton Classes="TabBarButton"
+                                 GroupName="ModLoaderType"
+                                 Content="Tlauncer" 
+                                 IsChecked="{Binding SelectedModpackLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:InstallPlatform.TLauncher}}"/>
+                    
+                    <RadioButton Classes="TabBarButton"
+                                 GroupName="ModLoaderType"
+                                 Content="Modrinth" 
+                                 IsChecked="{Binding SelectedModpackLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:InstallPlatform.Modrinth}}"/>
+                </WrapPanel>
+
+            </StackPanel>
+
+            <!-- Loader -->
+
+            <StackPanel>
+
+                <TextBlock
+                    Classes="DialogLabel"
+                    Text="Loader"/>
+
+                <WrapPanel
+                    Orientation="Horizontal">
+
+                    <!-- ToggleButtons -->
+                    <RadioButton Classes="TabBarButton"
+                                 GroupName="LoaderType"
+                                 Content="NeoForge" 
+                                 IsChecked="{Binding SelectedLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:ModLoaderType.NeoForge}}"/>
+                    
+                    <RadioButton Classes="TabBarButton"
+                                 GroupName="LoaderType"
+                                 Content="Forge" 
+                                 IsChecked="{Binding SelectedLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:ModLoaderType.Forge}}"/>
+                    
+                    <RadioButton Classes="TabBarButton"
+                                 GroupName="LoaderType"
+                                 Content="Fabric" 
+                                 IsEnabled="False" 
+                                 IsChecked="{Binding SelectedLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:ModLoaderType.Fabric}}"/>
+                    
+                    <RadioButton Classes="TabBarButton"
+                                 GroupName="LoaderType"
+                                 Content="Quilt" 
+                                 IsEnabled="False" 
+                                 IsChecked="{Binding SelectedLoader,
+		                                     Converter={StaticResource EnumToBoolConverter},
+		                                     ConverterParameter={x:Static md:ModLoaderType.Quilt}}"/>
+
+                </WrapPanel>
+
+            </StackPanel>
+
+            <!-- Game Version -->
+
+            <StackPanel>
+
+                <TextBlock
+                    Classes="DialogLabel"
+                    Text="Game version"/>
+
+                <ComboBox
+                    ItemsSource="{Binding GameVersions}"
+                    SelectedItem="{Binding SelectedGameVersion}"/>
+
+            </StackPanel>
+
+            <!-- Loader Version -->
+
+            <StackPanel>
+
+                <TextBlock
+                    Classes="DialogLabel"
+                    Text="Loader version"/>
+
+                <WrapPanel>
+
+                    <!-- Stable Latest Other -->
+                    
+                    <ComboBox
+                        ItemsSource="{Binding LoaderVersions}"
+                        SelectedItem="{Binding SelectedLoaderVersion}"/>
+
+                </WrapPanel>
+
+            </StackPanel>
+
+        </DialogContent>
+        
+        <DialogFooter IsVisible="{Binding SelectedLoader,
+                                    Converter={StaticResource NotNullToBoolConverter}}">
+
+            <StackPanel
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="12">
+
+                <Button
+                    Classes="SecondaryButton"
+                    Command="{Binding }">
+                    Back
+                </Button>
+
+                <Button
+                    Classes="AccentButton"
+                    Command="{Binding CreateInstanceCommand}">
+                    Create instance
+                </Button>
+
+            </StackPanel>
+
+        </DialogFooter>
+        
+    </Dialog>
+    
+</UserControl>

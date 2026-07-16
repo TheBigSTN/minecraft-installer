@@ -1,0 +1,78 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:ModpackInstaller.Components">
+    <Design.PreviewWith>
+        <Pages>
+            <Page>
+                <TextBox>
+                    Hey
+                </TextBox>
+                <PageNextButton />
+                
+                <PageBackButton />
+                
+                <PageNavigation />
+            </Page>
+        </Pages>
+    </Design.PreviewWith>
+
+    <Style Selector="controls|Pages">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel>
+                    <!-- Aici va apărea pagina curentă -->
+                    <ContentControl Content="{TemplateBinding CurrentPage}" />
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    
+    <Style Selector="controls|PageNavigation">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PageBackButton />
+                    <PageNextButton />
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    
+    <Style Selector="controls|PageNextButton, controls|PageBackButton">
+        <Setter Property="Height" Value="44"/>
+        <Setter Property="MinWidth" Value="120"/>
+        <Setter Property="Padding" Value="18,0"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="#2F3138"/>
+        <Setter Property="BorderBrush" Value="#404249"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{TemplateBinding CornerRadius}">
+
+                    <ContentPresenter
+                        Content="{TemplateBinding Content}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="{TemplateBinding Padding}"/>
+
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="controls|PageNextButton:pointerover, controls|PageBackButton:pointerover">
+        <Setter Property="Background" Value="#383B43"/>
+    </Style>
+
+    <Style Selector="controls|PageNextButton:pressed, controls|PageBackButton:pressed">
+        <Setter Property="Background" Value="#25272D"/>
+    </Style>
+</Styles>

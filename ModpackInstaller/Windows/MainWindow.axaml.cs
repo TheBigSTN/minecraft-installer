@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Diagnostics;
+using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using ModpackInstaller.Services;
@@ -22,12 +24,12 @@ public partial class MainWindow : Window
 
         Title = $"Modpack Installer v{version}";
 
-        AttachedToVisualTree += (_, _) => {
-            if (DataContext is MainViewModel vm) {
-                if (vm.DialogService is DialogService ds) {
-                    ds.AttachWindow(this);
-                }
-            }
-        };
+        // AttachedToVisualTree += (_, _) => {
+        //     if (DataContext is MainViewModel vm) {
+        //         if (vm.DialogService is DialogService ds) {
+        //             ds.AttachWindow(this);
+        //         }
+        //     }
+        // };
     }
 }

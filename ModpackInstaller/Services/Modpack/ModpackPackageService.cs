@@ -38,9 +38,7 @@ public class ModpackPackageService() {
             //AddToExport("config", modpackInstallPath, tempFolderPath);
             //AddToExport("resourcepacks", modpackInstallPath, tempFolderPath);
 
-
-            AddToExport(modpackInstallPath, modpackInstallPath, tempFolderPath, excludedPaths.ToList());
-
+            AddToExport(modpackInstallPath, modpackInstallPath, tempFolderPath, excludedPaths.ToHashSet());
 
             Directory.CreateDirectory(Path.Combine(outputZipPath, ".."));
 
@@ -105,23 +103,38 @@ public class ModpackPackageService() {
     //    }
     //}
 
-    private static void AddToExport(string sourcePath, string sourceBasePath, string outputPath, List<string> exludedFipePaths) {
+    private static void AddToExport(
+        string sourcePath,
+        string sourceBasePath,
+        string outputPath,
+        HashSet<string> excludedFilePaths)
+    {
         if (string.IsNullOrEmpty(sourcePath))
             return;
 
-        if(Directory.Exists(sourcePath)) {
-            foreach(var DirectoryPath in Directory.GetDirectories(sourcePath))
-                AddToExport(DirectoryPath, sourceBasePath, outputPath, exludedFipePaths);
+        if (Directory.Exists(sourcePath))
+        {
+            foreach (var directory in Directory.GetDirectories(sourcePath))
+                AddToExport(directory, sourceBasePath, outputPath, excludedFilePaths);
 
-            foreach(var DirectoryPath in Directory.GetFiles(sourcePath))
-                AddToExport(DirectoryPath, sourceBasePath, outputPath, exludedFipePaths);
+            foreach (var file in Directory.GetFiles(sourcePath))
+                AddToExport(file, sourceBasePath, outputPath, excludedFilePaths);
+
+            return;
         }
-        if(File.Exists(sourcePath)) {
-            if (!exludedFipePaths.Contains(sourcePath)) {
-                Directory.CreateDirectory(Path.Combine(outputPath, Path.GetDirectoryName(Path.GetRelativePath(sourceBasePath, sourcePath))!));
-                File.Copy(sourcePath, Path.Combine(outputPath, Path.GetRelativePath(sourceBasePath, sourcePath)));
-            }
-        }
+
+        if (!File.Exists(sourcePath))
+            return;
+
+        var relativePath = Path.GetRelativePath(sourceBasePath, sourcePath);
+
+        if (excludedFilePaths.Contains(relativePath))
+            return;
+
+        var destination = Path.Combine(outputPath, relativePath);
+
+        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        File.Copy(sourcePath, destination);
     }
 
     // =========================

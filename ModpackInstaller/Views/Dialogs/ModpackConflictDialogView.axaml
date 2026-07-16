@@ -1,0 +1,100 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ModpackInstaller.Views.Dialogs.ModpackConflictDialogView"
+             x:DataType="vm:ModpackConflictDialogViewModel">
+    
+    <UserControl.Styles>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </UserControl.Styles>
+    
+    <Border Width="620"
+            Background="#2B2D31"
+            CornerRadius="16"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+
+        <Grid RowDefinitions="Auto,1,Auto">
+
+            <!-- Header -->
+            <Grid Margin="24"
+                  ColumnDefinitions="*,Auto">
+
+                <TextBlock Text="Modpack already installed"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+
+                <Button Grid.Column="1"
+                        Width="40"
+                        Height="40"
+                        Padding="0"
+                        CornerRadius="20"
+                        Command="{Binding CancelCommand}"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"> 
+                    <Svg Width="30"
+                         Height="30"
+                         Path="/Assets/x.svg"/>
+                </Button>
+            </Grid>
+
+            <!-- Divider -->
+            <Border Grid.Row="1"
+                    Height="1"
+                    Background="#3A3D43"/>
+
+            <!-- Content -->
+            <StackPanel Grid.Row="2"
+                        Margin="24"
+                        Spacing="24">
+
+                <TextBlock
+                    TextWrapping="Wrap"
+                    FontSize="16">
+
+                    The modpack 
+                    <Run FontWeight="Bold"
+                         Text="{Binding InstanceName, FallbackValue='Dialog fallback'}" />.
+                     is already installed! Do you wish to duplicate it?
+
+                </TextBlock>
+
+                <!-- Buttons -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Spacing="12">
+                    
+                    
+                    <Button Width="110"
+                            Height="42"
+                            Padding="0"
+                            Content="Duplicate"
+                            Command="{Binding DuplicateCommand}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            FontSize="20"/>
+                    
+                    <Button Width="110"
+                            Height="42"
+                            Padding="0"
+                            Content="Ok"
+                            Command="{Binding CancelCommand}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            FontSize="20"/>
+
+                </StackPanel>
+
+            </StackPanel>
+
+        </Grid>
+
+    </Border>
+    
+</UserControl>

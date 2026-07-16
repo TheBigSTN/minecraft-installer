@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ModpackInstaller.ViewModels.Dialogs;
 
 namespace ModpackInstaller.Models.DTOs;
 
-public class PublicModpackRequestResponse {
+public class PublicModpackRequestResponse : IManualSetupPropData {
 
     public required string Id { get; set; }
     public required string ModpackName { get; set; }
@@ -14,7 +15,8 @@ public class PublicModpackRequestResponse {
     public required string GameVersion { get; set; }
     public required ModLoaderType Loader { get; set; }
     public required string LoaderVersion { get; set; }
-    public required int    LatestVersion { get; set; }
+    public required string LatestVersion { get; set; }
+    public required Guid LatestVersionId { get; set; }
     public required DateTimeOffset CreatedAt { get; set; }
     public required DateTimeOffset ModifiedAt { get; set; }
     public string Description { get; set; } = "";

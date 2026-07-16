@@ -54,7 +54,7 @@
 
 						<TextBlock FontSize="14">
 							<Run Text="v"/>
-							<Run Text="{Binding Modpack.Version}"/>
+							<Run Text="{Binding Modpack.VersionSemver}"/>
 						</TextBlock>
 
 						<!-- Latest badge -->

@@ -24,7 +24,7 @@ public class ModrinthApiService {
     };
 
     // 🔹 Game Versions
-    public async Task<IReadOnlyList<string>> GetGameVersionsAsync(
+    public static async Task<IReadOnlyList<string>> GetGameVersionsAsync(
         ModLoaderType loader,
         bool stableOnly = true) {
         var url = GetManifestUrl(loader);
@@ -45,6 +45,13 @@ public class ModrinthApiService {
             .ToList();
     }
 
+    public static async Task<List<GameVersionEntryDto>> GetGameVersionsAsync(ModLoaderType loader) {
+        var manifest = await WebService.GetJson<LauncherManifestDto>(GetManifestUrl(loader), DefaultHeaders);
+
+        return manifest?.GameVersions ?? [];
+    }
+    
+    
     // 🔹 Loader versions (Forge / Fabric / NeoForge)
     public async Task<IReadOnlyList<string>> GetLoaderVersionsAsync(
         ModLoaderType loader,
@@ -83,7 +90,7 @@ public class ModrinthApiService {
             .ToList();
     }
 
-    public async Task<ModrinthVersion?> GetCompatibleVersionAsync(
+    public static async Task<ModrinthVersion?> GetCompatibleVersionAsync(
         string projectSlugOrId,
         string gameVersion,
         ModLoaderType loader) // Folosim Enum-ul aici
@@ -109,20 +116,55 @@ public class ModrinthApiService {
         var url = $"{BaseUrl}/project/{projectIdOrSlug}";
         return await WebService.GetJson<ModrinthProject>(url, DefaultHeaders);
     }
+    
+    public static async Task<List<ModrinthTeamMember>> GetProjectMembersAsync(string projectIdOrSlug) {
+        var url = $"{BaseUrl}/project/{projectIdOrSlug}/members";
+        return await WebService.GetJson<List<ModrinthTeamMember>>(url, DefaultHeaders) ?? [];
+    }
 
     internal static async Task<List<ModrinthVersionExtended>?> GetProjectVersionAsync( string projectIdOrSlug, string gameVersion, string loader ) {
         var url = $"{BaseUrl}/project/{projectIdOrSlug}/version?loaders=[\"{loader}\"]&game_versions=[\"{gameVersion}\"]&include_changelog=true";
         return await WebService.GetJson<List<ModrinthVersionExtended>>(url, DefaultHeaders);
     }
 
-    internal static async Task<List<ModrinthVersionExtended>?> GetProjectVersionAsync( string projectIdOrSlug) {
-        var url = $"{BaseUrl}/project/{projectIdOrSlug}/version?include_changelog=true";
-        return await WebService.GetJson<List<ModrinthVersionExtended>>(url, DefaultHeaders);
-    }
+    // internal static async Task<List<ModrinthVersionExtended>?> GetProjectVersionAsync( string projectIdOrSlug) {
+    //     var url = $"{BaseUrl}/project/{projectIdOrSlug}/version?include_changelog=true";
+    //     return await WebService.GetJson<List<ModrinthVersionExtended>>(url, DefaultHeaders);
+    // }
 
     public static async Task<ModrinthVersion?> GetVersionByHashAsync( string sha1 ) {
         var url = $"{BaseUrl}/version_file/{sha1}";
 
         return await WebService.GetJson<ModrinthVersion>(url, DefaultHeaders);
     }
+
+    public static async Task<List<ModrinthSearchProject>> SearchOnModrinthAsync(string searchQuerry, IModrinthSearchInfo context ,int offset, int pageSize = 20) {
+        try {
+            var url = $"https://api.modrinth.com/v2/search" +
+                      $"?query={Uri.EscapeDataString(searchQuerry)}" +
+                      $"&offset={offset}" +
+                      $"&limit={pageSize}" +
+                      $"&facets=[" +
+                      $"[\"categories:{context.Loader}\"]," +
+                      $"[\"game_versions:{context.GameVersion}\"]," +
+                      $"[\"project_type:mod\"]" +
+                      $"]";
+
+            var result = await WebService.GetJson<ModrinthSearchResponse>(url);
+
+            return result?.Hits ?? [];
+        }
+        catch {
+            return [];
+        }
+    }
+}
+
+// public record ModrinthSearchContext(
+//     string Loader,
+//     string GameVersion);
+
+public interface IModrinthSearchInfo {
+    public ModLoaderType Loader { get; }
+    string GameVersion { get; }
 }

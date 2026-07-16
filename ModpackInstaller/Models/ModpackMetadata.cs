@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using ModpackInstaller.Converters;
+using ModpackInstaller.Services;
+using ModpackInstaller.ViewModels.Dialogs;
 
 namespace ModpackInstaller.Models;
 
@@ -14,28 +17,33 @@ public enum ModpackSource {
     Remote
 }
 
-public class ModpackMetadata {
-    public string Id { get; set; } = default!;
-    public string Name { get; set; } = default!;
-    public int Version { get; set; } = 0;
-
-    public string OwnerNickname { get; set; } = default!;
-    public bool IsPublic { get; set; } = false;
+public class ModpackMetadata : IModrinthSearchInfo {
+    public Guid Id { get; set; }
+    
+    public Guid? ModpackId { get; set; }
+    public string Name { get; set; } = null!;
+    
+    public Guid VersionId { get; set; } = Guid.Empty;
+    
+    [JsonConverter(typeof(StringConverter))]
+    public string VersionSemver { get; set; } = null!;
     public string? SharingCode { get; set; }
     public string? ModpackPassword { get; set; }
 
     public ModpackSource Source { get; set; } = ModpackSource.Local;
 
-    public string GameVersion { get; set; } = default!;
+    public string GameVersion { get; set; } = null!;
     public ModLoaderType Loader { get; set; }
-    public string LoaderVersion { get; set; } = default!;
+    public string LoaderVersion { get; set; } = null!;
 
-    public string Author { get; set; } = default!;
+    public string Author { get; set; } = null!;
     public string? Description { get; set; }
 
-    public string InstallPath { get; set; } = default!;
+    public string InstallPath { get; set; } = null!;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
-    public bool IsServerInstall { get; set; } = false;
+    public bool IsServerInstall { get; init; }
+
+    public string Icon { get; init; } = null!;
 }

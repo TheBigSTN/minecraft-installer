@@ -1,0 +1,147 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:ModpackInstaller.Components">
+    <Design.PreviewWith>
+        <controls:Dialog />
+    </Design.PreviewWith>
+    
+    <Style Selector="controls|Dialog">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border
+                    Width="{TemplateBinding  Width}"
+                    MinWidth="520"
+                    Height="{TemplateBinding  Height}"
+                    MinHeight="{TemplateBinding  MinHeight}"
+                    Background="#2B2D31"
+                    CornerRadius="14"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="0 40">
+                        
+                    <Grid RowDefinitions="Auto, Auto, *"
+                          ColumnDefinitions="Auto, *">
+                        <Grid Grid.Row="0"
+                              Grid.Column="0"
+                              Grid.ColumnSpan="2"
+                              x:Name="HeaderContainer"/>
+                        
+                        <DialogSeparator Grid.Row="1"
+                                         Grid.Column="0"
+                                         Grid.ColumnSpan="2"/>
+                            
+                        <ScrollViewer Grid.Row="2"
+                                      Grid.Column="1"
+                                      HorizontalScrollBarVisibility="Disabled" 
+                                      VerticalScrollBarVisibility="Auto"
+                                      Background="Transparent">
+                            
+                            <Grid x:Name="BodyContainer"
+                                  RowDefinitions="*, Auto"/>
+                            
+                        </ScrollViewer>
+                        
+                        <ScrollViewer Grid.Column="0"
+                                      Grid.Row="2"
+                                      HorizontalScrollBarVisibility="Disabled" 
+                                      VerticalScrollBarVisibility="Auto"
+                                      Background="Transparent">
+                            <Grid x:Name="SidebarContainter"
+                                  RowDefinitions="*, Auto"/>
+                        </ScrollViewer>
+                        
+                    </Grid>
+
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="controls|DialogHeader">
+        <Setter Property="Margin" Value="28,24,24,20"/>
+    </Style>
+
+    <Style Selector="controls|DialogContent">
+        <Setter Property="Margin" Value="28"/>
+        <Setter Property="Spacing" Value="16" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="controls|DialogFooter">
+        <Setter Property="Margin" Value="28"/>
+    </Style>
+    
+    <Style Selector="controls|DialogSeparator">
+        <Setter Property="Height" Value="1"/>
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Background" Value="#404249" />
+    </Style>
+    
+    <Style Selector="controls|DialogCloseButton">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand"></Setter>
+        <Setter Property="Background" Value="#313338"/>
+    </Style>
+    
+    <Style Selector="controls|DialogCloseButton:pointerover">
+        <Setter Property="Background" Value="#616368"/>
+    </Style>
+    
+    <Style Selector="controls|DialogSidebarTab">
+        <Setter Property="GroupName" Value="DialogSidebarButton" />
+        
+        <Setter Property="Margin" Value="8,4"/>
+        <Setter Property="Padding" Value="14,10"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Foreground" Value="#C5CAD3"/>
+        <Setter Property="Background" Value="Transparent"/>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Width="250"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="{TemplateBinding CornerRadius}"
+                    Padding="{TemplateBinding Padding}">
+
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="10">
+
+                        <Svg
+                            Width="18"
+                            Height="18"
+                            Path="{TemplateBinding IconPath}"
+                            Css="* { color : #BBBBBB }"/>
+
+                        <ContentPresenter FontSize="15"
+                                          FontWeight="Bold"
+                                          Content="{TemplateBinding Content}"
+                                          VerticalAlignment="Center"/>
+
+                    </StackPanel>
+
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    
+    <Style Selector="controls|DialogSidebarTab:pointerover">
+        <Setter Property="Background" Value="#373A40"/>
+    </Style>
+
+    <Style Selector="controls|DialogSidebarTab:pressed">
+        <Setter Property="Background" Value="#2F3136"/>
+    </Style>
+
+    <Style Selector="controls|DialogSidebarTab:checked">
+        <Setter Property="Background" Value="#173B67"/>
+        <Setter Property="Foreground" Value="#4EA1FF"/>
+    </Style>
+    
+</Styles>

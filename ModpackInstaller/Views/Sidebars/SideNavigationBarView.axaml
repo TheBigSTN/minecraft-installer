@@ -1,0 +1,119 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Sidebars"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:Class="ModpackInstaller.Views.Sidebars.SideNavigationBarView"
+			 x:DataType="vm:SideNavigationBarViewModel"
+			 x:Name="UserControl">
+	<Border Width="64"
+			Background="#202225">
+
+		<Grid RowDefinitions="Auto,Auto,*,Auto">
+
+			<!-- Top -->
+			<StackPanel Margin="0,12,0,0" Spacing="6">
+				<RadioButton
+					Classes="SideButton"
+					Command="{Binding HomeCommand}"
+					GroupName="Nav"
+					IsChecked="{Binding SelectedPage,
+		                        Converter={StaticResource EnumToBoolConverter},
+		                        ConverterParameter=Home}"
+					ToolTip.Tip="Home">
+					<Svg Width="30"
+					   Height="30"
+					   Path="/Assets/home.svg"
+					   Css="* {color: #BBBBBB }"/>
+				</RadioButton>
+
+				<RadioButton
+					Classes="SideButton"
+					GroupName="Nav"
+					Command="{Binding DiscoveryCommand}"
+					IsChecked="{Binding SelectedPage,
+		                        Converter={StaticResource EnumToBoolConverter},
+		                        ConverterParameter=Discovery}"
+					ToolTip.Tip="Discovery">
+					<Svg Width="30"
+					   Height="30"
+					   Path="/Assets/compass.svg"
+					   Css="* {color: #BBBBBB }"/>
+				</RadioButton>
+
+				<Separator Margin="8"/>
+			</StackPanel>
+
+			<!-- Modpacks -->
+			<ScrollViewer Grid.Row="2">
+				
+				<StackPanel>
+					
+					<ItemsControl ItemsSource="{Binding Modpacks}">
+
+						<ItemsControl.ItemTemplate>
+
+							<DataTemplate>
+
+								<RadioButton
+									Classes="SideButton"
+									x:CompileBindings="False"
+									GroupName="Nav"
+									Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl, AncestorLevel=1}, Path=((vm:SideNavigationBarViewModel)DataContext)?.OpenModpackCommand}"
+									CommandParameter="{Binding}"
+									ToolTip.Tip="{Binding Name}">
+
+									<!-- <Image Width="32" -->
+									<!-- 	   Height="32" -->
+									<!-- 	   Source="{Binding Icon}" /> -->
+									<Svg Width="30"
+									     Height="30"
+									     Path="/Assets/square.svg"/>
+
+								</RadioButton>
+
+							</DataTemplate>
+
+						</ItemsControl.ItemTemplate>
+
+					</ItemsControl>
+
+				<Button
+					Classes="SideButton"
+					Command="{Binding CreateModpackCommand}"
+					ToolTip.Tip="Create instance">
+
+					<Svg Width="30"
+					     Height="30"
+					     Path="/Assets/x.svg"
+					     Css="* {color: #BBBBBB }"/>
+
+				</Button>
+					
+				</StackPanel>
+
+				
+			</ScrollViewer>
+
+			<!-- Bottom -->
+			<RadioButton
+				Classes="SideButton"
+				GroupName="Nav"
+				Grid.Row="3"
+				Margin="0,0,0,12"
+				VerticalAlignment="Bottom"
+				Command="{Binding SettingsCommand}"
+				ToolTip.Tip="Settings">
+
+				<Svg Width="30"
+				     Height="30"
+				     Path="/Assets/settings.svg"
+				     Css="* {color: #BBBBBB }"/>
+
+			</RadioButton>
+
+		</Grid>
+
+	</Border>
+</UserControl>

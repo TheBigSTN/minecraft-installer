@@ -15,37 +15,37 @@ public static class CrashReporter {
             return;
 
         try {
-            string logFolder = Path.Combine(
+            var logFolder = Path.Combine(
                 AppVariables.InstallerRoot,
                 "crash_reports");
 
             Directory.CreateDirectory(logFolder);
 
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            string logPath = Path.Combine(logFolder, $"crash-{timestamp}.log");
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            var logPath = Path.Combine(logFolder, $"crash-{timestamp}.log");
 
-            string appVersion =
+            var appVersion =
                 Assembly.GetExecutingAssembly()
                         .GetName()
                         .Version?.ToString() ?? "unknown";
 
-            string report = $"""
-            ========== Modpack Installer Crash Report ==========
-            Timestamp     : {DateTime.Now}
-            Source        : {source}
-            App Version   : {appVersion}
-            .NET Version  : {Environment.Version}
-            OS            : {RuntimeInformation.OSDescription}
-            OS Arch       : {RuntimeInformation.OSArchitecture}
-            Process Arch  : {RuntimeInformation.ProcessArchitecture}
-            Machine Name  : {Environment.MachineName}
-            User          : {Environment.UserName}
-            ====================================================
+            var report = $"""
+                          ========== Modpack Installer Crash Report ==========
+                          Timestamp     : {DateTime.Now}
+                          Source        : {source}
+                          App Version   : {appVersion}
+                          .NET Version  : {Environment.Version}
+                          OS            : {RuntimeInformation.OSDescription}
+                          OS Arch       : {RuntimeInformation.OSArchitecture}
+                          Process Arch  : {RuntimeInformation.ProcessArchitecture}
+                          Machine Name  : {Environment.MachineName}
+                          User          : {Environment.UserName}
+                          ====================================================
 
-            {ex}
+                          {ex}
 
-            ====================================================
-            """;
+                          ====================================================
+                          """;
 
             File.WriteAllText(logPath, report);
         }

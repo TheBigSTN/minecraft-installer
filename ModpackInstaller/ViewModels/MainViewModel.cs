@@ -1,126 +1,76 @@
-﻿namespace ModpackInstaller.ViewModels;
+﻿
+using System.Collections.Generic;
 
-using ModpackInstaller.ViewModels.Body;
-using ModpackInstaller.ViewModels.Sidebars;
-using ModpackInstaller.ViewModels.Topbars;
-using ModpackInstaller.Models;
-using ReactiveUI;
-using ModpackInstaller.Services.Modpack;
-using ModpackInstaller.Infrastructure;
+namespace ModpackInstaller.ViewModels;
+
+using Body;
+using Sidebars;
+using Models;
+using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
-using ModpackInstaller.Services;
 using ReactiveUI.SourceGenerators;
 
 public partial class MainViewModel : ViewModelBase {
-    public IDialogService DialogService;
 
     [Reactive]
-    private ViewModelBase _sidebarViewModel;
-
-    [Reactive]
-    private ViewModelBase _topBarViewModel;
+    private SideNavigationBarViewModel _sideNavigationViewModel;
 
     [Reactive]
     private ViewModelBase _bodyViewModel;
+    
+    public MainViewModel() {
+        SideNavigationViewModel = new SideNavigationBarViewModel(this);
+        OpenHome();
+    }
+
+    [MemberNotNull(nameof(_bodyViewModel))]
+    public void OpenHome() {
+        BodyViewModel = new HomePageViewModel();
+    }
+
+    public void OpenDiscovery() {
+        BodyViewModel = new DiscoveryPageViewModel(this);
+    }
+    
+    public void OpenDiscovery(ModpackMetadata modpack) {
+        BodyViewModel = new DiscoveryPageViewModel(this, modpack);
+    }
+    
+    public void OpenModpack(ModpackMetadata modpack) =>
+        BodyViewModel = new ModpackPageViewModel(this, modpack);
+    
+    [Reactive] 
+    private ViewModelBase? _currentDialog;
 
     [Reactive]
-    private string _searchQuery = "";
+    private bool _isDialogOpen;
 
-    [Reactive]
-    private bool _isGlobalBusy;
+    [Reactive] 
+    private int _dialogBlurRadius; 
+    
+    private readonly Stack<ViewModelBase> _dialogStack = new();
+    
+    public async Task<T> ShowDialog<T>(DialogViewModel<T> dialog) {
+        _dialogStack.Push(dialog);
 
-    [Reactive]
-    private double _installProgress;
+        CurrentDialog = dialog;
+        IsDialogOpen = true;
+        DialogBlurRadius = 8;
 
-    [Reactive]
-    private bool _isProgressIndeterminate;
+        var result = await dialog.WaitAsync();
 
-    [Reactive]
-    private string _progressText;
+        _dialogStack.Pop();
 
-
-    public ModpackManifestService modpackManifestService;
-
-    public ModpackMedatataService modpackMedatataService;
-
-    public ModpackMetadata? SelectedModpack { get; private set; }
-
-	public AppSettings Settings { get; } = new AppSettings(AppVariables.InstallerRoot);
-
-    public MainViewModel(IDialogService dialogService) {
-		InstallTarget = Settings.Config.InstallTarget;
-        modpackManifestService = new ModpackManifestService();
-        modpackMedatataService = new ModpackMedatataService();
-
-        DialogService = dialogService;
-
-
-        ShowGlobal();
-    }
-
-    public void ShowGlobal(ModpackMetadata? modpack) {
-        SidebarViewModel = new ModpackListViewModel(this);
-        TopBarViewModel = new GlobalTopBarViewModel(this);
-        BodyViewModel = new ModpackInfoViewModel(modpack, this);
-        //_sidebarViewModel = SidebarViewModel;
-        //_topBarViewModel = TopBarViewModel;
-        //_bodyViewModel = BodyViewModel;
-    }
-
-    [MemberNotNull(
-    nameof(_sidebarViewModel),
-    nameof(_topBarViewModel),
-    nameof(_bodyViewModel)
-    )]
-    public void ShowGlobal() {
-        SidebarViewModel = new ModpackListViewModel(this);
-        TopBarViewModel = new GlobalTopBarViewModel(this);
-        BodyViewModel = new ModpackInfoViewModel(null, this);
-        //_sidebarViewModel = SidebarViewModel;
-        //_topBarViewModel = TopBarViewModel;
-        //_bodyViewModel = BodyViewModel;
-    }
-
-    public void OpenModpack(ModpackMetadata modpack) {
-        SelectedModpack = modpack;
-        if (SidebarViewModel is not ModpackListViewModel)
-            SidebarViewModel = new ModpackListViewModel(this);
-        if (SidebarViewModel is not GlobalTopBarViewModel)
-            TopBarViewModel = new GlobalTopBarViewModel(this);
-        BodyViewModel = new ModpackInfoViewModel(modpack, this);
-    }
-
-    public void EditModpack(ModpackMetadata modpack) {
-        SelectedModpack = modpack;
-
-        SidebarViewModel = new ModListViewModel(this, modpack);
-        TopBarViewModel = new ModpackTopBarViewModel(this);
-        BodyViewModel = new ModrinthBrowserViewModel(modpack, this);
-    }
-
-    public void ShowDiscovery() {
-        SidebarViewModel = new ModpackListViewModel(this);
-        TopBarViewModel = new GlobalTopBarViewModel(this);
-        BodyViewModel = new ModpackDiscoveryViewModel(this);
-    }
-
-    public void RefreshModpackList() {
-        if (SidebarViewModel is ModpackListViewModel modpackList) {
-            modpackList.LoadModpacks();
+        if (_dialogStack.TryPeek(out var previous)) {
+            CurrentDialog = previous;
+        } else {
+            CurrentDialog = null;
+            IsDialogOpen = false;
+            DialogBlurRadius = 0;
         }
-    }
 
-    private InstallPlatform _installTarget;
-
-	public InstallPlatform InstallTarget {
-		get => _installTarget;
-		set {
-            this.RaiseAndSetIfChanged(ref _installTarget, value);
-            Settings.Update(s => s.InstallTarget = InstallTarget);
-        }
-	}
-	
-    public string InstallPath {
-        get => AppVariables.GetBaseInstallPathFromLauncer(InstallTarget);
+        return result;
     }
+    
+    
 }

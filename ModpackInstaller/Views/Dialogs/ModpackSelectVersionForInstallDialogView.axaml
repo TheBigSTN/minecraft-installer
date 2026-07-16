@@ -1,0 +1,70 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ModpackInstaller.ViewModels.Dialogs"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="ModpackInstaller.Views.Dialogs.ModpackSelectVersionForInstallDialogView"
+             x:DataType="vm:ModpackSelectVersionForInstallDialogViewModel">
+    <Dialog Width="650">
+
+        <DialogHeader>
+            <TextBlock Text="Select Version"
+                       FontSize="22"
+                       FontWeight="Bold"/>
+        </DialogHeader>
+
+        <DialogContent>
+
+            <ItemsControl ItemsSource="{Binding ModpackVersions}">
+
+                <ItemsControl.ItemTemplate>
+
+                    <DataTemplate>
+
+                        <Border Margin="0,0,0,10"
+                                Padding="16"
+                                Background="#313338"
+                                CornerRadius="12">
+
+                            <Grid ColumnDefinitions="*,Auto">
+
+                                <StackPanel Spacing="4">
+
+                                    <TextBlock Text="{Binding VersionName}"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"/>
+
+                                    <TextBlock Text="{Binding Semver}"
+                                               Opacity="0.7"/>
+
+                                </StackPanel>
+
+                                <Button Grid.Column="1"
+                                        Content="Install"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding $parent[UserControl].((vm:ModpackSelectVersionForInstallDialogViewModel)DataContext)?.SelectVersionCommand}"
+                                        CommandParameter="{Binding }"/>
+
+                            </Grid>
+
+                        </Border>
+
+                    </DataTemplate>
+
+                </ItemsControl.ItemTemplate>
+
+            </ItemsControl>
+
+        </DialogContent>
+
+        <DialogFooter>
+
+            <Button HorizontalAlignment="Right"
+                    Content="Cancel"
+                    Command="{Binding CloseCommand}"/>
+
+        </DialogFooter>
+
+    </Dialog>
+</UserControl>

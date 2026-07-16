@@ -1,14 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
-using DynamicData;
 using ModpackInstaller.Infrastructure;
 using ModpackInstaller.Models;
 using ModpackInstaller.Models.Modrinth;
@@ -16,371 +15,291 @@ using ModpackInstaller.Models.Modrinth;
 namespace ModpackInstaller.Services.Modpack;
 
 public class ModpackManifestService {
-    private string? ManifestPath {
-        get {
-            if (!string.IsNullOrEmpty(_installPath))
-                return Path.Combine(_installPath, "manifest.json");
-            return null;
-        }
-    }
-    private string? _installPath;
+    private string? ManifestPath => string.IsNullOrEmpty(_installPath) 
+        ? null 
+        : Path.Combine(_installPath, "manifest.json");
+    
+    private readonly string? _installPath;
 
-    public ModpackManifest Manifest { get; private set; }
+    public readonly ObservableList<ModInfo> InstalledMods;
+    private readonly ConcurrentDictionary<string, Lazy<Task>> _installQueue = new();
 
-    public ModpackManifestService(string modpackInstallPath) {
+    private ModpackManifestService(string modpackInstallPath) {
+        InstalledMods = [];
         _installPath = modpackInstallPath;
-        Manifest = new ModpackManifest();
         Load();
     }
+    
+    private static readonly ConcurrentDictionary<string, ModpackManifestService> Instances = new();
 
-    public ModpackManifestService() {
-        Manifest = new ModpackManifest();
+    public static ModpackManifestService CreateInstance(string modpackInstallPath) {
+        modpackInstallPath = Path.GetFullPath(modpackInstallPath);
+
+        var service = Instances.GetOrAdd(
+            modpackInstallPath,
+            path => new ModpackManifestService(path));
+        service.Load();
+
+        return service;
     }
-
-    public void OpenModpack(string modpackInstallPath) {
-        if(_installPath != modpackInstallPath){
-            _installPath = modpackInstallPath;
-        }
-        Load();
-    }
-
-    //public static ModpackManifest Load(string manifestPath) {
-    //    if (!File.Exists(manifestPath)) {
-    //        return new ModpackManifest();
-    //    }
-
-    //    try {
-    //        var json = File.ReadAllText(manifestPath);
-    //        ModpackManifest modpackManifest = JsonSerializer.Deserialize<ModpackManifest>(json) ?? new ModpackManifest();
-    //        return modpackManifest;
-    //    }
-    //    catch {
-    //        return new ModpackManifest();
-    //    }
-    //}
-
-
-    [MemberNotNull(nameof(Manifest))]
-    public ModpackManifest Load() {
-        if (!File.Exists(ManifestPath)) {
-            Manifest = new ModpackManifest();
-            return Manifest;
-        }
-
-        try {
-            var json = File.ReadAllText(ManifestPath);
-            ModpackManifest modpackManifest = JsonSerializer.Deserialize<ModpackManifest>(json) ?? new ModpackManifest();
-            Manifest = modpackManifest;
-            return modpackManifest;
-        }
-        catch {
-            Manifest = new ModpackManifest();
-            return new ModpackManifest();
-        }
-    }
-
-    public async Task<ModpackManifest> LoadSync() {
-        if(!File.Exists(ManifestPath)) {
-            Manifest = new ModpackManifest();
-            return Manifest;
-        }
-
-        try {
-            var json = File.ReadAllText(ManifestPath);
-            ModpackManifest modpackManifest = JsonSerializer.Deserialize<ModpackManifest>(json) ?? new ModpackManifest();
-            Manifest = modpackManifest;
-            await SyncWithFilesystemAsync();
-            await SyncToFileSistemAsync();
-            return modpackManifest;
-        } catch {
-            Manifest = new ModpackManifest();
-            return new ModpackManifest();
-        }
-    }
-
-    public static void Save(ModpackManifest modpackManifest, string manifestPath) {
-        // Ne asigurăm că folderul există înainte de scriere
-        var directory = Path.GetDirectoryName(manifestPath);
-        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-
-        var json = JsonSerializer.Serialize(modpackManifest, AppVariables.DefaultJsonOptions);
-        File.WriteAllText(manifestPath, json);
-    }
-
-    public void Save() {
-        if (Manifest == null || ManifestPath == null)
-            return;
-
-        // Ne asigurăm că folderul există înainte de scriere
-        var directory = Path.GetDirectoryName(ManifestPath);
-        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-
-        var json = JsonSerializer.Serialize(Manifest, AppVariables.DefaultJsonOptions);
-        File.WriteAllText(ManifestPath, json);
-    }
-
-    public void ParseAllMods(Action<ModInfo> action) {
-        if(Manifest == null)
-            return;
-
-        foreach (ModInfo modInfo in Manifest.InstalledMods) {
-            action.Invoke(modInfo);
-        }
-        Save();
-    }
-
-
-
-    public bool AddOrUpdateMod(ModInfo modInfo, bool modpackInstall) {
-        if(Manifest == null)
+    
+    public static bool ReleaseInstance(ModpackManifestService service) {
+        if (service._installPath is null)
             return false;
 
-        var existing = Manifest.InstalledMods
-            .FirstOrDefault(m => m.ProjectId == modInfo.ProjectId);
-
-        if (existing == null) {
-            if (modpackInstall)
-                modInfo.Source = ModSource.Remote;
-
-            Manifest.InstalledMods.Add(modInfo);
-            Save();
-            return true; // added
-        }
-
-        if (existing.VersionId == modInfo.VersionId) {
-            return false; // same version, nothing changed
-        }
-
-        // Different version → update
-        RemoveMod(existing.ProjectId);
-
-        if (modpackInstall)
-            modInfo.Source = ModSource.Remote;
-
-        Manifest.InstalledMods.Add(modInfo);
-
-        Save();
-        return true; // updated
+        return Instances.TryRemove(
+            Path.GetFullPath(service._installPath),
+            out _);
+    }
+    
+    public static bool ReleaseInstance(string installPath) {
+        return Instances.TryRemove(
+            installPath,
+            out _);
     }
 
-    public void AddMod(ModInfo installedModInfo, bool modpackInstall) {
-        if(Manifest == null)
+    private void Load() {
+        if (!File.Exists(ManifestPath)) {
+            InstalledMods.Clear();
+            return;
+        }
+
+        try {
+            var json = File.ReadAllText(ManifestPath);
+            var modpackManifest = JsonSerializer.Deserialize<ModpackManifest>(json) ?? new ModpackManifest();
+            InstalledMods.Clear();
+            InstalledMods.AddRange(modpackManifest.InstalledMods);
+        }
+        catch {
+            // ignored
+        }
+    }
+
+    // public void ChangeModpack(string modpackPath) {
+    //     _installPath = modpackPath;
+    //     
+    //     Load();
+    // }
+
+    public ModpackManifest GetManifest() {
+        return new ModpackManifest {
+            InstalledMods = InstalledMods.ToList()
+        };
+    }
+
+    public async Task LoadSync( bool serverInstall ) {
+        if(!File.Exists(ManifestPath)) {
+            return;
+        }
+
+        try {
+            var json = await File.ReadAllTextAsync(ManifestPath);
+            var modpackManifest = JsonSerializer.Deserialize<ModpackManifest>(json) ?? new ModpackManifest();
+            InstalledMods.Clear();
+            InstalledMods.AddRange(modpackManifest.InstalledMods);
+            await SyncWithFilesystemAsync();
+            await SyncToFileSistemAsync(serverInstall);
+        }
+        catch {
+            // ignored
+        }
+    }
+    
+    private readonly object _fileLock = new();
+
+    private void Save() {
+        if (ManifestPath == null)
             return;
 
-        if (modpackInstall) installedModInfo.Source = ModSource.Remote;
-        Manifest.InstalledMods.Add(installedModInfo);
-        Save();
-    }
+        lock (_fileLock) {
+            
+            var directory = Path.GetDirectoryName(ManifestPath);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
 
-    public ModInfo? AddMod(ModrinthProject project, ModrinthVersion version) {
-        if (Manifest == null)
-            return null;
+            var manifest = GetManifest();
 
-        // Verificăm dacă există deja în lista de tip ModInfo
-        if (Manifest.InstalledMods.Any(m => m.ProjectId == project.Id))
-            return null;
-
-        var file = version.PrimaryFile;
-        if (file == null && version.Files.FirstOrDefault() == null) return null;
-        else file ??= version.Files.FirstOrDefault();
-
-        // AICI: Creăm obiectul nou pentru listă
-        var newItem = new ModInfo {
-            ProjectId = project.Id,
-            VersionId = version.Id,
-            VersionNumber = version.VersionNumber,
-            Title = project.Title,
-            Filename = file?.Filename ?? "",
-            DownloadUrl = file?.Url ?? "",
-            IconUrl = project.IconURL,
-            ClientSide = project.ClientSide,
-            ServerSide = project.ServerSide,
-            Source = ModSource.Remote,
-            Enabled = true
-        };
-
-        Manifest.InstalledMods.Add(newItem);
-        Save();
-        return newItem;
-    }
-    public async Task<ModInfo?> InstallModAsync( ModrinthProject project, ModrinthVersion version ) {
-        if(Manifest == null || _installPath == null)
-            return null;
-
-        var existing = Manifest.InstalledMods
-            .FirstOrDefault(m => m.ProjectId == project.Id);
-
-        var file = version.PrimaryFile ?? version.Files.FirstOrDefault();
-        if(file == null)
-            return null;
-
-        var modsFolder = Path.Combine(_installPath, "mods");
-        Directory.CreateDirectory(modsFolder);
-
-        var filePath = Path.Combine(modsFolder, file.Filename);
-
-        // 🔥 CASE 1: mod exists → update
-        if(existing != null) {
-            // dacă e aceeași versiune → nu facem nimic
-            if(existing.VersionId == version.Id) {
-                var currentPath = Path.Combine(modsFolder, existing.Filename);
-                if(!File.Exists(currentPath))
-                    await DownloadModAsync(existing, _installPath);
-                return existing;
-            }
-
-            // șterge jar vechi
-            if(!string.IsNullOrEmpty(existing.Filename)) {
-                var oldPath = Path.Combine(modsFolder, existing.Filename);
-                if(File.Exists(oldPath))
-                    File.Delete(oldPath);
-            }
-
-            var newVersion = existing;
-            newVersion.VersionId = version.Id;
-            newVersion.VersionNumber = version.VersionNumber;
-            newVersion.Filename = file.Filename;
-            newVersion.DownloadUrl = file.Url;
-
-            // descarcă noul jar
-            await DownloadModAsync(newVersion, _installPath);
-
-            // update model
-            existing.VersionId = version.Id;
-            existing.VersionNumber = version.VersionNumber;
-            existing.Filename = file.Filename;
-            existing.DownloadUrl = file.Url;
-
-            Save();
-            return existing;
+            var json = JsonSerializer.Serialize(manifest, AppVariables.DefaultJsonOptions);
+            
+            File.WriteAllText(ManifestPath, json);
         }
 
-        // 🔥 CASE 2: mod nou → install
-        var newItem = new ModInfo {
+    }
+
+    public async Task InstallModAsync(IModVersion searchInfo, bool updateIfExisting) {
+        var lazyTask = _installQueue.GetOrAdd(
+            searchInfo.ProjectId,
+            _ => new Lazy<Task>(() => InstallModInternalAsync(searchInfo, updateIfExisting)));
+
+        try
+        {
+            await lazyTask.Value;
+            Save();
+        }
+        finally
+        {
+            _installQueue.TryRemove(searchInfo.ProjectId, out _);
+        }
+        
+        Save();
+    }
+
+    private async Task InstallModInternalAsync(IModVersion searchInfo, bool updateIfExisting) {
+        if(_installPath == null) return;
+
+        var existing = InstalledMods
+            .FirstOrDefault(m => m.ProjectId == searchInfo.ProjectId);
+
+        if (!updateIfExisting && existing != null) return;
+
+        if (existing?.VersionId == searchInfo.VersionId) return;
+
+        var project = await ModrinthApiService.GetProjectAsync(searchInfo.ProjectId);
+        if (project == null) return;
+
+        var version = await ModrinthApiService.GetVersionAsync(searchInfo.VersionId);
+        if (version == null) return;
+
+        var modsFolder = Path.Combine(_installPath, "mods");
+        if (existing != null) {
+            var oldPath = Path.Combine(modsFolder, existing.Filename);
+            if(File.Exists(oldPath))
+                File.Delete(oldPath);
+        }
+        
+        var file = version.PrimaryFile ?? version.Files.FirstOrDefault();
+        if (file == null) return;
+
+        var projectMembers = await ModrinthApiService.GetProjectMembersAsync(project.Id);
+        
+        var newModInfo = new ModInfo {
             ProjectId = project.Id,
             VersionId = version.Id,
             VersionNumber = version.VersionNumber,
             Title = project.Title,
             Filename = file.Filename,
             DownloadUrl = file.Url,
+            FileSha = file.Hashes.Sha1,
             IconUrl = project.IconURL,
             ClientSide = project.ClientSide,
             ServerSide = project.ServerSide,
             Source = ModSource.Remote,
-            Enabled = true
+            Enabled = true,
+            OwnerName = projectMembers.FirstOrDefault()?.User.Username ?? "Unknown"
         };
 
-        await DownloadModAsync(newItem, _installPath);
-
-        Manifest.InstalledMods.Add(newItem);
-        Save();
-
-        return newItem;
-    }
-    public void RemoveMod(string projectId) {
-        if(Manifest == null || _installPath == null)
-            return;
-
-        var modToDelete = Manifest.InstalledMods.FirstOrDefault(m => m.ProjectId == projectId);
-
-        if (modToDelete != null) {
-            try {
-                // 2. Construim calea către fișierul .jar
-                // Presupunem că 'FileName' este proprietatea care reține numele fișierului salvat
-                string fullPath = Path.Combine(_installPath, "mods", modToDelete.Filename);
-
-                // 3. Ștergem fișierul de pe disc dacă există
-                if (File.Exists(fullPath)) {
-                    File.Delete(fullPath);
-                }
-            }
-            catch (Exception ex) {
-                // Loghează eroarea dacă fișierul este blocat de Minecraft sau sistem
-                Debug.WriteLine($"Nu s-a putut șterge fișierul: {ex.Message}");
-            }
-
-            // 4. Îl eliminăm din manifest și salvăm modificarea
-            Manifest.InstalledMods.Remove(modToDelete);
-            Save();
+        foreach (var modrinthDependency in version.Dependencies
+                     .Where(modrinthDependency => modrinthDependency.DependencyType == DependencyType.Required)) {
+            await InstallModAsync(modrinthDependency, updateIfExisting);
+        }
+        
+        await DownloadModAsync(newModInfo, _installPath);
+        
+        if(existing == null) 
+            InstalledMods.Add(newModInfo);
+        else {
+            InstalledMods[InstalledMods.IndexOf(existing)] = newModInfo;
         }
     }
 
-    public async Task UpdateModAsync( string modId, string versionId ) {
-        if(Manifest == null || _installPath == null)
-            return;
+    public bool RemoveMod(ModInfo mod) {
+        if (_installPath == null)
+            return false;
 
-        var mod = Manifest.InstalledMods.FirstOrDefault(m => m.ProjectId == modId);
-        if(mod == null)
-            return;
+        try {
+            var filePath = Path.Combine(_installPath, "mods", mod.Filename);
 
-        // dacă e deja aceeași versiune → no-op
-        if(mod.VersionId == versionId)
-            return;
+            if (File.Exists(filePath))
+                File.Delete(filePath);
 
-        var version = await ModrinthApiService.GetVersionAsync(versionId);
-        if(version == null)
-            return;
+            var existing = InstalledMods.FirstOrDefault(x => x.ProjectId == mod.ProjectId);
 
-        var project = await ModrinthApiService.GetProjectAsync(modId);
-        if(project == null)
-            return;
+            if (existing != null)
+                InstalledMods.Remove(existing);
 
-        await InstallModAsync(project, version);
+            Save();
+
+            return true;
+        }
+        catch {
+            return false;
+        }
     }
 
-    public bool IsModInstalled(ModInfo modInfo) {
-        var state = GetModInstallState(modInfo);
-        return state == ModInstallState.InstalledSameVersion
-            || state == ModInstallState.InstalledDifferentVersion;
+    public void EnableDisableMod(string projectId, bool status) {
+        if (InstalledMods.FirstOrDefault(m => m.ProjectId == projectId) is null || _installPath == null)
+            return;
+        
+        var mod = InstalledMods.First(m => m.ProjectId == projectId);
+        
+        if (mod.Enabled == status)
+            return;
+        
+        var filePath = Path.Combine(_installPath, "mods", mod.Filename);
+        var deactivationPath = filePath + ".deactivation";
+
+        try {
+            if (status) {
+                // Enable: Rename from .deactivation back to .jar
+                if (File.Exists(deactivationPath)) {
+                    File.Move(deactivationPath, filePath, true);
+                }
+            } else {
+                // Disable: Rename from .jar to .deactivation
+                if (File.Exists(filePath)) {
+                    File.Move(filePath, deactivationPath, true);
+                }
+            }
+        }
+        catch (Exception ex) {
+            Debug.WriteLine($"Failed to toggle mod file state: {ex.Message}");
+        }
+        
+        mod.Enabled = status;
+        Save();
     }
+    
+    public bool IsModInstalled(IModVersion modInfo) => 
+        GetModInstallState(modInfo) is ModInstallState.InstalledSameVersion or ModInstallState.InstalledDifferentVersion;
 
-    public bool IsModInstalledDiferentVersion(ModInfo modInfo) {
-        return GetModInstallState(modInfo) == ModInstallState.InstalledDifferentVersion;
-    }
-
-    public bool IsModInstalledSameVersion(ModInfo modInfo) {
-        return GetModInstallState(modInfo) == ModInstallState.InstalledSameVersion;
-    }
-
-    public ModInstallState GetModInstallState(ModInfo modInfo) {
-        if(Manifest == null)
-            return ModInstallState.InstalledDifferentVersion;
-
-        var mod = Manifest.InstalledMods
+    private ModInstallState GetModInstallState(IModVersion modInfo) {
+        var mod = InstalledMods
             .FirstOrDefault(m => m.ProjectId == modInfo.ProjectId);
 
         if (mod == null)
             return ModInstallState.NotInstalled;
 
-        if (mod.VersionId == modInfo.VersionId)
-            return ModInstallState.InstalledSameVersion;
-
-        return ModInstallState.InstalledDifferentVersion;
+        return mod.VersionId == modInfo.VersionId
+            ? ModInstallState.InstalledSameVersion
+            : ModInstallState.InstalledDifferentVersion;
     }
 
-    public static async Task<bool> DownloadModAsync(ModInfo modInfo, string modpackinstallPath) {
+    public static async Task DownloadModAsync(ModInfo modInfo, string modpackInstallPath) {
+        var modsFolder = Path.Combine(modpackInstallPath, "mods");
+        Directory.CreateDirectory(modsFolder);
+
+        var filePath = Path.Combine(modsFolder, modInfo.Filename);
+        var tempPath = filePath + ".tmp";
+
         try {
-            var modsFolder = Path.Combine(modpackinstallPath, "mods");
-            if (!Directory.Exists(modsFolder))
-                Directory.CreateDirectory(modsFolder);
+            await using var input =
+                await BackendApiService.HttpClient.GetStreamAsync(modInfo.DownloadUrl);
 
-            var filePath = Path.Combine(modsFolder, modInfo.Filename);
+            await using var output = File.Create(tempPath);
 
-            using var client = new HttpClient();
-            var data = await client.GetByteArrayAsync(modInfo.DownloadUrl);
-            await File.WriteAllBytesAsync(filePath, data);
+            await input.CopyToAsync(output);
 
-            Debug.WriteLine($"[Download] Finalizat: {modInfo.Title}");
-            return true;
+            output.Close();
+
+            File.Move(tempPath, filePath, true);
         }
-        catch (Exception ex) {
-            Debug.WriteLine($"[Error] Descărcare eșuată pentru {modInfo.Title}: {ex.Message}");
-            return false;
+        finally {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
         }
     }
 
     public async Task SyncWithFilesystemAsync() {
-        if(_installPath == null || Manifest == null)
+        if(_installPath == null)
             return;
 
         var modsFolder = Path.Combine(_installPath, "mods");
@@ -393,106 +312,87 @@ public class ModpackManifestService {
             var fileName = Path.GetFileName(filePath);
 
             // 🔹 deja în manifest?
-            if(Manifest.InstalledMods.Any(m => m.Filename == fileName))
+            if(InstalledMods.Any(m => m.Filename == fileName))
                 continue;
 
             try {
-                // 1️⃣ hash
-                var sha1 = HashUtils.ComputeSHA1(filePath);
+                var sha1 = HashUtils.ComputeSha1(filePath);
 
-                // 2️⃣ query Modrinth
                 var version = await ModrinthApiService.GetVersionByHashAsync(sha1);
 
                 if(version != null) {
-                    // 3️⃣ avem match → luăm și project
-                    var project = await ModrinthApiService.GetProjectAsync(version.ProjectId);
-
-                    var existingMod = Manifest.InstalledMods
+                    var existingMod = InstalledMods
                         .FirstOrDefault(m => m.ProjectId == version.ProjectId);
 
                     if(existingMod != null) {
-                        // aceeași versiune
                         if(existingMod.VersionId == version.Id)
                             continue;
 
-                        // altă versiune -> păstrăm ce este în manifest
                         try {
                             File.Delete(filePath);
 
-                            Debug.WriteLine(
+                            Console.WriteLine(
                                 $"Removed duplicate version: {fileName} " +
                                 $"(manifest={existingMod.VersionId}, found={version.Id})");
                         } catch(Exception ex) {
-                            Debug.WriteLine($"Failed to delete {fileName}: {ex.Message}");
+                            Console.WriteLine($"Failed to delete {fileName}: {ex.Message}");
                         }
 
                         continue;
                     }
-
-
-
-
-                    var primaryFile = version.Files.FirstOrDefault(f => f.Hashes.Sha1 == sha1)
-                                      ?? version.Files.FirstOrDefault();
-
-                    var mod = new ModInfo {
-                        ProjectId = version.ProjectId,
-                        VersionId = version.Id,
-                        VersionNumber = version.VersionNumber,
-                        Title = project?.Title ?? fileName,
-                        Filename = fileName,
-                        DownloadUrl = primaryFile?.Url ?? "",
-                        IconUrl = project?.IconURL ?? "",
-                        Source = ModSource.Remote,
-                        Enabled = true,
-                        ClientSide = project?.ClientSide ?? SideSupport.unknown,
-                        ServerSide = project?.ServerSide ?? SideSupport.unknown
-                    };
-
-                    Manifest.InstalledMods.Add(mod);
+                    
+                    await InstallModAsync(new ModVersion(version.ProjectId, version.Id), false);
                 } else {
-                    // 4️⃣ fallback → LOCAL MOD
                     var (title, versionStr) = ParseFileName(fileName);
 
                     var mod = new ModInfo {
-                        ProjectId = Guid.NewGuid().ToString(), // local id
+                        ProjectId = Guid.NewGuid().ToString(),
                         VersionId = versionStr,
                         VersionNumber = versionStr,
                         Title = title,
                         Filename = fileName,
                         Source = ModSource.Local,
-                        Enabled = true
+                        Enabled = true,
+                        OwnerName = "Unknown"
                     };
 
-                    Manifest.InstalledMods.Add(mod);
+                    InstalledMods.Add(mod);
                 }
             } catch(Exception ex) {
-                Debug.WriteLine($"[Sync Error] {fileName}: {ex.Message}");
+                Console.WriteLine($"[Sync Error] {fileName}: {ex.Message}");
             }
         }
 
         Save();
     }
 
-    public async Task SyncToFileSistemAsync() {
-        if(_installPath == null || Manifest == null)
+    public async Task SyncToFileSistemAsync(bool serverInstall) {
+        if (_installPath == null)
             return;
 
         var modsFolder = Path.Combine(_installPath, "mods");
 
-        foreach(var mod in Manifest.InstalledMods.ToList()) {
-            var filePath = Path.Combine(modsFolder, mod.Filename);
+        foreach (var mod in InstalledMods.ToList()) {
 
-            // 1️⃣ file missing → repair
-            if(!File.Exists(filePath)) {
-                await RepairModAsync(mod);
+            if (!ShouldDownload(mod, serverInstall))
+                continue;
+
+            var filePath = Path.Combine(modsFolder, mod.Filename);
+            var disabledPath = filePath + ".deactivation";
+
+            if (File.Exists(disabledPath))
+                continue;
+
+            if (!File.Exists(filePath)) {
+                await DownloadModAsync(mod, _installPath);
                 continue;
             }
 
-            // 2️⃣ optional: verify hash
-            if(!await IsValidModAsync(mod, filePath)) {
-                await RepairModAsync(mod);
-            }
+            if (mod.Source != ModSource.Remote ||
+                await IsValidModAsync(mod, filePath)) continue;
+            
+            File.Delete(filePath);
+            await DownloadModAsync(mod, _installPath);
         }
 
         Save();
@@ -502,12 +402,10 @@ public class ModpackManifestService {
         if(mod.Source != ModSource.Remote)
             return true;
 
-        // 1. FAST PATH: already cached hash
         if(!string.IsNullOrWhiteSpace(mod.FileSha)) {
             return await CompareLocalFileAsync(filePath, mod.FileSha);
         }
 
-        // 2. FETCH METADATA ONCE
         var version = await ModrinthApiService.GetVersionAsync(mod.VersionId);
         if(version == null)
             return true;
@@ -515,14 +413,16 @@ public class ModpackManifestService {
         var file = version.Files.FirstOrDefault(f => f.Filename == mod.Filename)
                    ?? version.PrimaryFile;
 
-        if(file?.Hashes?.Sha1 == null)
+        if(file?.Hashes.Sha1 == null)
             return true;
 
-        // save for future runs (IMPORTANT)
         mod.FileSha = file.Hashes.Sha1.ToLowerInvariant();
-        var index = Manifest.InstalledMods.FindIndex(info => info.VersionId == mod.VersionId);
 
-        Manifest.InstalledMods[index].FileSha = mod.FileSha;
+        var index = InstalledMods.IndexOf(mod);
+        
+        if (index != -1) {
+            InstalledMods[index].FileSha = mod.FileSha;
+        }
 
         // 3. compare
         return await CompareLocalFileAsync(filePath, mod.FileSha);
@@ -546,21 +446,6 @@ public class ModpackManifestService {
         return local == expectedSha1.ToLowerInvariant();
     }
 
-    private async Task RepairModAsync( ModInfo mod ) {
-        if(_installPath == null)
-            return;
-
-        var version = await ModrinthApiService.GetVersionAsync(mod.VersionId);
-        if(version == null)
-            return;
-
-        var project = await ModrinthApiService.GetProjectAsync(version.ProjectId);
-        if(project == null)
-            return;
-
-        await InstallModAsync(project, version);
-    }
-
     private static (string title, string version) ParseFileName( string fileName ) {
         var name = Path.GetFileNameWithoutExtension(fileName);
 
@@ -571,8 +456,8 @@ public class ModpackManifestService {
             return (name, "");
 
         // heuristic:
-        string title = parts[0];
-        string version = parts.Length > 1 ? parts[^1] : "";
+        var title = parts[0];
+        var version = parts.Length > 1 ? parts[^1] : "";
 
         // beautify title
         title = title.Replace("_", " ");
@@ -580,6 +465,13 @@ public class ModpackManifestService {
 
         return (title, version);
     }
+    
+    private static bool ShouldDownload(ModInfo mod, bool serverInstall) {
+        return serverInstall
+            ? mod.ServerSide is SideSupport.required or SideSupport.optional
+            : mod.ClientSide is SideSupport.required or SideSupport.optional;
+    }   
+    
 }
 
 
@@ -587,4 +479,14 @@ public enum ModInstallState {
     NotInstalled,
     InstalledSameVersion,
     InstalledDifferentVersion
+}
+
+public interface IModVersion {
+    string ProjectId { get; }
+    string VersionId { get; }
+}
+
+public class ModVersion(string projectId, string versionId) : IModVersion {
+    public string ProjectId { get; } = projectId;
+    public string VersionId { get; } = versionId;
 }

@@ -31,16 +31,13 @@ public class ModrinthProject {
     [JsonPropertyName("server_side")]
     public SideSupport ServerSide { get; set; }
 
-    [JsonPropertyName("project_id")]
-    public string ProjectIdSearch {
-        get => Id;
-        set => Id = value;
-    }
-
     [JsonPropertyName("icon_url")]  
     public string IconURL { get; set; } = "";
     [JsonPropertyName("downloads")] public int Downloads { get; set; }
     [JsonPropertyName("published")] public DateTime PublishedDate { get; set; }
-    [JsonPropertyName("body")] public string Body { get; set; } = "";
-    [JsonPropertyName("team")] public string TeamId { get; set; } = "";
+    [JsonPropertyName("body")] public string Body{ get; set; }
+    
+    [JsonPropertyName("team")] public string TeamId{ get; set; }
+    
+    [JsonPropertyName("author")] public string Author{ get; set; }
 }

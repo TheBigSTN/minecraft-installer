@@ -17,8 +17,7 @@ using MsBox.Avalonia.Enums;
 
 namespace ModpackInstaller;
 
-public partial class App : Application {
-    public IServiceProvider Services { get; private set; } = null!;
+public class App : Application {
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -29,10 +28,10 @@ public partial class App : Application {
         {
             CrashReporter.Log(e.Exception, "UIThread");
 
-#if DEBUG
-            //if (Debugger.IsAttached)
-            //    Debugger.Break();
-#endif
+            // #if DEBUG
+            //     if (Debugger.IsAttached)
+            //         Debugger.Break();
+            // #endif
 
             e.Handled = true;
         };
@@ -45,33 +44,32 @@ public partial class App : Application {
 
 
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            var dialogService = new DialogService();
-            var viewModel = new MainViewModel(dialogService);
-
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
+            // var dialogService = new DialogService();
+            var viewModel = new MainViewModel();
+        
             var window = new MainWindow {
                 DataContext = viewModel
             };
-
-            dialogService.AttachWindow(window);
-
+        
+            // dialogService.AttachWindow(window);
+        
             desktop.MainWindow = window;
         }
-        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
-        {
-            singleViewPlatform.MainView = new MainView
-            {
-                DataContext = new MainViewModel(new DialogService())
-            };
-        }
+        // else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+        // {
+        //     singleViewPlatform.MainView = new MainView
+        //     {
+        //         DataContext = new MainViewModel(new DialogService())
+        //     };
+        // }
 
         base.OnFrameworkInitializationCompleted();
 
         _ = Task.Run(CheckForUpdatesAsync);
     }
 
-    public static async Task CheckForUpdatesAsync() {
+    private static async Task CheckForUpdatesAsync() {
         var source = new GithubSource("https://github.com/TheBigSTN/minecraft-installer", null, false);
         var mgr = new UpdateManager(source);
 

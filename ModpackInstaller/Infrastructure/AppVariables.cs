@@ -6,22 +6,26 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using ModpackInstaller.Converters;
 using ModpackInstaller.Models;
 
 namespace ModpackInstaller.Infrastructure;
 
 public static class AppVariables {
     public static string GetTempFolderPath(string foldername) {
-        string path = Path.Combine(Path.GetTempPath(), "ModpackInstaller", foldername);
+        var path = Path.Combine(Path.GetTempPath(), "ModpackInstaller", foldername);
         Directory.CreateDirectory(path);
         return path;
     }
     public static string GetTempFilePath(string filename) {
-        string path = Path.Combine(Path.GetTempPath(), "ModpackInstaller", filename);
+        var path = Path.Combine(Path.GetTempPath(), "ModpackInstaller", filename);
         Directory.CreateDirectory(Path.Combine(path, ".."));
         return path;
     }
+#pragma warning disable CS0169 // Field is never used
+    //It's used only on releases and on in a dev environment
     private static string? _installerRoot;
+#pragma warning restore CS0169 // Field is never used
     public static string InstallerRoot {
         get {
 #if DEBUG
@@ -29,53 +33,31 @@ public static class AppVariables {
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "ModpackInstallerDev");
 #else
-            if(_installerRoot == null) {
-                string baseLocal = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string baseRoaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            if (_installerRoot != null) 
+                return _installerRoot;
+            
+            var baseLocal = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-                string roamingDataPath = Path.Combine(baseRoaming, "ModpackInstaller");
-                string localDataPath = Path.Combine(baseLocal, "ModpackInstaller");
-
-                // 2. Dacă avem Roaming, mutăm totul în Local
-                if (Directory.Exists(roamingDataPath)) {
-                    Directory.CreateDirectory(localDataPath);
-
-                    foreach (var dir in Directory.GetDirectories(roamingDataPath, "*", SearchOption.AllDirectories))
-                    {
-                        var relative = Path.GetRelativePath(roamingDataPath, dir);
-                        Directory.CreateDirectory(Path.Combine(localDataPath, relative));
-                    }
-
-                    foreach (var file in Directory.GetFiles(roamingDataPath, "*", SearchOption.AllDirectories))
-                    {
-                        var relative = Path.GetRelativePath(roamingDataPath, file);
-                        var destination = Path.Combine(localDataPath, relative);
-
-                        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                        File.Move(file, destination, overwrite: true);
-                    }
-
-                    // Opțional: șterge folderul vechi dacă a rămas gol
-                    Directory.Delete(roamingDataPath, recursive: true);
-                }
-                // 3. Dacă nu avem niciunul, creăm structura în Local
-                else if(!Directory.Exists(localDataPath)) {
-                    Directory.CreateDirectory(localDataPath);
-                }
-
-                _installerRoot = localDataPath;
-            }
+            var localDataPath = Path.Combine(baseLocal, "ModpackInstaller");
+            
+            _installerRoot = localDataPath;
+            
             return _installerRoot;
 
 #endif
         }
     }
 
-    public static JsonSerializerOptions DefaultJsonOptions => new() {
+    public static readonly JsonSerializerOptions DefaultJsonOptions = new() {
         WriteIndented = true
     };
 
-    public static JsonSerializerOptions WebJsonOptions => new() {
+    static AppVariables() {
+        DefaultJsonOptions.Converters.Add(new FlexibleGuidConverter());
+        DefaultJsonOptions.Converters.Add(new FlexibleNullableGuidConverter());
+    }
+
+    public static readonly JsonSerializerOptions WebJsonOptions = new() {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         Converters = {
@@ -87,7 +69,8 @@ public static class AppVariables {
     public static string AppApiBaseUrl {
         get {
 #if DEBUG
-            return "http://192.168.0.189:8080";
+            // return "http://192.168.0.189:8080";
+            return "http://localhost:8080";
 #else
         return "https://minte.go.ro:5005/modpack-service";
 #endif
@@ -95,7 +78,7 @@ public static class AppVariables {
     }
 
     public static string GetBaseInstallPathFromLauncer( InstallPlatform installPlatform ) {
-        string basePath = installPlatform switch {
+        var basePath = installPlatform switch {
             InstallPlatform.TLauncher => Environment.OSVersion.Platform switch {
                 PlatformID.Win32NT => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft", "versions"),
                 PlatformID.Unix => Path.Combine(Environment.GetEnvironmentVariable("HOME")!, ".minecraft", "versions"),

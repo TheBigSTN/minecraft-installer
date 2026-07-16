@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:Class="ModpackInstaller.Views.NavigationBarView">
+	<Border Background="#1A1C22"
+            Height="52"
+            BorderBrush="#2B2D33"
+            BorderThickness="0,0,0,1"
+			PointerPressed="Drag">
+
+		<Grid ColumnDefinitions="Auto,*,Auto">
+
+			<!-- App -->
+			<StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="16,0">
+
+				<Image Source="/Assets/image-1.ico"
+                       Width="22"
+                       Height="22"/>
+
+				<TextBlock Margin="10,0,0,0"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           FontSize="15"
+                           Foreground="White">
+
+					<Run Text="Modpack Installer "/>
+
+					<Run x:Name="Version"
+					     Foreground="#6FA8FF"/>
+				</TextBlock>
+
+			</StackPanel>
+
+			<!-- Empty space -->
+			<Border Grid.Column="1"/>
+
+			<!-- Window buttons -->
+			<StackPanel Grid.Column="2"
+                        Orientation="Horizontal">
+
+				<Button Classes="TitleButton MinimizeButton"
+						Click="Minimize">
+					<TextBlock Text="−"
+							   FontSize="18"
+							   HorizontalAlignment="Center"
+							   VerticalAlignment="Center"/>
+				</Button>
+
+				<Button Classes="TitleButton MaximizeButton"
+						Click="Maximize">
+					<TextBlock Text="□"
+							   FontSize="12"
+							   HorizontalAlignment="Center"
+							   VerticalAlignment="Center"/>
+				</Button>
+
+				<Button Classes="TitleButton CloseButton"
+						Click="Close">
+					<TextBlock Text="✕"
+							   FontSize="13"
+							   HorizontalAlignment="Center"
+							   VerticalAlignment="Center"/>
+				</Button>
+
+			</StackPanel>
+
+		</Grid>
+
+	</Border>
+</UserControl>

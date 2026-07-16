@@ -25,4 +25,6 @@ public class DiscoveryModpackDisplay : PublicModpackRequestResponse {
 
         IsInstalled = isInstalled;
     }
+
+    public DiscoveryModpackDisplay() { }
 }

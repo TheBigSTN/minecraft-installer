@@ -98,8 +98,6 @@ public static class CliRunner {
 			bool nonDiscoverable
 		) {
 		var modpacks = await BackendApiService.GetPublicModpacksAsync();
-		if(modpacks == null)
-			return;
 
 		var modpack = modpacks.FirstOrDefault(x => x.Id == modpackId);
 
@@ -108,8 +106,7 @@ public static class CliRunner {
 			return;
 		}
 
-		ModpackMedatataService metadataService = new();
-		if(metadataService.Exists(modpackId) && !nonDiscoverable) {
+		if(ModpackMedatataService.ExistsModpack(Guid.Parse(modpackId)) && !nonDiscoverable) {
 			Console.WriteLine($"Modpack {modpackId} is already installed globaly");
             Console.WriteLine($"If you still wish to install it  use the --non-discoverable flag");
             Console.WriteLine($"That installs the modpack but you can't use the GUI to modify it");
@@ -128,20 +125,9 @@ public static class CliRunner {
 
         var installPath = Environment.CurrentDirectory;
 
-		var progress = new Progress<double>(p => {
-			Console.Write($"\rProgress: {p:0.00}%");
-		});
-
-		static void status( string text ) {
-			Console.WriteLine();
-			Console.WriteLine(text);
-		}
-
 		await ModpackInstallService.DownloadAndInstallModpack(
 			modpack,
 			installPath,
-			progress,
-			status,
 			isServer,
 			nonDiscoverable,
 			false);
@@ -153,9 +139,17 @@ public static class CliRunner {
     private static async Task SyncFileSistemToModpack() {
         Console.WriteLine("Syncing modpack manifest with filesystem...");
         Console.WriteLine("This fixes issues with mods and stuff");
-        ModpackManifestService modpackManifest = new(Environment.CurrentDirectory);
+        var modpackManifest = ModpackManifestService.CreateInstance(Environment.CurrentDirectory);
+        ModpackMedatataService localMetadataService = new(Environment.CurrentDirectory);
 
-        await modpackManifest.LoadSync();
+        if (!localMetadataService.Exists()) {
+	        Console.WriteLine("There is no modpack installed in the current directory");
+	        return;
+        }
+	        
+        var localMetadata = localMetadataService.Load();
+
+        await modpackManifest.LoadSync(localMetadata.IsServerInstall);
     }
 
     private static async Task UpdateAsync() {
