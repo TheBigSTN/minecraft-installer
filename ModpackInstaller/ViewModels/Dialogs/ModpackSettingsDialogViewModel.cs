@@ -42,17 +42,16 @@ public partial class ModpackSettingsDialogViewModel : DialogViewModel<Unit> {
         CloseCommand = ReactiveCommand.Create(() => Close(Unit.Default));
 
         PublishModpackCommand = ReactiveCommand.CreateFromTask(async () => {
-            if (_metadata.ModpackId is null)
-                return;
-
-            var remoteModpackInfo = await BackendApiService.GetModpack(_metadata.ModpackId.Value);
-
-            if (remoteModpackInfo is not null)
+            if (_metadata.ModpackId is not null)
                 return;
 
             await modpackPublicize.CreateOnServerAsync(false);
+            
+            await LoadModpackInfo();
+            await LoadVersions();
 
             this.RaisePropertyChanged(nameof(IsPublished));
+            this.RaisePropertyChanged(nameof(IsOwnedByYou));
         });
 
         CreateNewVersionCommand = ReactiveCommand.CreateFromTask(async () => {

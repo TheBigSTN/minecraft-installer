@@ -91,7 +91,6 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
 
     private async Task<Unit> AsyncLoad(DiscoveryCategory discoveryCategory) {
         _allDiscoveryItems.Clear();
-        var installCommand = ReactiveCommand.CreateFromTask<DiscoveryItem>(async (item) => await InstallItem(item));
         switch (SelectedCategory) {
             case DiscoveryCategory.Modpacks:
                 var results = await BackendApiService.GetPublicModpacksAsync();
@@ -104,7 +103,7 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
                              Source = result,
                              IsInstalled = false,
                              IsInstalling = false,
-                             InstallCommand = installCommand
+                             InstallCommand = ReactiveCommand.CreateFromTask<DiscoveryItem>(async item => await InstallItem(item))
                          })) {
                     _allDiscoveryItems.Add(item);
                 }
@@ -126,7 +125,7 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
                         IsInstalled =
                             _modpackManifestService.IsModInstalled(new ModInfo { ProjectId = mod.Id, VersionId = "" }),
                         IsInstalling = false,
-                        InstallCommand = installCommand
+                        InstallCommand = ReactiveCommand.CreateFromTask<DiscoveryItem>(async item => await InstallItem(item))
                     });
                 });
 
