@@ -4,10 +4,8 @@ using Avalonia.Markup.Xaml;
 
 namespace ModpackInstaller.Views.Sidebars;
 
-public partial class ModListView : UserControl
-{
-    public ModListView()
-    {
+public partial class SideNavigationBarView : UserControl {
+    public SideNavigationBarView() {
         InitializeComponent();
     }
 }
