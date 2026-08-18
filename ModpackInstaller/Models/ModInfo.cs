@@ -1,7 +1,11 @@
-﻿using System.Runtime.Serialization;
+﻿using System;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using ModpackInstaller.Models.Modrinth;
-using ModpackInstaller.Services.Modpack;
+using ModpackInstaller.Infrastructure;
+using ModpackInstaller.Models.Caches;
+using ModpackInstaller.Services;
+using ModpackInstaller.Services.Helpers;
+using Environment = ModpackInstaller.Models.Modrinth.Environment;
 
 namespace ModpackInstaller.Models;
 
@@ -12,7 +16,7 @@ public enum ModSource {
     CustomUrl
 }
 
-public class ModInfo : IModVersion {
+public class ModInfo : IMigratedData, IModVersion {
     public required string ProjectId { get; set; }
     public required string VersionId { get; set; }
     public string VersionNumber { get; set; } = "";
@@ -22,13 +26,44 @@ public class ModInfo : IModVersion {
     public string DownloadUrl { get; set; } = "";
     public string IconUrl { get; set; } = "";
     public bool Enabled { get; set; } = true;
-
-    public SideSupport ClientSide { get; set; } = SideSupport.unknown;
-    public SideSupport ServerSide { get; set; } = SideSupport.unknown;
-
     public string FileSha { get; set; } = "";
-
     public string OwnerName { get; set; } = "";
+    public required Environment Environment { get; set; } = Environment.Unknown;
+    public static int SchemaVersion => 1;
 
-    // You need to add them in the backend otherwize update pathches won't work
+    public static void Migrate(JsonObject root, int fileVersion) {
+        if (fileVersion < 1) {
+            var versionId = root.GetField<string>(nameof(VersionId));
+            var source = root.GetField<ModSource>(nameof(Source));
+
+            if (!string.IsNullOrEmpty(versionId)) {
+                if (source is ModSource.Remote) {
+                    var version = ModrinthVersionCache.Get(versionId);
+                    
+                    root.SetField(nameof(Environment), version?.Environment ?? Environment.HaveToRequest);
+                    
+                }
+                else {
+                    root.SetField(nameof(Environment), Environment.ClientAndServer);
+                }
+                
+            }
+        }
+    }
+}
+
+public enum ModInstallState {
+    NotInstalled,
+    InstalledSameVersion,
+    InstalledDifferentVersion
+}
+
+public interface IModVersion {
+    string ProjectId { get; }
+    string VersionId { get; }
+}
+
+public class ModVersion(string projectId, string versionId) : IModVersion {
+    public string ProjectId { get; } = projectId;
+    public string VersionId { get; } = versionId;
 }

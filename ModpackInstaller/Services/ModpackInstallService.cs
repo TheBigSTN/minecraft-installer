@@ -5,184 +5,183 @@ using System.Linq;
 using System.Threading.Tasks;
 using ModpackInstaller.Models;
 using ModpackInstaller.Models.DTOs;
+using ModpackInstaller.Models.Interfaces;
 using ModpackInstaller.Services.Modpack;
 using ModpackInstaller.Models.Modrinth;
+using ModpackInstaller.Services.Notifications;
 
 namespace ModpackInstaller.Services;
 
 public static class ModpackInstallService {
-    private static async Task InstallModsOfModpack( 
-            ModpackMetadata modpackMetadata,
-            bool serverInstall = false
-        ) {
-        ModpackManifestService manifestService = ModpackManifestService.CreateInstance(modpackMetadata.InstallPath);
-        var manifest = manifestService.GetManifest();
-        
-        var downloadTasks = manifest.InstalledMods.Select(async mod => {
-            bool shouldDownload;
-
-            if(serverInstall) {
-                shouldDownload = mod.ServerSide is SideSupport.required or SideSupport.optional;
-            } else {
-                shouldDownload = mod.ClientSide is SideSupport.required or SideSupport.optional;
-            }
-
-			if(shouldDownload) {
-				await ModpackManifestService.DownloadModAsync(mod, modpackMetadata.InstallPath);
-			}
-        });
-
-        await Task.WhenAll(downloadTasks);
-    }
-
-    public static async Task<ModpackMetadata> DownloadAndInstallModpack(
-		    PublicModpackRequestResponse modpack,
-		    string baseInstallPath,
-            bool serverInstall = false,
-			bool nonDiscoverableMedatadata = false,
-			bool useSubfolder = true
-        ) {
-		var installPath = !useSubfolder
+    public static async Task<ModpackMetadataStorage> DownloadAndInstallModpackAsync(
+        PublicModpackRequestResponse modpack,
+        string baseInstallPath,
+        bool serverInstall = false,
+        bool nonDiscoverableMetadata = false,
+        bool useSubfolder = true
+    ) {
+        var notification = NotificationManager.Show(
+            "Downloading modpack...",
+            "",
+            false
+        );
+        // 1. Resolve paths
+        var installPath = !useSubfolder
             ? baseInstallPath
             : Path.Combine(baseInstallPath, modpack.ModpackName.Trim());
 
-		Directory.CreateDirectory(installPath);
+        Directory.CreateDirectory(installPath);
 
-		ModpackMetadata metadata = new() {
-			Id = Guid.NewGuid(),
-			ModpackId = Guid.Parse(modpack.Id),
-			InstallPath = installPath,
-			Name = modpack.ModpackName,
-			GameVersion = modpack.GameVersion,
-			Loader = modpack.Loader,
-			Author = modpack.AuthorName,
-			CreatedAt = modpack.CreatedAt,
-			UpdatedAt = modpack.ModifiedAt,
-			Description = modpack.Description,
-			LoaderVersion = modpack.LoaderVersion,
-			// ModpackPassword = null,
-			// SharingCode = null,
-			VersionId = modpack.LatestVersionId,
-			VersionSemver = modpack.LatestVersion,
-			Source = ModpackSource.Remote,
+        // FIX: Generate a single ID to be shared between metadata and path registry
+        var metadataId = Guid.NewGuid();
+
+        var metadataFilePath = nonDiscoverableMetadata
+            ? Path.Combine(installPath, "metadata.json")
+            : ModpackMetadataRegistry.GetPath(metadataId);
+
+        // 2. Construct metadata model
+        ModpackMetadata metadata = new() {
+            Id = metadataId, // Use the consistent ID
+            ModpackId = Guid.Parse(modpack.Id),
+            InstallPath = installPath,
+            Name = modpack.ModpackName,
+            GameVersion = modpack.GameVersion,
+            Loader = modpack.Loader,
+            Author = modpack.AuthorName,
+            CreatedAt = modpack.CreatedAt,
+            UpdatedAt = modpack.ModifiedAt,
+            Description = modpack.Description,
+            LoaderVersion = modpack.LoaderVersion,
+            VersionId = modpack.LatestVersionId,
+            VersionSemver = modpack.LatestVersion,
+            Source = ModpackSource.Remote,
             IsServerInstall = serverInstall
         };
-		
+
+        // 3. Execute download and file extraction pipeline
         var zipPath = Path.Combine(installPath, "modpack.zip");
 
-		try {
-			await BackendApiService.DownloadVersionAsync(
-				modpack.Id,
-				modpack.LatestVersionId,
-				zipPath);
+        try {
+            await BackendApiService.DownloadVersionAsync(
+                modpack.Id,
+                modpack.LatestVersionId,
+                zipPath).ConfigureAwait(false);
 
             ZipFile.ExtractToDirectory(zipPath, installPath, true);
 
-            var fileTree = await BackendApiService.GetVersionTreeAsync(modpack.LatestVersionId);
-
+            var fileTree = await BackendApiService.GetVersionTreeAsync(modpack.LatestVersionId).ConfigureAwait(false);
             var fileTreePath = ModpackTreeService.GetTreeJsonPath(installPath);
-            
+
             ModpackTreeService.Save(fileTreePath, fileTree!);
-
-		} finally {
-			if (File.Exists(zipPath))
-				File.Delete(zipPath);
-		}
-
-		if(nonDiscoverableMedatadata) {
-			ModpackMedatataService registry = new(installPath);
-
-			registry.Create(metadata);
-		} else {
-			ModpackMedatataService registry = new();
-
-			registry.Create(metadata);
+        }
+        finally {
+            if (File.Exists(zipPath))
+                File.Delete(zipPath);
         }
 
-		await InstallModsOfModpack(metadata, serverInstall);
-		return metadata;
-	}
+        var storage = new ModpackMetadataStorage(metadataFilePath, metadata);
+        await storage.SaveAsync().ConfigureAwait(false);
 
-	public static async Task<ModpackMetadata?> UpdateModpack(ModpackMetadata metadata) {
-		if (metadata.ModpackId is null)
-			return null;
-		
-		if (!Directory.Exists(metadata.InstallPath))
-			Directory.CreateDirectory(metadata.InstallPath);
+        notification.Title = "Downloading mods of modpack...";
+        notification.ReportProgress(0);
 
-		var treeService = new ModpackTreeService(metadata.InstallPath);
+        var manifestService = await ModpackManifestStorage.CreateInstanceAsync(installPath).ConfigureAwait(false);
 
-		var remoteMetadata = await BackendApiService.GetModpack(metadata.ModpackId.Value, null)
-		                     ?? throw new Exception("Modpack not found.");
+        await manifestService.FilesystemSyncService.SyncToFileSystemAsync(serverInstall).ConfigureAwait(false);
 
-		var remoteTree = await BackendApiService.GetVersionTreeAsync(remoteMetadata.LatestVersion.Id)
-		                 ?? throw new Exception("Failed to download modpack tree.");
-		
-		var oldManifest = await BackendApiService.GetModpackManifestAsync(metadata.VersionId);
-		var newManifest = await BackendApiService.GetModpackManifestAsync(remoteMetadata.LatestVersion.Id);
-		
-		if (oldManifest is null || newManifest is null) 
-			throw new Exception("Failed to download modpack manifests.");
+        return storage;
+    }
 
-		var diff = ModpackTreeDiff.Create(treeService.ModpackTree, remoteTree);
+    public static async Task<bool> UpdateModpackAsync(ModpackMetadataStorage metadataStorage) {
+        var metadata = metadataStorage.GetData();
 
-		// Șterge fișierele eliminate
-		foreach (var file in diff.FilesToDelete) {
-			var fullPath = Path.Combine(metadata.InstallPath, file.FilePath);
+        if (metadata.ModpackId is null)
+            return false;
 
-			if (File.Exists(fullPath))
-				File.Delete(fullPath);
+        Directory.CreateDirectory(metadata.InstallPath);
 
-			RemoveEmptyDirectories(Path.GetDirectoryName(fullPath));
-		}
+        var treeService = new ModpackTreeService(metadata.InstallPath);
 
-		// Descarcă fișierele noi/modificate
-		foreach (var file in diff.FilesToDownload) {
-			var destination = Path.Combine(metadata.InstallPath, file.FilePath);
+        // 1. Fetch independent remote data in parallel
+        var remoteMetadataTask = BackendApiService.GetModpack(metadata.ModpackId.Value);
+        var oldManifestTask = BackendApiService.GetModpackManifestAsync(metadata.VersionId);
 
-			if (file.FilePath == "manifest.json") {
-				continue;
-			}
+        await Task.WhenAll(remoteMetadataTask, oldManifestTask).ConfigureAwait(false);
 
-			Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        var remoteMetadata = await remoteMetadataTask.ConfigureAwait(false) ?? throw new Exception("Modpack not found.");
+        var oldManifest = await oldManifestTask.ConfigureAwait(false);
 
-			await BackendApiService.DownloadStoredFileAsync(
-				file.Sha256,
-				destination);
-		}
+        // 2. Fetch the new version data in parallel using the remote metadata ID
+        var latestVersionId = remoteMetadata.LatestVersion.Id;
+        var remoteTreeTask = BackendApiService.GetVersionTreeAsync(latestVersionId);
+        var newManifestTask = BackendApiService.GetModpackManifestAsync(latestVersionId);
 
-		treeService.ModpackTree = remoteTree;
-		treeService.Save();
-		
-		var manifestService = ModpackManifestService.CreateInstance(metadata.InstallPath);
-		var manifestDiff = ManifestDiffCreator.Create(oldManifest, newManifest);
+        await Task.WhenAll(remoteTreeTask, newManifestTask).ConfigureAwait(false);
 
-		foreach (var mod in manifestDiff.Removed) {
-			manifestService.RemoveMod(mod);
-		}
+        var remoteTree = await remoteTreeTask.ConfigureAwait(false) ?? throw new Exception("Failed to download modpack tree.");
+        var newManifest = await newManifestTask.ConfigureAwait(false);
 
-		foreach (var mod in manifestDiff.Updated) {
-			await manifestService.InstallModAsync(mod.NewMod, true);
-		}
+        if (oldManifest is null || newManifest is null)
+            throw new Exception("Failed to download modpack manifests.");
 
-		foreach (var mod in manifestDiff.Added) {
-			await manifestService.InstallModAsync(mod, true);
-		}
+        // 3. Process tree diffs and clean up deleted files
+        var diff = ModpackTreeDiff.Create(treeService.ModpackTree, remoteTree);
 
-		metadata.VersionId = remoteMetadata.LatestVersion.Id;
-		metadata.VersionSemver = remoteMetadata.LatestVersion.Semver;
-		new ModpackMedatataService().Save(metadata);
-		return metadata;
-	}
+        foreach (var fullPath in diff.FilesToDelete.Select(file => Path.Combine(metadata.InstallPath, file.FilePath))) {
+            if (File.Exists(fullPath))
+                File.Delete(fullPath);
 
-	private static void RemoveEmptyDirectories(string? directory) {
-		while (!string.IsNullOrEmpty(directory) &&
-		       Directory.Exists(directory) &&
-		       !Directory.EnumerateFileSystemEntries(directory).Any())
-		{
-			Directory.Delete(directory);
-			directory = Path.GetDirectoryName(directory);
-		}
-	}
+            RemoveEmptyDirectories(Path.GetDirectoryName(fullPath));
+        }
+
+        // 4. Download new/modified files
+        foreach (var file in diff.FilesToDownload) {
+            if (file.FilePath == "manifest.json")
+                continue;
+
+            var destination = Path.Combine(metadata.InstallPath, file.FilePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+
+            await BackendApiService.DownloadStoredFileAsync(
+                file.Sha256,
+                destination).ConfigureAwait(false);
+        }
+
+        treeService.ModpackTree = remoteTree;
+        treeService.Save();
+
+        // 5. Handle mod installation changes via manifest diff
+        var store = await ModpackManifestStorage.CreateInstanceAsync(metadata.InstallPath).ConfigureAwait(false);
+        var installationManager = new ModInstallationManager(store);
+        var manifestDiff = ManifestDiffCreator.Create(oldManifest, newManifest);
+
+        foreach (var mod in manifestDiff.Removed) {
+            installationManager.RemoveMod(mod);
+        }
+
+        foreach (var mod in manifestDiff.Updated) {
+            await installationManager.InstallModAsync(mod.NewMod, true).ConfigureAwait(false);
+        }
+
+        foreach (var mod in manifestDiff.Added) {
+            await installationManager.InstallModAsync(mod, true).ConfigureAwait(false);
+        }
+
+        // 6. Persist updated metadata
+        metadataStorage.Update(local => {
+            local.VersionId = latestVersionId;
+            local.VersionSemver = remoteMetadata.LatestVersion.Semver;
+        });
+
+        return true;
+    }
+
+    private static void RemoveEmptyDirectories(string? directory) {
+        while (!string.IsNullOrEmpty(directory) &&
+               Directory.Exists(directory) &&
+               !Directory.EnumerateFileSystemEntries(directory).Any()) {
+            Directory.Delete(directory);
+            directory = Path.GetDirectoryName(directory);
+        }
+    }
 }
-

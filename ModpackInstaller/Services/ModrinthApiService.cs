@@ -49,9 +49,9 @@ public static class ModrinthApiService {
         return await WebService.GetJson<ModrinthVersion>(url, DefaultHeaders);
     }
 
-    public static async Task<ModrinthProject?> GetProjectAsync(string projectIdOrSlug) {
+    public static Task<ModrinthProject?> GetProjectAsync(string projectIdOrSlug) {
         var url = $"{BaseUrl}/project/{projectIdOrSlug}";
-        return await WebService.GetJson<ModrinthProject>(url, DefaultHeaders);
+        return WebService.GetJson<ModrinthProject>(url, DefaultHeaders);
     }
     
     public static async Task<List<ModrinthTeamMember>> GetProjectMembersAsync(string projectIdOrSlug) {
@@ -82,7 +82,7 @@ public static class ModrinthApiService {
                       $"&offset={offset}" +
                       $"&limit={pageSize}" +
                       $"&facets=[" +
-                      $"[\"categories:{context.Loader}\"]," +
+                      $"[\"categories:{context.Loader.ToString().ToLower()}\"]," +
                       $"[\"game_versions:{context.GameVersion}\"]," +
                       $"[\"project_type:mod\"]" +
                       $"]";

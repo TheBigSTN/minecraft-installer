@@ -15,7 +15,7 @@ public class FileNode : ReactiveObject {
     public bool IsDirectory { get; }
     public bool IsLocked { get; private set; }
 
-    public ObservableCollection<FileNode> Children { get; } = new();
+    public ObservableCollection<FileNode> Children { get; } = [];
 
     private bool _isChecked = true;
     public bool IsChecked {

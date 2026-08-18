@@ -1,43 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using ModpackInstaller.Services;
 using ModpackInstaller.Services.Modpack;
 
 namespace ModpackInstaller.Desktop;
+
 public static class CliRunner {
-	public static async Task<int> RunAsync( string[] args ) {
+    public static async Task<int> RunAsync(string[] args) {
         var command = args[0].ToLowerInvariant();
 
-        var knownFlags = new HashSet<string>
-				{
-			"--server",
-			"--non-discoverable"
-		};
+        var knownFlags = new HashSet<string> { "--server", "--non-discoverable" };
 
         var flags = new HashSet<string>();
         var positionals = new List<string>();
 
-        for(int i = 1; i < args.Length; i++) {
+        for (var i = 1; i < args.Length; i++) {
             var arg = args[i];
 
-            if(arg.StartsWith("--")) {
-                if(!knownFlags.Contains(arg)) {
+            if (arg.StartsWith("--")) {
+                if (!knownFlags.Contains(arg)) {
                     Console.WriteLine($"Unknown flag: {arg}");
                     return 1;
                 }
 
                 flags.Add(arg);
-            } else {
+            }
+            else {
                 positionals.Add(arg);
             }
         }
 
         try {
-            switch(command) {
+            Debug.Print(command);
+            switch (command) {
                 case "help":
                 case "-help":
                 case "--help":
@@ -50,7 +48,7 @@ public static class CliRunner {
                     return 0;
 
                 case "install":
-                    if(positionals.Count < 1) {
+                    if (positionals.Count < 1) {
                         Console.WriteLine("Missing modpack id.");
                         return 1;
                     }
@@ -68,7 +66,7 @@ public static class CliRunner {
                     return 0;
 
                 case "sync":
-                    await SyncFileSistemToModpack();
+                    await SyncFileSistemToModpackAsync();
                     return 0;
 
                 default:
@@ -76,93 +74,94 @@ public static class CliRunner {
                     ShowHelp();
                     return 1;
             }
-        } catch(Exception ex) {
-			Console.WriteLine(ex);
-			return -1;
-		}
-	}
+        }
+        catch (Exception ex) {
+            Console.WriteLine(ex);
+            return -1;
+        }
+    }
 
-	private static async Task DiscoverAsync() {
-		var modpacks = await BackendApiService.GetPublicModpacksAsync();
-		if(modpacks == null)
-			return;
+    private static async Task DiscoverAsync() {
+        var modpacks = await BackendApiService.GetPublicModpacksAsync();
 
-		foreach(var mp in modpacks) {
-			Console.WriteLine($"{mp.Id} - {mp.ModpackName}");
-		}
-	}
+        foreach (var mp in modpacks) {
+            Console.WriteLine($"{mp.Id} - {mp.ModpackName}");
+        }
+    }
 
-	private static async Task InstallAsync( 
-			string modpackId,
-			bool isServer,
-			bool nonDiscoverable
-		) {
-		var modpacks = await BackendApiService.GetPublicModpacksAsync();
+    private static async Task InstallAsync(
+        string modpackId,
+        bool isServer,
+        bool nonDiscoverable
+    ) {
+        var modpacks = await BackendApiService.GetPublicModpacksAsync();
 
-		var modpack = modpacks.FirstOrDefault(x => x.Id == modpackId);
+        var modpack = modpacks.FirstOrDefault(x => x.Id == modpackId);
 
-		if(modpack == null) {
-			Console.WriteLine($"Modpack {modpackId} not found");
-			return;
-		}
-
-		if(ModpackMedatataService.ExistsModpack(Guid.Parse(modpackId)) && !nonDiscoverable) {
-			Console.WriteLine($"Modpack {modpackId} is already installed globaly");
-            Console.WriteLine($"If you still wish to install it  use the --non-discoverable flag");
-            Console.WriteLine($"That installs the modpack but you can't use the GUI to modify it");
-            Console.WriteLine($"You have to use the CLI");
+        if (modpack == null) {
+            Console.WriteLine($"Modpack {modpackId} not found");
             return;
-		}
+        }
 
-        ModpackMedatataService localMetadataService = new(Environment.CurrentDirectory);
-        if( localMetadataService.Exists() ) {
+        if (ModpackMetadataRegistry.Exists(Guid.Parse(modpackId)) && !nonDiscoverable) {
+            Console.WriteLine($"Modpack {modpackId} is already installed globaly");
+            Console.WriteLine("If you still wish to install it  use the --non-discoverable flag");
+            Console.WriteLine("That installs the modpack but you can't use the GUI to modify it");
+            Console.WriteLine("You have to use the CLI");
+            return;
+        }
+
+        ModpackMetadataStorage localMetadataService = new(Environment.CurrentDirectory);
+        if (localMetadataService.Exists) {
             Console.WriteLine("A modpack is already installed in the current directory");
             Console.WriteLine("Please choose a different directory or uninstall the existing modpack");
             return;
         }
 
-		Console.WriteLine($"Installing modpack {modpack.ModpackName}");
+        Console.WriteLine($"Installing modpack {modpack.ModpackName}");
 
         var installPath = Environment.CurrentDirectory;
 
-		await ModpackInstallService.DownloadAndInstallModpack(
-			modpack,
-			installPath,
-			isServer,
-			nonDiscoverable,
-			false);
+        await ModpackInstallService.DownloadAndInstallModpackAsync(
+            modpack,
+            installPath,
+            isServer,
+            nonDiscoverable,
+            false).ConfigureAwait(false);
 
-		Console.WriteLine();
-		Console.WriteLine("Install complete.");
-	}
+        Console.WriteLine();
+        Console.WriteLine("Install complete.");
+    }
 
-    private static async Task SyncFileSistemToModpack() {
+    private static async Task SyncFileSistemToModpackAsync() {
         Console.WriteLine("Syncing modpack manifest with filesystem...");
         Console.WriteLine("This fixes issues with mods and stuff");
-        var modpackManifest = ModpackManifestService.CreateInstance(Environment.CurrentDirectory);
-        ModpackMedatataService localMetadataService = new(Environment.CurrentDirectory);
 
-        if (!localMetadataService.Exists()) {
-	        Console.WriteLine("There is no modpack installed in the current directory");
-	        return;
+        var modpackManifest = await ModpackManifestStorage.CreateInstanceAsync(Environment.CurrentDirectory)
+                                                          .ConfigureAwait(false);
+        ModpackMetadataStorage localMetadataService = new(Environment.CurrentDirectory);
+
+        if (!localMetadataService.Exists) {
+            Console.WriteLine("There is no modpack installed in the current directory");
+            return;
         }
-	        
-        var localMetadata = localMetadataService.Load();
 
-        await modpackManifest.LoadSync(localMetadata.IsServerInstall);
+        var localMetadata = localMetadataService.GetData();
+
+        await modpackManifest.FilesystemSyncService
+                             .SyncToFileSystemAsync(localMetadata.IsServerInstall)
+                             .ConfigureAwait(false);
     }
 
     private static async Task UpdateAsync() {
-		var installPath = Environment.CurrentDirectory;
+        var installPath = Environment.CurrentDirectory;
 
-		var metadataService = new ModpackMedatataService(installPath);
+        var metadataService = new ModpackMetadataStorage(installPath);
 
-		var metadata = metadataService.Load();
+        await ModpackInstallService.UpdateModpackAsync(metadataService);
 
-		await ModpackInstallService.UpdateModpack(metadata);
-
-		Console.WriteLine("Update completed.");
-	}
+        Console.WriteLine("Update completed.");
+    }
 
     private static void ShowHelp() {
         Console.WriteLine("Modpack Installer CLI");

@@ -34,8 +34,7 @@ public partial class SideNavigationBarViewModel : ViewModelBase {
     [Reactive] private NavigationPage _selectedPage;
     
     public SideNavigationBarViewModel(MainViewModel global) {
-        var medatataService = new ModpackMedatataService();
-        Modpacks = new ObservableCollection<ModpackMetadata>(ModpackMedatataService.LoadAll());
+        Modpacks = new ObservableCollection<ModpackMetadata>(ModpackMetadataRegistry.LoadAll());
         _global = global;
         _selectedPage = NavigationPage.Home;
 
@@ -43,10 +42,15 @@ public partial class SideNavigationBarViewModel : ViewModelBase {
 
         DiscoveryCommand = ReactiveCommand.Create(global.OpenDiscovery);
         
-        OpenModpackCommand = ReactiveCommand.Create<ModpackMetadata>(global.OpenModpack);
+        OpenModpackCommand = ReactiveCommand.CreateFromTask<ModpackMetadata>(async item =>
+        {
+            var storage = await ModpackMetadataRegistry.LoadAsync(item.Id).ConfigureAwait(false);
+            if (storage != null)
+                await global.OpenModpackAsync(storage).ConfigureAwait(false);
+        });
         
         CreateModpackCommand = ReactiveCommand.CreateFromTask(async () => {
-            var result = await _global.ShowDialog(new CreateModpackDialogViewModel(global));
+            var result = await _global.ShowDialogAsync(new CreateModpackDialogViewModel(global));
 
             switch (result.Status) {
                 case CreateModpackDialogResult.InstallModpack:
@@ -63,12 +67,10 @@ public partial class SideNavigationBarViewModel : ViewModelBase {
                         LoaderVersion = result.Response.LoaderVersion
                     };
                     
-                    if (await _global.ShowDialog(new ManualSetupDialogViewModel(data)) is not ModpackManualSetupResponse.Finished) 
+                    if (await _global.ShowDialogAsync(new ManualSetupDialogViewModel(data)) is not ModpackManualSetupResponse.Finished) 
                         return;
-                    
-                    ModpackMedatataService modpackMedatataService = new();
 
-                    modpackMedatataService.Create(result.Response);
+                    await ModpackMetadataRegistry.CreateAsync(result.Response);
                     break;
                 case CreateModpackDialogResult.ImportInstance:
                 case CreateModpackDialogResult.Cancel:
@@ -76,9 +78,9 @@ public partial class SideNavigationBarViewModel : ViewModelBase {
             }
         });
 
-        ModpackMedatataService.MetadataChanged += () => {
+        ModpackMetadataRegistry.MetadataChanged += () => {
             Modpacks.Clear();
-            Modpacks.AddRange(ModpackMedatataService.LoadAll());
+            Modpacks.AddRange(ModpackMetadataRegistry.LoadAll());
         };
         
         SettingsCommand = ReactiveCommand.Create(() => {

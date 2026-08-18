@@ -4,6 +4,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using ModpackInstaller.Converters;
 using ModpackInstaller.Models;
+using ModpackInstaller.Models.Modrinth;
+using ModpackInstaller.Services.Helpers;
+using Environment = System.Environment;
 
 namespace ModpackInstaller.Infrastructure;
 
@@ -45,19 +48,21 @@ public static class AppVariables {
     }
 
     public static readonly JsonSerializerOptions DefaultJsonOptions = new() {
-        WriteIndented = true
+        WriteIndented = true,
+        Converters = {
+            new FlexibleGuidConverter(),
+            new FlexibleNullableGuidConverter(),
+            new MigratedDataJsonConverterFactory()
+        }
     };
-
-    static AppVariables() {
-        DefaultJsonOptions.Converters.Add(new FlexibleGuidConverter());
-        DefaultJsonOptions.Converters.Add(new FlexibleNullableGuidConverter());
-    }
 
     public static readonly JsonSerializerOptions WebJsonOptions = new() {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         Converters = {
-            new JsonStringEnumConverter()
+            // new JsonStringEnumConverter(), this is kinda debug removal since i don't know if i need it
+            new MigratedDataJsonConverterFactory(),
+            new UniversalEnumConverterFactory()
         }
     };
 

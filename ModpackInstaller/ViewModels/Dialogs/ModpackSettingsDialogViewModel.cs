@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using DynamicData;
 using ModpackInstaller.Models;
 using ModpackInstaller.Models.Backend;
-using ModpackInstaller.Models.DTOs;
+using ModpackInstaller.Models.Interfaces;
 using ModpackInstaller.Services;
 using ModpackInstaller.Services.Modpack;
 using ReactiveUI;
@@ -14,7 +14,7 @@ using ReactiveUI.SourceGenerators;
 namespace ModpackInstaller.ViewModels.Dialogs;
 
 public partial class ModpackSettingsDialogViewModel : DialogViewModel<Unit> {
-    private readonly ModpackMetadata _metadata;
+    private readonly IReadOnlyModpackMetadata _metadata;
 
     [Reactive] private bool _isPublic;
 
@@ -35,9 +35,10 @@ public partial class ModpackSettingsDialogViewModel : DialogViewModel<Unit> {
 
     private ModpackSettingsDialogViewModel(
         MainViewModel main,
-        ModpackMetadata metadata) {
-        _metadata = metadata;
-        ModpackPublicizeService modpackPublicize = new(metadata);
+        ModpackMetadataStorage metadataStorage,
+        ModpackManifestStorage manifestStorage) {
+        _metadata = metadataStorage.GetData();
+        ModpackPublicizeService modpackPublicize = new(metadataStorage);
 
         CloseCommand = ReactiveCommand.Create(() => Close(Unit.Default));
 
@@ -45,59 +46,60 @@ public partial class ModpackSettingsDialogViewModel : DialogViewModel<Unit> {
             if (_metadata.ModpackId is not null)
                 return;
 
-            await modpackPublicize.CreateOnServerAsync(false);
+            await modpackPublicize.CreateOnServerAsync(false).ConfigureAwait(false);
             
-            await LoadModpackInfo();
-            await LoadVersions();
+            await LoadModpackInfoAsync().ConfigureAwait(false);
+            await LoadVersionsAsync().ConfigureAwait(false);
 
             this.RaisePropertyChanged(nameof(IsPublished));
             this.RaisePropertyChanged(nameof(IsOwnedByYou));
         });
 
         CreateNewVersionCommand = ReactiveCommand.CreateFromTask(async () => {
-            await main.ShowDialog(new CreateModpackUpdateDialogViewModel(metadata));
+            await main.ShowDialogAsync(new CreateModpackUpdateDialogViewModel(metadataStorage, manifestStorage)).ConfigureAwait(false);
 
-            await LoadVersions();
+            await LoadVersionsAsync().ConfigureAwait(false);
         });
 
         DeleteModpackCommand = ReactiveCommand.Create(() => {
-            var successful = new ModpackMedatataService().Delete(metadata.Id, out _);
+            var successful = ModpackMetadataRegistry.Delete(_metadata.Id, out _);
 
             if (successful) {
                 main.OpenHome();
                 // var instance = ModpackManifestService.CreateInstance(metadata.InstallPath);
-                ModpackManifestService.ReleaseInstance(metadata.InstallPath);
+                ModpackManifestStorage.ReleaseInstance(_metadata.InstallPath);
             }
 
             Close(Unit.Default);
         });
     }
 
-    public static async Task<ModpackSettingsDialogViewModel> CreateInstance(
+    public static async Task<ModpackSettingsDialogViewModel> CreateInstanceAsync(
         MainViewModel main,
-        ModpackMetadata metadata) {
-        var vm = new ModpackSettingsDialogViewModel(main, metadata);
+        ModpackMetadataStorage metadataStorage,
+        ModpackManifestStorage manifestStorage) {
+        var vm = new ModpackSettingsDialogViewModel(main, metadataStorage, manifestStorage);
 
-        await vm.LoadVersions();
-        await vm.LoadModpackInfo();
+        await vm.LoadVersionsAsync().ConfigureAwait(false);
+        await vm.LoadModpackInfoAsync().ConfigureAwait(false);
 
         return vm;
     }
 
     [Reactive] private ModpackDto? _remoteModpackInfo;
 
-    private async Task LoadModpackInfo() {
+    private async Task LoadModpackInfoAsync() {
         if (_metadata.ModpackId is null) return;
         
-        _remoteModpackInfo = await BackendApiService.GetModpack(_metadata.ModpackId.Value);
+        _remoteModpackInfo = await BackendApiService.GetModpack(_metadata.ModpackId.Value).ConfigureAwait(false);
 
         IsPublic = _remoteModpackInfo is not null;
     }
 
 
-    private async Task LoadVersions() {
+    private async Task LoadVersionsAsync() {
         if (_metadata.ModpackId is null) return;
-        var versions = await BackendApiService.GetModpackVersionsAsync(_metadata.ModpackId.Value);
+        var versions = await BackendApiService.GetModpackVersionsAsync(_metadata.ModpackId.Value).ConfigureAwait(false);
         ModpackVersions.Clear();
         ModpackVersions.AddRange(versions.ConvertAll(i => new ModpackVersionItemViewModel(i)));
     }

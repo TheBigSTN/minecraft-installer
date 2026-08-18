@@ -13,8 +13,6 @@ using ReactiveUI.SourceGenerators;
 namespace ModpackInstaller.ViewModels.ModpackBody;
 
 public partial class ContentViewModel : ViewModelBase {
-    private readonly ModpackMetadata _modpackMetadata;
-
     [Reactive] private string _searchQuery= "";
 
     public ReactiveCommand<ModInfo, Unit> RemoveModCommand { get; }
@@ -26,42 +24,46 @@ public partial class ContentViewModel : ViewModelBase {
     
     private readonly ObservableCollection<ModInfo> _allMods = [];
 
-    public ContentViewModel(MainViewModel main, ModpackMetadata modpackMetadata) {
-        _modpackMetadata = modpackMetadata;
-        var manifestService = ModpackManifestService.CreateInstance(modpackMetadata.InstallPath);
+    public ContentViewModel(MainViewModel main, 
+                            ModpackMetadataStorage modpackMetadataStorage,
+                            ModpackManifestStorage modpackManifestStorage) {
+        ModInstallationManager modManager = new (modpackManifestStorage);
+        ModFilesystemSyncService modSyncService = new(modpackManifestStorage, modManager);
+        ModStateService modStateService = new (modpackManifestStorage);
         
-        _allMods.AddRange(manifestService.InstalledMods.ToList());
+        _allMods.AddRange(modpackManifestStorage.InstalledMods.ToList());
         
         this.WhenAnyValue(x => x.SearchQuery)
             .Subscribe(_ => FilterMods());
 
-        manifestService.InstalledMods.Changed += () => {
+        modpackManifestStorage.InstalledMods.Changed += data => {
             _allMods.Clear();
-            _allMods.AddRange(manifestService.InstalledMods.ToList());
+            _allMods.AddRange(data.ToList());
             FilterMods();
         };
         FilterMods();
         
         RemoveModCommand = ReactiveCommand.Create<ModInfo>(modInfo => {
-            manifestService.RemoveMod(modInfo);
+            modManager.RemoveMod(modInfo);
 
             _mods.Remove(modInfo);
         });
         
         ToggleModCommand = ReactiveCommand.Create<ModInfo>(modInfo => {
-            manifestService.EnableDisableMod(modInfo.ProjectId, !modInfo.Enabled);
+            modStateService.EnableDisableMod(modInfo.ProjectId, !modInfo.Enabled);
         });
         
-        BrowseContentCommand = ReactiveCommand.Create(() => {
-            main.OpenDiscovery(modpackMetadata);
+        BrowseContentCommand = ReactiveCommand.CreateFromTask(async () => {
+            await main.OpenDiscoveryAsync(modpackMetadataStorage).ConfigureAwait(false);
         });
 
         _ = Task.Run(async () => {
-            await manifestService.SyncToFileSistemAsync(modpackMetadata.IsServerInstall);
-            await manifestService.SyncWithFilesystemAsync();
+            await modSyncService.SyncToFileSystemAsync(modpackMetadataStorage.GetData().IsServerInstall).ConfigureAwait(false);
+            await modSyncService.SyncWithFilesystemAsync().ConfigureAwait(false);
             FilterMods();
         });
     }
+
     private void FilterMods() {
         Mods.Clear();
 

@@ -1,16 +1,20 @@
 ﻿
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using DynamicData;
+using ModpackInstaller.Services.Modpack;
+using ModpackInstaller.Services.Notifications;
 
 namespace ModpackInstaller.ViewModels;
 
 using Body;
 using Sidebars;
-using Models;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using ReactiveUI.SourceGenerators;
 
 public partial class MainViewModel : ViewModelBase {
+    // public static MainViewModel Instance { get; private set; } = null!;
 
     [Reactive]
     private SideNavigationBarViewModel _sideNavigationViewModel;
@@ -19,8 +23,15 @@ public partial class MainViewModel : ViewModelBase {
     private ViewModelBase _bodyViewModel;
     
     public MainViewModel() {
+        NotificationManager.Notifications.Changed += list => {
+            NotificationStack.Clear();
+            NotificationStack.AddRange(list);
+        };
+        NotificationManager.IsConsole = false;
         SideNavigationViewModel = new SideNavigationBarViewModel(this);
         OpenHome();
+
+        // Instance = this;
     }
 
     [MemberNotNull(nameof(_bodyViewModel))]
@@ -32,12 +43,13 @@ public partial class MainViewModel : ViewModelBase {
         BodyViewModel = new DiscoveryPageViewModel(this);
     }
     
-    public void OpenDiscovery(ModpackMetadata modpack) {
-        BodyViewModel = new DiscoveryPageViewModel(this, modpack);
+    public async Task OpenDiscoveryAsync(ModpackMetadataStorage modpack) {
+        BodyViewModel = await DiscoveryPageViewModel.CreateInstanceAsync(this, modpack).ConfigureAwait(false);
     }
     
-    public void OpenModpack(ModpackMetadata modpack) =>
-        BodyViewModel = new ModpackPageViewModel(this, modpack);
+    public async Task OpenModpackAsync(ModpackMetadataStorage modpackStorage) =>
+        BodyViewModel = await ModpackPageViewModel.CreateInstanceAsync(this, modpackStorage)
+                                                  .ConfigureAwait(true);
     
     [Reactive] 
     private ViewModelBase? _currentDialog;
@@ -50,7 +62,7 @@ public partial class MainViewModel : ViewModelBase {
     
     private readonly Stack<ViewModelBase> _dialogStack = new();
     
-    public async Task<T> ShowDialog<T>(DialogViewModel<T> dialog) {
+    public async Task<T> ShowDialogAsync<T>(DialogViewModel<T> dialog) {
         _dialogStack.Push(dialog);
 
         CurrentDialog = dialog;
@@ -71,6 +83,8 @@ public partial class MainViewModel : ViewModelBase {
 
         return result;
     }
-    
-    
+
+    public ObservableCollection<NotificationCardViewModel> NotificationStack = [];
+
+
 }

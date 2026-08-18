@@ -8,6 +8,7 @@ using DynamicData;
 using ModpackInstaller.Infrastructure;
 using ModpackInstaller.Models;
 using ModpackInstaller.Models.DTOs;
+using ModpackInstaller.Models.Interfaces;
 using ModpackInstaller.Models.Modrinth;
 using ModpackInstaller.Services;
 using ModpackInstaller.Services.Modpack;
@@ -19,13 +20,13 @@ namespace ModpackInstaller.ViewModels.Body;
 
 public partial class DiscoveryPageViewModel : ViewModelBase {
     private readonly MainViewModel _main;
-    private readonly ModpackManifestService? _modpackManifestService;
+    private ModpackManifestStorage? _store;
 
     [Reactive] private DiscoveryCategory _selectedCategory;
 
-    [Reactive] private ModpackMetadata? _modpackMetadata;
+    [Reactive] private IReadOnlyModpackMetadata? _modpackMetadata;
 
-    [Reactive] private string _searchQuerry;
+    [Reactive] private string _searchQuery;
 
     [Reactive] private InstallPlatform _selectedModpackLoader;
     public ObservableCollection<DiscoveryItem> DiscoveryItems { get; } = [];
@@ -34,17 +35,17 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
     public ReactiveCommand<DiscoveryItem, Unit> OpenItemCommand { get; }
 
     public DiscoveryPageViewModel(MainViewModel main) {
-        _searchQuerry = "";
+        _searchQuery = "";
         _main = main;
         _selectedCategory = DiscoveryCategory.Modpacks;
-        var loadCommand = ReactiveCommand.CreateFromTask<DiscoveryCategory>(AsyncLoad);
+        var loadCommand = ReactiveCommand.CreateFromTask<DiscoveryCategory>(LoadAsync);
 
         this.WhenAnyValue(x => x.SelectedCategory)
             .Throttle(TimeSpan.FromMilliseconds(300))
             .ObserveOn(RxApp.MainThreadScheduler)
             .InvokeCommand(loadCommand);
 
-        this.WhenAnyValue(x => x.SearchQuerry)
+        this.WhenAnyValue(x => x.SearchQuery)
             .Skip(1)
             .Throttle(TimeSpan.FromMilliseconds(300))
             .Select(_ => SelectedCategory)
@@ -56,21 +57,21 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(loader => { AppSettings.Settings.SetInstallTarget(loader); });
 
-        OpenItemCommand = ReactiveCommand.CreateFromTask<DiscoveryItem>(OpenItem);
+        OpenItemCommand = ReactiveCommand.CreateFromTask<DiscoveryItem>(OpenItemAsync);
     }
 
-    private async Task OpenItem(DiscoveryItem item) {
+    private async Task OpenItemAsync(DiscoveryItem item) {
         switch (SelectedCategory) {
             case DiscoveryCategory.Modpacks:
-                if (item.Source is PublicModpackRequestResponse itemSource) {
-                    var response = await _main.ShowDialog(
+                if (item.Source is PublicModpackRequestResponse) {
+                    var response = await _main.ShowDialogAsync(
                         await ModpackSelectVersionForInstallDialogViewModel
-                            .CreateInstance(Guid.Parse(item.Id))
-                    );
+                              .CreateInstance(Guid.Parse(item.Id)).ConfigureAwait(false)
+                    ).ConfigureAwait(false);
 
                     if (response is null) return;
 
-                    await InstallItem(item, response.Id, response.Semver);
+                    await InstallItemAsync(item, response.Id, response.Semver).ConfigureAwait(false);
                 }
 
                 break;
@@ -83,17 +84,28 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
         }
     }
 
-    public DiscoveryPageViewModel(MainViewModel main, ModpackMetadata modpackMetadata) : this(main) {
-        _modpackMetadata = modpackMetadata;
-        _modpackManifestService = ModpackManifestService.CreateInstance(modpackMetadata.InstallPath);
+    private DiscoveryPageViewModel(MainViewModel main, ModpackMetadataStorage modpackMetadataStorage) : this(main) {
+        _modpackMetadata = modpackMetadataStorage.GetData();
         SelectedCategory = DiscoveryCategory.Mods;
     }
 
-    private async Task<Unit> AsyncLoad(DiscoveryCategory discoveryCategory) {
+    public static async Task<DiscoveryPageViewModel> CreateInstanceAsync(
+        MainViewModel main,
+        ModpackMetadataStorage modpackMetadataStorage) {
+        var data = new DiscoveryPageViewModel(main, modpackMetadataStorage) {
+            _store = await ModpackManifestStorage
+                           .CreateInstanceAsync(modpackMetadataStorage.GetData().InstallPath)
+                           .ConfigureAwait(false)
+        };
+
+        return data;
+    }
+
+    private async Task<Unit> LoadAsync(DiscoveryCategory discoveryCategory) {
         _allDiscoveryItems.Clear();
         switch (SelectedCategory) {
             case DiscoveryCategory.Modpacks:
-                var results = await BackendApiService.GetPublicModpacksAsync();
+                var results = await BackendApiService.GetPublicModpacksAsync().ConfigureAwait(false);
 
                 foreach (var item in results.Select(result => new DiscoveryItem {
                              Id = result.Id,
@@ -103,7 +115,11 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
                              Source = result,
                              IsInstalled = false,
                              IsInstalling = false,
-                             InstallCommand = ReactiveCommand.CreateFromTask<DiscoveryItem>(async item => await InstallItem(item))
+                             InstallCommand =
+                                 ReactiveCommand
+                                     .CreateFromTask<
+                                         DiscoveryItem>(item =>
+                                                            InstallItemAsync(item))
                          })) {
                     _allDiscoveryItems.Add(item);
                 }
@@ -111,9 +127,10 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
                 break;
             case DiscoveryCategory.Mods:
                 if (_modpackMetadata == null ||
-                    _modpackManifestService == null) return Unit.Default;
+                    _store == null) return Unit.Default;
 
-                var mods = await ModrinthApiService.SearchOnModrinthAsync(SearchQuerry, _modpackMetadata, 0);
+                var mods = await ModrinthApiService.SearchOnModrinthAsync(SearchQuery, _modpackMetadata, 0)
+                                                   .ConfigureAwait(false);
 
                 mods.ForEach(mod => {
                     _allDiscoveryItems.Add(new DiscoveryItem {
@@ -123,9 +140,13 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
                         Title = mod.Title ?? "",
                         Source = mod,
                         IsInstalled =
-                            _modpackManifestService.IsModInstalled(new ModInfo { ProjectId = mod.Id, VersionId = "" }),
+                            _store.StateService.IsModInstalled(
+                                new ModVersion(mod.Id, "")),
                         IsInstalling = false,
-                        InstallCommand = ReactiveCommand.CreateFromTask<DiscoveryItem>(async item => await InstallItem(item))
+                        InstallCommand =
+                            ReactiveCommand
+                                .CreateFromTask<
+                                    DiscoveryItem>(item => InstallItemAsync(item))
                     });
                 });
 
@@ -142,25 +163,25 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
         return Unit.Default;
     }
 
-    private async Task InstallItem(DiscoveryItem item, Guid? versionId = null, string? versionSemver = null) {
+    private async Task InstallItemAsync(DiscoveryItem item, Guid? versionId = null, string? versionSemver = null) {
         item.IsInstalling = true;
         try {
             switch (SelectedCategory) {
                 case DiscoveryCategory.Modpacks: {
                     if (item.Source is PublicModpackRequestResponse itemSource) {
-                        var exists = ModpackMedatataService.ExistsModpack(Guid.Parse(item.Id));
+                        var exists = ModpackMetadataRegistry.Exists(Guid.Parse(item.Id));
 
                         if (exists) {
                             var shouldDuplicate =
-                                await _main.ShowDialog(new ModpackConflictDialogViewModel(item.Title));
+                                await _main.ShowDialogAsync(new ModpackConflictDialogViewModel(item.Title));
 
                             if (!shouldDuplicate)
                                 return;
                         }
 
-                        var existingNames = ModpackMedatataService.LoadAll()
-                            .Select(x => x.Name.Trim())
-                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                        var existingNames = ModpackMetadataRegistry.LoadAll()
+                                                                   .Select(x => x.Name.Trim())
+                                                                   .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                         var originalName = itemSource.ModpackName.Trim();
                         var name = originalName;
@@ -172,7 +193,8 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
 
                         itemSource.ModpackName = name;
 
-                        var response = await _main.ShowDialog(new ManualSetupDialogViewModel(itemSource));
+                        var response = await _main.ShowDialogAsync(new ManualSetupDialogViewModel(itemSource))
+                                                  .ConfigureAwait(false);
 
                         if (response is not ModpackManualSetupResponse.Finished) return;
 
@@ -181,32 +203,34 @@ public partial class DiscoveryPageViewModel : ViewModelBase {
                             itemSource.LatestVersion = versionSemver;
                         }
 
-                        var metadata = await ModpackInstallService.DownloadAndInstallModpack(
+                        var metadata = await ModpackInstallService.DownloadAndInstallModpackAsync(
                             itemSource,
                             AppVariables.GetBaseInstallPathFromLauncer(AppSettings.Settings.Config.InstallTarget));
 
-                        _main.OpenModpack(metadata);
+                        await _main.OpenModpackAsync(metadata).ConfigureAwait(false);
                     }
 
                     break;
                 }
                 case DiscoveryCategory.Mods: {
                     if (_modpackMetadata == null ||
-                        _modpackManifestService == null) return;
+                        _store == null) return;
 
                     if (item.Source is ModrinthSearchProject itemSource) {
                         var version = await ModrinthApiService.GetCompatibleVersionAsync(
                             itemSource.Id,
                             _modpackMetadata.GameVersion,
                             _modpackMetadata.Loader
-                        );
+                        ).ConfigureAwait(false);
 
-                        await _modpackManifestService.InstallModAsync(new ModVersion(itemSource.Id, version!.Id),
-                            false);
+                        await _store.InstallationManager
+                                    .InstallModAsync(new ModVersion(itemSource.Id, version!.Id), false)
+                                    .ConfigureAwait(false);
 
                         item.IsInstalled = true;
                         this.RaisePropertyChanged(nameof(item.IsInstalled));
                     }
+
                     break;
                 }
                 case DiscoveryCategory.DataPacks:

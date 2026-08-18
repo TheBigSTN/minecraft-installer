@@ -224,8 +224,7 @@ public static class BackendApiService {
     // =========================================
     // GET MODPACK MANIFEST (GET /api/v1/modpacks/version/{versionId}/manifest)
     // =========================================
-    public static async Task<ModpackManifest?> GetModpackManifestAsync(Guid versionId, string? sharingCode = null)
-    {
+    public static async Task<ModpackManifest?> GetModpackManifestAsync(Guid versionId, string? sharingCode = null) {
         // Construct the URL based on the backend route
         var url = $"{BaseUrl}api/v1/modpacks/notRead/version/{versionId}/manifest";
 
@@ -240,7 +239,6 @@ public static class BackendApiService {
         result.EnsureSuccess();
 
         return result.Data;
-
     }
 
     // =========================================

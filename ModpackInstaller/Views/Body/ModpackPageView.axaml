@@ -152,7 +152,7 @@
                                      Height="36"
                                      Margin="2"
                                      Command="{Binding FilesPageCommand}"
-                                     IsEnabled="False">
+                                     IsEnabled="True">
                             Files
                         </RadioButton>
                         <RadioButton GroupName="PackNav"

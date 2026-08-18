@@ -7,7 +7,7 @@
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<Version>4.0.4</Version>
+		<Version>4.1.0</Version>
 		<ApplicationIcon>Assets\app.ico</ApplicationIcon>
 		<PackageProjectUrl>https://github.com/TheBigSTN/minecraft-installer</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/TheBigSTN/minecraft-installer</RepositoryUrl>

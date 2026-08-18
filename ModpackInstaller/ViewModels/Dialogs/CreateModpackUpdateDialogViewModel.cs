@@ -24,9 +24,10 @@ public partial class CreateModpackUpdateDialogViewModel : DialogViewModel<bool> 
 
     private readonly FileSelectionRules _rules;
 
-    public CreateModpackUpdateDialogViewModel(ModpackMetadata metadata) {
-        var modpackPath = metadata.InstallPath;
-        _rules = new FileSelectionRules(modpackPath);
+    public CreateModpackUpdateDialogViewModel(ModpackMetadataStorage metadataStorage,
+                                              ModpackManifestStorage manifestStorage) {
+        var modpackPath = metadataStorage.GetData().InstallPath;
+        _rules = new FileSelectionRules(manifestStorage);
 
         Root = BuildTree(modpackPath, "");
         Root.IsExpanded = true;
@@ -38,11 +39,11 @@ public partial class CreateModpackUpdateDialogViewModel : DialogViewModel<bool> 
                 return;
             }
             
-            ModpackPublicizeService service = new(metadata);
+            ModpackPublicizeService service = new(metadataStorage);
 
             await service.UploadNewVersionAsync(Root, Semver, VersionName);
 
-            new ModpackMedatataService().Update(metadata.Id, local => {
+            metadataStorage.Update(local => {
                 local.VersionSemver = Semver;
             });
             

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace ModpackInstaller.Models.Modrinth;
 
@@ -15,29 +16,24 @@ public enum SideSupport {
     unknown
 }
 
+[UsedImplicitly]
 public class ModrinthProject {
-    [JsonPropertyName("id")]
-    public string Id { get; set; } = "";
+    [JsonPropertyName("id")] public string Id { get; set; } = "";
 
-    [JsonPropertyName("title")]
-    public string Title { get; set; } = "";
+    [JsonPropertyName("title")] public string Title { get; set; } = "";
 
-    [JsonPropertyName("description")]
-    public string Description { get; set; } = "";
+    [JsonPropertyName("description")] public string Description { get; set; } = "";
 
-    [JsonPropertyName("client_side")]
-    public SideSupport ClientSide { get; set; }
+    [JsonPropertyName("client_side")] public SideSupport ClientSide { get; set; }
 
-    [JsonPropertyName("server_side")]
-    public SideSupport ServerSide { get; set; }
+    [JsonPropertyName("server_side")] public SideSupport ServerSide { get; set; }
 
-    [JsonPropertyName("icon_url")]  
-    public string IconURL { get; set; } = "";
+    [JsonPropertyName("icon_url")] public string IconURL { get; set; } = "";
     [JsonPropertyName("downloads")] public int Downloads { get; set; }
     [JsonPropertyName("published")] public DateTime PublishedDate { get; set; }
-    [JsonPropertyName("body")] public string Body{ get; set; }
-    
-    [JsonPropertyName("team")] public string TeamId{ get; set; }
-    
-    [JsonPropertyName("author")] public string Author{ get; set; }
+    [JsonPropertyName("body")] public string Body { get; set; }
+
+    [JsonPropertyName("team")] public string TeamId { get; set; }
+
+    [JsonPropertyName("author")] public string Author { get; set; }
 }

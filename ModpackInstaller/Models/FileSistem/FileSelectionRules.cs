@@ -22,8 +22,7 @@ public class FileSelectionRules {
         "tree.json"
     ];
 
-    public FileSelectionRules(string modpackInstallPath) {
-        ModpackManifestService manifestService = ModpackManifestService.CreateInstance(modpackInstallPath);
+    public FileSelectionRules(ModpackManifestStorage manifestStorage) {
 
         string[] excludedPatterns = [
             "TLauncherAdditional.json",
@@ -40,7 +39,7 @@ public class FileSelectionRules {
             "metadata.json"
         ];
 
-        foreach (var modInfo in manifestService.InstalledMods) {
+        foreach (var modInfo in manifestStorage.InstalledMods) {
             if (modInfo.Source is ModSource.Local) {
                 _required.Add(Path.Combine("mods", modInfo.Filename)
                     .Replace('\\', '/'));

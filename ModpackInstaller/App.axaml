@@ -295,15 +295,12 @@
 		
 		<StyleInclude Source="avares://ModpackInstaller/Components/Dialog.axaml"/>
 		<StyleInclude Source="avares://ModpackInstaller/Components/Pages.axaml"/>
+		<StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
 	</Application.Styles>
 
 	<Application.DataTemplates>
 		<DataTemplate DataType="vmSidebars:SideNavigationBarViewModel">
 			<viewsSidebars:SideNavigationBarView />
-		</DataTemplate>
-		
-		<DataTemplate DataType="vmBody:ModpackInfoViewModel">
-			<viewsBody:ModpackInfoView />
 		</DataTemplate>
 		
 		<DataTemplate DataType="vmBody:HomePageViewModel">
@@ -318,6 +315,9 @@
 		
 		<DataTemplate DataType="vmModpackBody:ContentViewModel">
 			<viewsModpackBody:ContentView />
+		</DataTemplate>
+		<DataTemplate DataType="vmModpackBody:FilesViewModel">
+			<viewsModpackBody:FilesView />
 		</DataTemplate>
 		
 		<DataTemplate DataType="vmDialog:ModpackConflictDialogViewModel">

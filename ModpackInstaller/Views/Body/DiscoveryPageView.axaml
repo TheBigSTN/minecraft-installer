@@ -161,7 +161,7 @@
                              Margin="12,0"
                              VerticalContentAlignment="Center"
                              Classes="centered"
-                             Text="{Binding SearchQuerry}"/>
+                             Text="{Binding SearchQuery}"/>
                 </Border>
 
                 <!-- Filters -->

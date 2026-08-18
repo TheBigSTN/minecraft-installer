@@ -8,19 +8,19 @@ using ModpackInstaller.Models;
 using ModpackInstaller.Models.Backend;
 using ModpackInstaller.Models.DTOs;
 using ModpackInstaller.Models.FileSistem;
+using ModpackInstaller.Models.Interfaces;
 using ModpackInstaller.Services.FileSistem;
 
 namespace ModpackInstaller.Services.Modpack;
 
-public class ModpackPublicizeService(ModpackMetadata metadata) {
-	private readonly ModpackMetadata _metadata = metadata;
-    private readonly ModpackMedatataService _modpackMedatataService = new();
+public class ModpackPublicizeService(ModpackMetadataStorage metadataStorage) {
+    private readonly ModpackMetadataStorage _metadataStorage = metadataStorage;
 
     // =========================================
     // 1. ÎNREGISTRARE UTILIZATOR
     // =========================================
     private static async Task<FullUserDto?> RegisterUserAsync(string nickname) {
-        var response = await BackendApiService.RegisterAsync(nickname);
+        var response = await BackendApiService.RegisterAsync(nickname).ConfigureAwait(false);
         if (response != null) {
             AppSettings.Settings.Update(cfg => {
                 cfg.UserPasswordToken = response.Token;
@@ -28,6 +28,7 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
                 cfg.UserId = response.Id;
             });
         }
+
         return response;
     }
 
@@ -35,22 +36,17 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
     // 2. CREARE MODPACK (INIȚIALIZARE)
     // =========================================
     public async Task CreateOnServerAsync(bool isPublic, string? sharingCode = null) {
-        var ownerToken = await GetValidToken();
+        var ownerToken = await GetValidToken().ConfigureAwait(false);
 
         var request = CreateRequest(isPublic, sharingCode);
-        var response = await BackendApiService.CreateModpackAsync(request, ownerToken);
+        var response = await BackendApiService.CreateModpackAsync(request, ownerToken).ConfigureAwait(false);
 
         if (response != null) {
-            // _modpackMedatataService.Update(_metadata.Id, modpackMetadata => {
-            //     modpackMetadata.ModpackId = response.Id;
-            //     modpackMetadata.ModpackPassword = response.Password;
-            //     modpackMetadata.SharingCode = response.ShareCode;
-            // });
-            _metadata.ModpackId = response.Id;
-            _metadata.ModpackPassword = response.Password;
-            _metadata.SharingCode = response.ShareCode;
-
-            _modpackMedatataService.Save(_metadata);
+            _metadataStorage.Update(modpackMetadata => {
+                modpackMetadata.ModpackId = response.Id;
+                modpackMetadata.ModpackPassword = response.Password;
+                modpackMetadata.SharingCode = response.ShareCode;
+            });
         }
     }
 
@@ -61,46 +57,46 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
         TreeNode root,
         string semver,
         string versionName
-        ) {
+    ) {
         try {
-            var ownerToken = await GetValidToken();
-            
-            if(_metadata.ModpackId is null || string.IsNullOrEmpty(_metadata.ModpackPassword))
+            var ownerToken = await GetValidToken().ConfigureAwait(false);
+
+            if (_metadataStorage.IsPublished)
                 throw new Exception("Modpack not published.");
 
             var version = await BackendApiService.InitiateVersionUploadAsync(
                 new InitiateVersionUploadRequest(
-                    _metadata.ModpackId.Value,
+                    _metadataStorage.GetData().ModpackId!.Value, // IsPublished ensures it's not null
                     semver,
                     versionName
                 ),
                 ownerToken
-            );
+            ).ConfigureAwait(false);
 
             if (version == null)
                 return false;
-            
+
             var tree = BuildTree(root);
-            
+
             var missingFiles = await BackendApiService.UploadTreeJsonAsync(
                 version.ModpackId,
                 version.Id,
                 tree,
                 ownerToken
-            );
+            ).ConfigureAwait(false);
 
             if (missingFiles == null)
                 return false;
 
             foreach (var fullPath in missingFiles.MissingFiles
-                         .Select(file => Path.Combine(_metadata.InstallPath, file.FilePath))
-                     ) {
+                         .Select(file => Path.Combine(_metadataStorage.GetData().InstallPath, file.FilePath))
+                    ) {
                 await BackendApiService.UploadFileToBlobStorageAsync(
                     fullPath,
                     ownerToken
-                );
+                ).ConfigureAwait(false);
             }
-            
+
             await BackendApiService.UpdateVersionStatusAsync(
                 new UpdateVersionStatusRequest(
                     Guid.Parse(version.ModpackId),
@@ -108,11 +104,12 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
                     ModpackVersionStatus.Private
                 ),
                 ownerToken
-            );
+            ).ConfigureAwait(false);
 
-            _metadata.VersionId = version.Id;
-            _metadata.VersionSemver = version.Semver;
-            _modpackMedatataService.Save(_metadata);
+            _metadataStorage.Update(local => {
+                local.VersionId = version.Id;
+                local.VersionSemver = version.Semver;
+            });
 
             return true;
         }
@@ -121,10 +118,10 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
             return false;
         }
     }
-    
+
     private static List<string> GetExcludedFiles(TreeNode root) {
         var excludedFiles = new List<string>();
-        
+
         if (root.IsFile) {
             var relativePath = root.Node.RelativePath;
 
@@ -145,35 +142,40 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
     private static async Task<string> GetValidToken(int recursion = 0) {
         var token = AppSettings.Settings.Config.UserPasswordToken;
         if (string.IsNullOrEmpty(token)) {
-            _ = await RegisterUserAsync("TODO");
-            token = await GetValidToken(recursion + 1);
-        } else if (recursion > 10) {
+            _ = await RegisterUserAsync("TODO").ConfigureAwait(false);
+            token = await GetValidToken(recursion + 1).ConfigureAwait(false);
+        }
+        else if (recursion > 10) {
             throw new Exception("Maximum recursion depth reached");
         }
+
         return token;
     }
 
     private CreateModpackRequest CreateRequest(bool isPublic, string? code) {
+        var data = _metadataStorage.GetData();
+        
         return new CreateModpackRequest(
-            _metadata.Id,
-            _metadata.Name,
-            _metadata.Description ?? "",
-            _metadata.GameVersion,
-            _metadata.Loader.ToString(),
-            _metadata.LoaderVersion,
-            code ?? _metadata.SharingCode ?? "",
+            data.Id,
+            data.Name,
+            data.Description ?? "",
+            data.GameVersion,
+            data.Loader.ToString(),
+            data.LoaderVersion,
+            code ?? data.SharingCode ?? "",
             isPublic
         );
     }
+
     public static string GenerateCode(int length = 10) {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var random = new Random();
         return new string(Enumerable.Range(0, length)
-                                  .Select(_ => chars[random.Next(chars.Length)])
-                                  .ToArray());
+            .Select(_ => chars[random.Next(chars.Length)])
+            .ToArray());
     }
-    
-    
+
+
     private ModpackTreeDto BuildTree(TreeNode root) {
         List<ModpackFileDto> files = [];
 
@@ -181,14 +183,13 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
 
         return new ModpackTreeDto(files);
     }
-    
+
     private void CollectFiles(
         TreeNode node,
         List<ModpackFileDto> files) {
-
         if (node is { IsFile: true, IsChecked: true }) {
             var fullPath = Path.Combine(
-                _metadata.InstallPath,
+                _metadataStorage.GetData().InstallPath,
                 node.Node.RelativePath);
 
             files.Add(new ModpackFileDto(
@@ -201,8 +202,4 @@ public class ModpackPublicizeService(ModpackMetadata metadata) {
         foreach (var child in node.Children)
             CollectFiles(child, files);
     }
-    
-    
-    
-
 }

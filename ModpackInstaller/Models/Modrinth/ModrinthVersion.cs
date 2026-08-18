@@ -18,6 +18,8 @@ public class ModrinthVersion {
 	[JsonPropertyName("game_versions")] public List<string> GameVersions { get; set; } = [];
 	[JsonPropertyName("files")] public List<ModrinthFile> Files { get; set; } = [];
 	[JsonPropertyName("dependencies")] public List<ModrinthDependency> Dependencies { get; set; } = [];
+	
+	[JsonPropertyName("environment")] public required Environment Environment { get; init; }
 
 	public ModrinthFile? PrimaryFile => Files.FirstOrDefault(f => f.IsPrimary) ?? Files.FirstOrDefault();
 }
