@@ -16,13 +16,36 @@ public abstract class StoredData<T> where T : class, IMigratedData, new() {
     public DateTime LastLoaded { get; private set; }
     public DateTime LastSaved { get; private set; }
 
-    public void MarkDirty() => IsDirty = true;
-    
+    private CancellationTokenSource? _saveDebounceCts;
+
+    public void MarkDirty() {
+        IsDirty = true;
+
+        _saveDebounceCts?.Cancel();
+        _saveDebounceCts?.Dispose();
+
+        var cts = new CancellationTokenSource();
+        _saveDebounceCts = cts;
+
+        _ = DebouncedSaveAsync(cts.Token);
+    }
+
+    private async Task DebouncedSaveAsync(CancellationToken cancellationToken) {
+        try {
+            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
+
+            await SaveAsync().ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) {
+            // Another MarkDirty() reset the timer.
+        }
+    }
+
     private readonly SemaphoreSlim _ioLock = new(1, 1);
 
     public async Task LoadAsync() {
         await _ioLock.WaitAsync().ConfigureAwait(false);
-        
+
         try {
             var json = string.Empty;
             if (File.Exists(FilePath)) {
@@ -52,7 +75,7 @@ public abstract class StoredData<T> where T : class, IMigratedData, new() {
     public async Task SaveAsync() {
         if (!IsDirty) return;
 
-        await _ioLock.WaitAsync();
+        await _ioLock.WaitAsync().ConfigureAwait(false);
 
         try {
             var root = JsonSerializer.SerializeToNode(Data)?.AsObject() ?? new JsonObject();
@@ -65,7 +88,7 @@ public abstract class StoredData<T> where T : class, IMigratedData, new() {
                 Directory.CreateDirectory(dir);
             }
 
-            await File.WriteAllTextAsync(FilePath, json);
+            await File.WriteAllTextAsync(FilePath, json).ConfigureAwait(false);
 
             IsDirty = false;
             LastSaved = DateTime.UtcNow;
