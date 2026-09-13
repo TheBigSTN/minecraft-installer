@@ -78,6 +78,8 @@ public abstract class StoredData<T> where T : class, IMigratedData, new() {
         await _ioLock.WaitAsync().ConfigureAwait(false);
 
         try {
+            OnSaved();
+            OnSave?.Invoke();
             var root = JsonSerializer.SerializeToNode(Data)?.AsObject() ?? new JsonObject();
             root["_version"] = T.SchemaVersion;
 
@@ -92,8 +94,6 @@ public abstract class StoredData<T> where T : class, IMigratedData, new() {
 
             IsDirty = false;
             LastSaved = DateTime.UtcNow;
-            OnSaved();
-            OnSave?.Invoke();
         }
         finally {
             _ioLock.Release();
